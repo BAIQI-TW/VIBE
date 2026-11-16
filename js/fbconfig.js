@@ -3,12 +3,12 @@
    config 為 Firebase 主控台「專案設定 → 你的應用程式 → Web」的設定物件；Web API Key 不是私鑰，可公開，存取由 firestore.rules 控制。
    notice 與 marketing 為個資告知草稿，正式上線前須由 RKL 依實際營運流程確認文字；改文字時一併改 ver（同意紀錄會存版本）。 */
 window.VIBE_FB={
-  enabled:false,
+  enabled:true,/* v199zzzzzz59：使用者 2026-11-16 提供 Firebase 專案 vibe-7eace 設定並開啟 */
   hosts:['baiqi-tw.github.io'],
-  config:{apiKey:'',authDomain:'',projectId:'',appId:''},
+  config:{apiKey:'AIzaSyB6CQg1D0MitVZInaauQK_bDiM2MgaaAtk',authDomain:'vibe-7eace.firebaseapp.com',projectId:'vibe-7eace',storageBucket:'vibe-7eace.firebasestorage.app',messagingSenderId:'1064028927340',appId:'1:1064028927340:web:9168079cba5ab4c756af49'},/* measurementId 未用：不載入 Analytics */
   emailLinkUrl:'https://baiqi-tw.github.io/VIBE/',
   notice:{
-    ver:'draft-2026-11-16',
+    ver:'2026-11-16-v1',
     title:'登入前說明',
     body:[
       '蒐集者：佰奇創意機械股份有限公司（RIKULAU）。',
@@ -16,10 +16,10 @@ window.VIBE_FB={
       '資料類別：Email、帳號識別碼、您保存的配置與重要選擇紀錄（車款、尺寸、塗裝、加購）。',
       '期間：至您要求刪除帳號資料為止。',
       '地區與對象：本公司及受託提供雲端服務的 Google（Firebase），資料可能存放於台灣境外。',
-      '權利：您可要求查詢、閱覽、複製、補充更正、停止蒐集處理利用或刪除，請聯絡〔聯絡信箱待填〕。',
+      '權利：您可要求查詢、閱覽、複製、補充更正、停止蒐集處理利用或刪除，請透過 RIKULAU 官網 rikulau.com 的聯絡管道與我們聯繫。',
       '不提供的影響：無法使用雲端保存；3D 幾何手冊的其他功能不受影響。'
     ],
     agree:'我已閱讀並同意上述說明'
   },
-  marketing:{ver:'draft-2026-11-16',label:'我願意收到 RIKULAU 新品與活動資訊（可隨時取消）'}
+  marketing:{ver:'2026-11-16-v1',label:'我願意收到 RIKULAU 新品與活動資訊（可隨時取消）'}
 };
