@@ -32,7 +32,7 @@ md.innerHTML='<div class="card modal cl-modal" role="dialog" aria-modal="true" a
  +'<label class="cl-ck"><input type="checkbox" id="clAg"> '+esc(C.notice.agree)+'</label><label class="cl-ck"><input type="checkbox" id="clMk"> '+esc(C.marketing.label)+'</label></div>';
 document.body.appendChild(md);
 const sm=t=>{$('clMm').textContent=t||''};
-const open=()=>{md.hidden=false;sm('');$('clAg').checked=true;$('clMk').checked=!!C.marketing.preset;/* v199zzzzzz60：預設打勾（使用者 2026-11-16） */sync();sdk().catch(()=>sm('雲端服務暫時無法連線'))},close=()=>{md.hidden=true};
+const open=()=>{md.hidden=false;sm('');$('clAg').checked=!!C.notice.agreePreset;$('clMk').checked=!!C.marketing.preset;/* v199zzzzzz60：預設打勾（使用者 2026-11-16） */sync();sdk().catch(()=>sm('雲端服務暫時無法連線'))},close=()=>{md.hidden=true};
 const sync=()=>{const ok=$('clAg').checked;['clG','clE','clEm'].forEach(i=>$(i).disabled=!ok)};
 $('clAg').addEventListener('change',sync);$('clX').onclick=close;md.addEventListener('click',e=>{if(e.target===md)close()});
 $('clIn').onclick=open;

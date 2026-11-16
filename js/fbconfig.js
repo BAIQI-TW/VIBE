@@ -8,16 +8,16 @@ window.VIBE_FB={
   config:{apiKey:'AIzaSyB6CQg1D0MitVZInaauQK_bDiM2MgaaAtk',authDomain:'vibe-7eace.firebaseapp.com',projectId:'vibe-7eace',storageBucket:'vibe-7eace.firebasestorage.app',messagingSenderId:'1064028927340',appId:'1:1064028927340:web:9168079cba5ab4c756af49'},/* measurementId 未用：不載入 Analytics */
   emailLinkUrl:'https://baiqi-tw.github.io/VIBE/',
   notice:{
-    ver:'2026-11-16-v2',
+    ver:'2026-11-16-v3',
     title:'登入以保存配置',
     body:[
-      '佰奇創意機械股份有限公司（RIKULAU）會蒐集您的 Email、帳號識別碼，以及保存的配置與選擇紀錄（車款、尺寸、塗裝、加購）。',
-      '用途：保存與跨裝置載入配置，並分析選擇以改進產品與服務。',
+      '佰奇創意機械股份有限公司（RIKULAU）會蒐集您的 Email、帳號識別，以及客製化紀錄。',
+      '用途：跨裝置保存客製化紀錄，以改進產品與服務。',
       '資料存放於 Google Firebase（可能位於台灣境外），保存至您要求刪除為止。',
       '查詢、更正、停止使用或刪除，請透過官網 rikulau.com 與我們聯繫。',
-      '不登入不影響 3D 幾何手冊的其他功能。'
+      '登入與否只關係到您的客製化紀錄留存，無關本網頁其他功能。'
     ],
-    agree:'我同意上述說明'
+    agree:'我同意上述說明',agreePreset:false/* v199zzzzzz61：使用者 2026-11-16 指示預設不打勾 */
   },
-  marketing:{ver:'2026-11-16-v2',label:'接收 RIKULAU 新品與活動資訊（可隨時取消）',preset:true}/* v199zzzzzz60：使用者 2026-11-16 指示兩個選項預設打勾；同意紀錄會記 preset */
+  marketing:{ver:'2026-11-16-v3',label:'接收 RIKULAU 新品與活動資訊（可隨時取消）',preset:true}/* v199zzzzzz60：使用者 2026-11-16 指示兩個選項預設打勾；同意紀錄會記 preset */
 };
