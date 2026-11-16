@@ -1591,7 +1591,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
    加購（鈦零件、BLKTEC）、幾何客製表單與騎士尺寸、零組件透明度、畫質與材質（臨時面板的現值）。上半是給人看的表格，下半「JSON」區塊是機器可讀版。
    「貼上並套用」只讀 JSON 區塊，逐欄驗證（無效欄位略過並回報），再依序還原：胎寬／頭碗 → 塗裝與加購變數 → 畫質 → 車型與尺寸 → 表單與騎士 → 重畫。
    不含：鏡頭視角、主分頁與子分頁位置、疊圖比較、扭力巡檢進度。 */
-const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz69';
+const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz72';
 function cfgTs(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())}
 function cfgGather(){const nn=v=>(typeof v==='number'&&isFinite(v))?v:null,fo={};Object.keys(F).forEach(k=>{const v=F[k];fo[k]=typeof v==='number'?nn(v):v});
   const ma={};MT_G.forEach(g=>{const m=MTS[g[0]];if(m.p||m.c||m.b!==1)ma[g[0]]={p:m.p,c:m.c,b:m.b}});
@@ -2526,7 +2526,7 @@ scBtn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="tr
 stage.appendChild(scBtn);
 function scUI(){scBtn.hidden=!scOK();scBtn.dataset.on=SC.on?'1':'0';scBtn.setAttribute('aria-label',SC.on?'暫停展示':'播放展示');scBtn.title=SC.on?'暫停展示':'播放展示'}
 function scPlace(){const rb=document.getElementById('reset');if(!rb)return;const a=rb.getBoundingClientRect(),b=stage.getBoundingClientRect();if(!a.width){scBtn.style.visibility='hidden';return}
-  const cs=getComputedStyle(rb);scBtn.style.visibility='';Object.assign(scBtn.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-a.height-8)+'px',top:(a.top-b.top)+'px',background:cs.backgroundColor,borderRadius:cs.borderRadius});/* 字色不跟回到全車鈕（它處理中會轉黃）；v199zzzzzz64：音樂鈕在播放鈕左側（播放鈕隱藏時貼回到全車鈕），樣式同兩顆圓鈕 */const mw=document.getElementById('bgmW');if(mw){const k=scBtn.hidden?1:2;Object.assign(mw.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-k*(a.height+8))+'px',top:(a.top-b.top)+'px'});const mb=mw.querySelector('button');if(mb)Object.assign(mb.style,{background:cs.backgroundColor,borderRadius:cs.borderRadius})}}
+  const cs=getComputedStyle(rb);scBtn.style.visibility='';const vt=innerWidth>760,st=a.height+8;/* v199zzzzzz71：桌機三顆圓鈕改垂直（回到全車在下、播放、音樂在最上），避免與主分頁膠囊干涉；行動版維持水平 */Object.assign(scBtn.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:st))+'px',top:(a.top-b.top-(vt?st:0))+'px',background:cs.backgroundColor,borderRadius:cs.borderRadius});/* 字色不跟回到全車鈕（它處理中會轉黃）；v199zzzzzz64：音樂鈕在播放鈕左側（播放鈕隱藏時貼回到全車鈕），樣式同兩顆圓鈕 */const mw=document.getElementById('bgmW');if(mw){const k=scBtn.hidden?1:2;Object.assign(mw.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:k*st))+'px',top:(a.top-b.top-(vt?k*st:0))+'px'});const mb=mw.querySelector('button');if(mb)Object.assign(mb.style,{background:cs.backgroundColor,borderRadius:cs.borderRadius})}}
 new ResizeObserver(scPlace).observe(stage);window.addEventListener('resize',scPlace);setTimeout(scPlace,0);setInterval(()=>{if(scBtn.hidden!==!scOK())scUI();scPlace()},1000);
 scBtn.addEventListener('click',()=>{if(SC.on){SC.why='按鈕';scStop(true,true)}else{SC.why='按鈕';scPlay()}});
 ['pointerdown','wheel','keydown'].forEach(e=>window.addEventListener(e,ev=>{const t=ev.target&&ev.target.closest?ev.target:null;if(t&&t.closest('#scBtn,#bgmW'))return;const g=!!(t&&t.closest('.gb'));if(!SC.on&&SC.pre){SC.pre=false;if(!g)scSheet('mid')}if(SC.on)SC.why='操作 '+ev.type;scStop(true,!g)},{capture:true,passive:true}));
