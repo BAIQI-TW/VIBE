@@ -1591,7 +1591,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
    加購（鈦零件、BLKTEC）、幾何客製表單與騎士尺寸、零組件透明度、畫質與材質（臨時面板的現值）。上半是給人看的表格，下半「JSON」區塊是機器可讀版。
    「貼上並套用」只讀 JSON 區塊，逐欄驗證（無效欄位略過並回報），再依序還原：胎寬／頭碗 → 塗裝與加購變數 → 畫質 → 車型與尺寸 → 表單與騎士 → 重畫。
    不含：鏡頭視角、主分頁與子分頁位置、疊圖比較、扭力巡檢進度。 */
-const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz59';
+const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz60';
 function cfgTs(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())}
 function cfgGather(){const nn=v=>(typeof v==='number'&&isFinite(v))?v:null,fo={};Object.keys(F).forEach(k=>{const v=F[k];fo[k]=typeof v==='number'?nn(v):v});
   const ma={};MT_G.forEach(g=>{const m=MTS[g[0]];if(m.p||m.c||m.b!==1)ma[g[0]]={p:m.p,c:m.c,b:m.b}});
