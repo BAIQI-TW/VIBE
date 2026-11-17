@@ -1591,7 +1591,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
    加購（鈦零件、BLKTEC）、幾何客製表單與騎士尺寸、零組件透明度、畫質與材質（臨時面板的現值）。上半是給人看的表格，下半「JSON」區塊是機器可讀版。
    「貼上並套用」只讀 JSON 區塊，逐欄驗證（無效欄位略過並回報），再依序還原：胎寬／頭碗 → 塗裝與加購變數 → 畫質 → 車型與尺寸 → 表單與騎士 → 重畫。
    不含：鏡頭視角、主分頁與子分頁位置、疊圖比較、扭力巡檢進度。 */
-const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz72';
+const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz74';
 function cfgTs(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())}
 function cfgGather(){const nn=v=>(typeof v==='number'&&isFinite(v))?v:null,fo={};Object.keys(F).forEach(k=>{const v=F[k];fo[k]=typeof v==='number'?nn(v):v});
   const ma={};MT_G.forEach(g=>{const m=MTS[g[0]];if(m.p||m.c||m.b!==1)ma[g[0]]={p:m.p,c:m.c,b:m.b}});
@@ -1817,7 +1817,7 @@ function renderGeo(){chips(document.getElementById('modelChips'),Object.values(M
   {const hc=document.getElementById('hsTypeChips');if(hc){chips(hc,['外露式','全隱藏式'],hsT()==='hid'?'全隱藏式':'外露式',x=>{HS_SEL[selM]=x==='全隱藏式'?'hid':'ex';try{if(N){tween=null;logoNow=true;applyNodes(N)}}catch(e){}wk(150);renderGeo()});const hn=document.getElementById('hsTypeNote');if(hn)hn.textContent=hsT()==='hid'?'全隱藏式：軸承藏在頭管內，只露上蓋 9.5 mm 與下冠座 1 mm（參照 NECO H02 圖面）；頭管下端貼近叉冠，龍頭隨之降低。顏色同「座管束・頭碗組顏色」。':'外露式：上碗 14 mm、下碗 16 mm 圓環造型，外緣貼 KING 字樣（參照 Chris King AeroSet）；頭管畫短 15 mm 以下碗補足。顏色同「座管束・頭碗組顏色」。'}}
   document.getElementById('modelH').textContent=({'64':'全公路車','325':'全公路車','audax':'長途耐力車','ili':'礫石車','ss':'礫石車','ex':'探險礫石車'}[selM]||'車')+'型';
   const has=!!GEOS[selM];document.getElementById('sizeH').textContent=MNAME[selM]+(has?' 尺寸':'');document.getElementById('stTag').innerHTML='<span data-k="m" role="button" tabindex="0">'+MNAME[selM]+'</span>'+(has?'・<span data-k="s" role="button" tabindex="0">'+size+'</span>':'');
-  const gg=has?(GEO.find(x=>x.size===size)||GEO[0]):null;document.getElementById('geoScore').innerHTML=gg?`<span>尺寸 <b class="num">${gg.size}</b></span><span>前伸量 <b class="num">${gg.reach}</b><i class="u"> mm</i></span><span>堆疊高 <b class="num">${gg.stack}</b><i class="u"> mm</i></span>`:'';
+  const gg=has?(GEO.find(x=>x.size===size)||GEO[0]):null;document.getElementById('geoScore').innerHTML=gg?`<span data-next="1" role="button" tabindex="0">尺寸 <b class="num">${gg.size}</b></span><span>前伸量 <b class="num">${gg.reach}</b><i class="u"> mm</i></span><span>堆疊高 <b class="num">${gg.stack}</b><i class="u"> mm</i></span>`:'';
   document.getElementById('m325note').textContent=({'64':'幾何與官網現行頁一致；管徑為 STEP 示意量測。','325':'幾何與規格依官網；上、下管異型截面取自 STEP（僅示意），其他尺寸兩端截面不變、沿程拉伸。','ss':'幾何與規格依官網；管件粗細尚無量測，為示意。','audax':'幾何依官網現行頁（M 尺寸官網數值自檢有 2–3 mm 差）；規格與管徑摘自官方舊頁，須核對現行頁面；管件形狀為示意。','ili':'幾何依官網現行頁；規格與管徑摘自官方舊頁，須核對現行頁面；管件形狀為示意。','ex':'幾何依官網現行頁；規格待擷取，管件粗細為示意。'}[selM]||'')+' 前叉為示意。';
   if(!has){chips(document.getElementById('sizeChips'),[],null,()=>{});chips(document.getElementById('cmpChips'),[],null,()=>{});geoTable.innerHTML='<p class="fine">尺寸對照待補。</p>';tblKey='';specBox();renderFit();return}
   chips(document.getElementById('sizeChips'),GEOV().map(g=>g.size),size,s=>{size=s;if(cmp===s)cmp=null;goGeo(s);updateGhost();renderGeo()});
@@ -2379,9 +2379,19 @@ function custTarget(){return(effSub()==='geo'||!CN)?CN:stockNodes(GEO.find(g=>g.
   const main=document.querySelector('main'),ST=['closed','mid','full'],gb=document.createElement('button');main.dataset.sheet='mid';
   gb.type='button';gb.className='gb';gb.setAttribute('aria-label','卡片高度：點一下切換，上下滑動收合或伸展');
   const cur=()=>ST.indexOf(main.dataset.sheet),set=s=>{main.dataset.sheet=ST[Math.max(0,Math.min(2,s))];wk(150)};let y0=null;
-  gb.addEventListener('pointerdown',e=>{y0=e.clientY;try{gb.setPointerCapture(e.pointerId)}catch(_){}});
-  gb.addEventListener('pointerup',e=>{if(y0===null)return;const dy=e.clientY-y0;y0=null;if(Math.abs(dy)>22)set(cur()+(dy<0?1:-1));else set(cur()===1?2:1)});/* 點一下：收合→預設、預設→伸展、伸展→預設 */
-  gb.addEventListener('pointercancel',()=>{y0=null});
+  /* v199zzzzzz73：拖曳時卡片即時跟手（改 3D 區高度 --stH），放開依位置＋速度吸附到最近的三段之一（使用者 2026-11-17 選定） */
+  const lf=document.querySelector('main>.left')||document.querySelector('.left');let h0=0,mv=false,tr=[];
+  const lim=()=>{const H=innerHeight,M=main.clientHeight;return{full:.30*H,mid:.48*H,closed:Math.max(.48*H,M-((sh.offsetHeight||48)+8))}};
+  const end=()=>{main.style.removeProperty('--stH');delete main.dataset.drag};
+  gb.addEventListener('pointerdown',e=>{y0=e.clientY;mv=false;tr=[[e.clientY,performance.now()]];h0=lf?lf.getBoundingClientRect().height:0;try{gb.setPointerCapture(e.pointerId)}catch(_){}});
+  gb.addEventListener('pointermove',e=>{if(y0===null||!lf)return;const dy=e.clientY-y0;if(!mv&&Math.abs(dy)<6)return;
+    if(!mv){mv=true;main.dataset.drag='1';if(main.dataset.sheet==='closed')main.dataset.sheet='mid'}
+    const L=lim(),h=Math.max(L.full,Math.min(L.closed,h0+dy));main.style.setProperty('--stH',h+'px');tr.push([e.clientY,performance.now()]);if(tr.length>6)tr.shift();wk(150)});
+  gb.addEventListener('pointerup',e=>{if(y0===null)return;const dy=e.clientY-y0;y0=null;
+    if(!mv){end();set(cur()===1?2:1);return}/* 點一下：收合→預設、預設→伸展、伸展→預設 */
+    const a=tr[0],b=[e.clientY,performance.now()],v=(b[0]-a[0])/Math.max(16,b[1]-a[1]),L=lim(),h=Math.max(L.full,Math.min(L.closed,h0+dy))+v*180;
+    const pts=[[L.closed,0],[L.mid,1],[L.full,2]];let best=pts[0];pts.forEach(p=>{if(Math.abs(p[0]-h)<Math.abs(best[0]-h))best=p});end();set(best[1])});
+  gb.addEventListener('pointercancel',()=>{y0=null;end()});
   gb.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){set(cur()+(e.key==='ArrowUp'?1:-1));e.preventDefault()}});
   sh.insertBefore(gb,sh.firstChild);tabs.addEventListener('click',()=>{if(main.dataset.sheet==='closed')set(1)},true);/* 收合時點分頁＝先展開 */
   const fit=()=>{(mq.matches?sh:bar).appendChild(tabs)};if(mq.addEventListener)mq.addEventListener('change',fit);else mq.addListener(fit);fit()})();
@@ -2390,6 +2400,7 @@ function custTarget(){return(effSub()==='geo'||!CN)?CN:stockNodes(GEO.find(g=>g.
     if(s.dataset.k==='m'){setModel(K[(K.indexOf(selM)+1)%K.length])}
     else if(GEOS[selM]){const ss=GEO.map(g=>g.size),n=ss[(ss.indexOf(size)+1)%ss.length];size=n;if(cmp===size)cmp=null;goGeo(size);updateGhost();renderGeo()}};
   t.addEventListener('click',act);t.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){act(e);e.preventDefault()}})})();
+/* v199zzzzzz73：點卡片上方的尺寸大字＝換下一個尺寸（循環），同 3D 膠囊 */(function(){const g=document.getElementById('geoScore');if(!g)return;const go=e=>{if(!(e.target.closest&&e.target.closest('[data-next]'))||!GEOS[selM])return;const ss=GEO.map(x=>x.size),n=ss[(ss.indexOf(size)+1)%ss.length];size=n;if(cmp===size)cmp=null;goGeo(size);updateGhost();renderGeo()};g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){go(e);e.preventDefault()}})})();
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!tm.hidden)tm.hidden=true;else closeCard()}});
 ADDONS.forEach(a=>{document.getElementById('tag_'+a.id).innerHTML=`<span>${a.name}</span>`});

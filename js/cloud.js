@@ -78,5 +78,10 @@ function evt(type,data){if(!user||sent>=200)return;sent++;Q.push({t:F.serverTime
 setInterval(()=>{if(!user)return;const s=summary();if(!s)return;if(last){const ch={};let n=0;for(const k in s)if(s[k]!==last[k]){ch[k]=[last[k]===undefined?null:last[k],s[k]===undefined?null:s[k]];n++}if(n)evt('select',ch)}last=s},4000);
 setInterval(()=>{if(!user||!Q.length)return;const col=F.collection(db,'users',user.uid,'events');Q.splice(0,10).forEach(e=>F.addDoc(col,e).catch(err=>console.warn('cloud evt',err&&err.code)))},10000);
 window.addEventListener('pagehide',()=>{if(!user||!Q.length)return;const col=F.collection(db,'users',user.uid,'events');Q.splice(0).forEach(e=>F.addDoc(col,e).catch(()=>{}))});
+/* v199zzzzzz73：進入客製服務就在背景載入 SDK；客人第一次在客製服務改動後約 0.8 秒跳出登入說明（未登入、未曾登入、此瀏覽器未問過才跳；使用者 2026-11-17 選定） */
+(function(){const tb=document.querySelector('.tab[data-tab="custom"]'),pn=document.querySelector('.panel[data-panel="custom"]');if(!tb||!pn)return;
+  tb.addEventListener('click',()=>{const go=()=>sdk().catch(()=>{});('requestIdleCallback' in window)?requestIdleCallback(go,{timeout:3000}):setTimeout(go,800)});
+  let asked=LS.get('vibe.fb.ask')==='1'||LS.get('vibe.fb.seen')==='1';const hit=e=>{if(asked||user||!md.hidden)return;const t=e.target;if(!(t&&t.closest&&t.closest('select,input,button,[role="button"],.chip')))return;if(t.closest('#cloudBox,[role="tab"],[role="tablist"]'))return;/* 切子分頁不算改動 */
+    asked=true;LS.set('vibe.fb.ask','1');setTimeout(()=>{if(!user&&md.hidden)open()},800)};pn.addEventListener('change',hit,true);pn.addEventListener('click',hit,true)})();
 window.VIBE_CLOUD={get user(){return user&&{uid:user.uid,email:user.email}},sdk};
 })();

@@ -11,17 +11,17 @@
 'use strict';
 const PERSONA={
  /* 人設名稱只在程式與文件，前台不顯示 */
-/* v199zzzzzz65：64／325 人設對調（使用者判定原配置顛倒） */
- '64':   {name:'從容的速度',bpm:114,root:45,mode:'lydian',      prog:[0,4,5,3],cb:1,swing:0,  seed:3251,
-          bass:{pat:'quarter',wave:'triangle',det:[0],cut:900,fe:.8,q:.8,a:.006,d:.3,s:.55,r:.12,vol:.42},
-          harm:{pat:'pluck',wave:'sawtooth',det:[-5,5],cut:1500,fe:1.4,q:1.2,a:.004,d:.2,s:.15,r:.1,vol:.06,oct:1},
-          lead:{wave:'sine',det:[0,4],cut:5000,fe:.3,q:.5,a:.02,d:.4,s:.7,r:.3,vol:.2,oct:2,dens:.42,legato:.6,range:6,leap:.15},
-          hat:{pat:8,vol:.035},kick:{pat:'half',vol:.35},rv:.26},
- '325':  {name:'俐落的領騎者',bpm:124,root:50,mode:'dorian',    prog:[0,6,3,4],cb:1,swing:0,  seed:6401,
+/* v199zzzzzz74：64／325 人設對調回 v65 之前（M325＝從容、M64＝俐落推進；使用者 2026-11-17 古典主題決定）；以下合成參數只在取樣載入失敗時使用 */
+ '64':   {name:'俐落的推進',bpm:124,root:50,mode:'dorian',    prog:[0,6,3,4],cb:1,swing:0,  seed:6401,
           bass:{pat:'pulse8',wave:'sawtooth',det:[-6,6],cut:520,fe:2.2,q:3,a:.004,d:.16,s:.35,r:.08,vol:.32},
           harm:{pat:'arp16',wave:'square',det:[0],cut:1700,fe:1.2,q:1,a:.003,d:.09,s:.2,r:.06,vol:.075,oct:2},
           lead:{wave:'triangle',det:[0,7],cut:3600,fe:.6,q:.7,a:.01,d:.25,s:.6,r:.18,vol:.16,oct:2,dens:.55,legato:.35,range:7,leap:.12},
           hat:{pat:16,vol:.045},kick:{pat:'four',vol:.5},rv:.16},
+ '325':  {name:'從容的速度',bpm:114,root:45,mode:'lydian',      prog:[0,4,5,3],cb:1,swing:0,  seed:3251,
+          bass:{pat:'quarter',wave:'triangle',det:[0],cut:900,fe:.8,q:.8,a:.006,d:.3,s:.55,r:.12,vol:.42},
+          harm:{pat:'pluck',wave:'sawtooth',det:[-5,5],cut:1500,fe:1.4,q:1.2,a:.004,d:.2,s:.15,r:.1,vol:.06,oct:1},
+          lead:{wave:'sine',det:[0,4],cut:5000,fe:.3,q:.5,a:.02,d:.4,s:.7,r:.3,vol:.2,oct:2,dens:.42,legato:.6,range:6,leap:.15},
+          hat:{pat:8,vol:.035},kick:{pat:'half',vol:.35},rv:.26},
  'audax':{name:'長途的穩定步調',bpm:92,root:41,mode:'ionian',   prog:[0,3,0,4],cb:2,swing:0,  seed:3252,
           bass:{pat:'quarter',wave:'sine',det:[0],cut:700,fe:.3,q:.5,a:.01,d:.4,s:.7,r:.15,vol:.5},
           harm:{pat:'pad',wave:'sawtooth',det:[-9,0,9],cut:950,fe:.4,q:.6,a:.9,d:1.2,s:.8,r:1.1,vol:.045,oct:1},
@@ -105,6 +105,13 @@ function hat(bus,t,vel,vv){const s=ctx.createBufferSource();s.buffer=noise;const
 function kick(bus,t,vel,vv,tom){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';const f0=tom?150:110,f1=tom?70:42;
   o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+(tom?.25:.12));g.gain.setValueAtTime(vel*vv,t);g.gain.exponentialRampToValueAtTime(.0005,t+(tom?.5:.28));
   o.connect(g);g.connect(bus);o.start(t);o.stop(t+.55)}
+/* v199zzzzzz74：合成定音鼓（Strauss）與鐵砧（Verdi）；不需取樣 */
+function timp(bus,t,m,dur,vel){const f0=hz(m);[[1,1,1.7],[1.5,.42,1],[1.98,.22,.6],[2.44,.1,.4]].forEach(([r,a,d])=>{const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(f0*r*1.03,t);o.frequency.exponentialRampToValueAtTime(f0*r,t+.09);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vel*a*.5,t+.006);g.gain.setTargetAtTime(0,t+.012,Math.min(d,dur+.4)/4);o.connect(g);g.connect(bus);o.start(t);o.stop(t+d+.1)});
+  const s=ctx.createBufferSource();s.buffer=noise;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=380;const g=ctx.createGain();g.gain.setValueAtTime(vel*.5,t);g.gain.exponentialRampToValueAtTime(.0005,t+.07);s.connect(f);f.connect(g);g.connect(bus);s.start(t);s.stop(t+.09)}
+function anvil(bus,t,m,vel){const f0=hz(m);[[1,1,.9],[2.76,.55,.45],[5.4,.32,.22],[8.93,.18,.12],[13.3,.08,.07]].forEach(([r,a,d])=>{const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=f0*r;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vel*a*.14,t+.0015);g.gain.setTargetAtTime(0,t+.003,d/4);o.connect(g);g.connect(bus);o.start(t);o.stop(t+d*1.5+.05)});
+  const s=ctx.createBufferSource();s.buffer=noise;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=Math.min(9000,f0*3);f.Q.value=1.2;const g=ctx.createGain();g.gain.setValueAtTime(vel*.18,t);g.gain.exponentialRampToValueAtTime(.0005,t+.03);s.connect(f);f.connect(g);g.connect(bus);s.start(t);s.stop(t+.05)}
 /* ===== 取樣播放器 ===== */
 const ARR=window.VIBE_BGM_ARR||{},BUF=new Map(),LD={};let IDX=null;
 const LAY={piano:v=>v<=31?1:v<=63?2:v<=95?3:4,guitar:v=>v<=42?1:v<=85?2:3,bass:v=>v<=50?'p':v<=110?'f':'fff'};
@@ -114,7 +121,7 @@ function loadInst(inst){if(LD[inst])return LD[inst];
   LD[inst]=(IDX?Promise.resolve(IDX):fetch(base()+'index.json').then(r=>{if(!r.ok)throw new Error('index '+r.status);return r.json()}).then(j=>IDX=j))
    .then(I=>{const e=I[inst];if(!e)throw new Error('no '+inst);return fetch(base()+inst+'.webm?h='+e.h).then(r=>{if(!r.ok)throw new Error(inst+' '+r.status);return r.arrayBuffer()}).then(ab=>Promise.all(Object.entries(e.z).map(([k,z])=>ctx.decodeAudioData(ab.slice(z[0],z[0]+z[1])).then(b=>BUF.set(inst+':'+k,[b,z[2]])))))})
    .catch(err=>{LD[inst]=null;throw err});return LD[inst]}
-function needInst(m){const a=ARR[m];return a?Object.keys(a.tracks).filter(i=>i!=='shk'&&i!=='kick'&&i!=='pad'):[]}
+function needInst(m){const a=ARR[m];return a?Object.keys(a.tracks).filter(i=>['piano','guitar','bass'].indexOf(i)>=0):[]}
 const PADV={wave:'sawtooth',det:[-9,0,9],cut:950,fe:.4,q:.6,a:.9,d:1.2,s:.8,r:1.1,vol:.05};/* v199zzzzzz67：編曲用合成 Pad（AUDAX、EX 空間層） */
 function ready(m){const a=ARR[m];if(!a)return Promise.resolve(false);return Promise.all(needInst(m).map(loadInst)).then(()=>true)}
 let rrN=0;
@@ -127,20 +134,40 @@ function sPlay(pl,inst,t,m,dur,vel){const L=LAY[inst](vel);let hit=null;if(inst=
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+.004);g.gain.setValueAtTime(pk,Math.max(t+.005,off));g.gain.setTargetAtTime(0,off,rel/3);
   s.connect(g);g.connect(pl.ib[inst]);const end=Math.min(t+b.duration/rate,off+rel*3);s.start(t);s.stop(end);pl.vE.push(end);s.onended=()=>{try{g.disconnect()}catch(e){}}}/* 發聲數以結束時間計，不依賴 onended */
 function arrSong(m){const a=ARR[m],ev=[],n=a.bars*SPB,R=rng(9000+a.bpm);for(let i=0;i<n;i++)ev.push([]);
-  Object.entries(a.tracks).forEach(([inst,list])=>list.forEach(e=>{const st=Math.round(((e[0]-1)*4+e[1])*4);if(st<0||st>=n)return;
-    ev[st].push(inst==='shk'?['shk',0,1,e[4]/127]:inst==='kick'?['smk',0,1,e[4]/127]:inst==='pad'?['pad',e[2],e[3],e[4]/127]:['s',inst,e[2],e[3],Math.max(1,Math.min(127,e[4]+Math.round((R()-.5)*6))),(R()-.5)*.01])}));return ev}
+  const sd=60/a.bpm/4;/* v199zzzzzz74：不在 16 分格線上的拍位（三連音）以時間微移補足 */
+  Object.entries(a.tracks).forEach(([inst,list])=>list.forEach(e=>{const ex=((e[0]-1)*4+e[1])*4,st=Math.round(ex),off=(ex-st)*sd;if(st<0||st>=n)return;
+    ev[st].push(inst==='shk'?['shk',0,1,e[4]/127,off]:inst==='kick'?['smk',0,1,e[4]/127,off]:inst==='pad'?['pad',e[2],e[3],e[4]/127,off]:inst==='tim'?['tim',e[2],e[3],e[4]/127,off]:inst==='anv'?['anv',e[2],e[3],e[4]/127,off]:['s',inst,e[2],e[3],Math.max(1,Math.min(127,e[4]+Math.round((R()-.5)*6))),(R()-.5)*.01+off])}));return ev}
 const SONGS={};function song(m){return SONGS[m]||(SONGS[m]=compose(PERSONA[m]||PERSONA['325']))}
+/* ===== v199zzzzzz73：程序化流水聲（使用者 2026-11-17 選定先做；不需取樣、檔案零增加）=====
+   兩層：①水流底噪＝兩路雜訊（左右各一、相位不同的慢速 LFO 推動帶通中心與音量）；②水泡＝短正弦、音高 40–90 ms 內上滑約 6 成、指數衰減、隨機左右，隨機間隔（偶爾成串）。
+   跟著車款播放器一起淡入淡出；量依車款人設（WAT）。音量滑桿只控制整體，水聲比例固定。 */
+const WAT={'325':.45,'64':.3,'audax':.8,'ili':.5,'ss':.5,'ex':.9}/* v199zzzzzz74：隨人設對調；ili 改山魔王、SS 有鐵砧，略降 */;let wNoise=null;
+function wBuf(){if(wNoise&&wNoise.sampleRate===ctx.sampleRate)return wNoise;const n=ctx.sampleRate*3,b=ctx.createBuffer(2,n,ctx.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c),r=rng(777+c);let lp=0;for(let i=0;i<n;i++){lp=lp*.6+(r()*2-1)*.4;d[i]=lp}
+  const f=Math.floor(ctx.sampleRate*.05);for(let i=0;i<f;i++){const k=i/f;d[n-f+i]=d[n-f+i]*(1-k)+d[i]*k}}/* 頭尾交叉淡化，循環無接縫 */return wNoise=b}
+function water(pl,amt,t0){if(!amt)return;const wg=ctx.createGain();wg.gain.value=amt;wg.connect(pl.bus);const ws=ctx.createGain();ws.gain.value=.12;wg.connect(ws);ws.connect(verb);pl.wat={g:wg,next:t0,amt,src:[]};
+  [[-.6,.11,1050,0],[.6,.17,1350,1.7]].forEach(([pan,lf,fc,ph])=>{const s=ctx.createBufferSource();s.buffer=wBuf();s.loop=true;
+    const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fc;bp.Q.value=.7;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3800;
+    const a=ctx.createGain();a.gain.value=.045;const o=ctx.createOscillator();o.frequency.value=lf;const od=ctx.createGain();od.gain.value=fc*.35;o.connect(od);od.connect(bp.frequency);
+    const o2=ctx.createOscillator();o2.frequency.value=lf*1.73;const od2=ctx.createGain();od2.gain.value=.018;o2.connect(od2);od2.connect(a.gain);
+    s.connect(bp);bp.connect(lp);lp.connect(a);let out=a;if(ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=pan;a.connect(pn);out=pn}out.connect(wg);
+    s.start(t0,ph);o.start(t0);o2.start(t0);pl.wat.src.push(s,o,o2)})}
+function bubbles(pl,until){const w=pl.wat;if(!w)return;const R=Math.random;while(w.next<until){const t=w.next,n=R()<.18?2+Math.floor(R()*3):1;
+    for(let k=0;k<n;k++){const tt=t+k*(.02+R()*.05),f0=900*Math.pow(3.2,R()),d=.04+R()*.05,o=ctx.createOscillator(),g=ctx.createGain(),pk=(.006+R()*.012);
+      o.frequency.setValueAtTime(f0,tt);o.frequency.linearRampToValueAtTime(f0*(1.45+R()*.3),tt+d);g.gain.setValueAtTime(0,tt);g.gain.linearRampToValueAtTime(pk,tt+.002);g.gain.setTargetAtTime(0,tt+.004,d/3);
+      let out=g;if(ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=R()*1.6-.8;g.connect(pn);out=pn}o.connect(g);out.connect(w.g);o.start(tt);o.stop(tt+d*2.5)}
+    w.next=t-Math.log(1-R())/(6+12*w.amt)}}
+function wStop(pl,t){if(pl.wat)pl.wat.src.forEach(s=>{try{s.stop(t)}catch(e){}})}
 function player(m,smp){const p=PERSONA[m]||PERSONA['325'],bus=ctx.createGain(),dry=ctx.createGain(),wet=ctx.createGain();bus.gain.value=0;dry.gain.value=1;
   if(smp){const a=ARR[m],ib={};wet.gain.value=0;bus.connect(master);Object.keys(a.tracks).forEach(i=>{const g=ctx.createGain(),sd=ctx.createGain();g.gain.value=a.gain[i]||1;sd.gain.value=a.send[i]||0;if(a.pan&&a.pan[i]&&ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=a.pan[i];g.gain.value*=Math.SQRT2;/* 等功率聲像會讓單聲道取樣降 3 dB，補回 */g.connect(pn);pn.connect(bus)}else g.connect(bus);/* v199zzzzzz63：輕微左右分離 */g.connect(sd);sd.connect(verb);ib[i]=g});
-    return{m,p:{bpm:a.bpm,swing:a.swing||0,hat:{vol:.05}},ev:SONGS['a'+m]||(SONGS['a'+m]=arrSong(m)),bus,dry,wet,ib,vE:[],smp:1,len:a.bars*SPB,step:0,next:ctx.currentTime+.08,dead:0}}
+    const P={m,p:{bpm:a.bpm,swing:a.swing||0,hat:{vol:.05}},ev:SONGS['a'+m]||(SONGS['a'+m]=arrSong(m)),bus,dry,wet,ib,vE:[],smp:1,len:a.bars*SPB,step:0,next:ctx.currentTime+.08,dead:0};water(P,WAT[m]||0,ctx.currentTime+.05);return P}
   wet.gain.value=p.rv;bus.connect(dry);bus.connect(wet);dry.connect(master);wet.connect(verb);return{m,p,ev:song(m),bus,dry,wet,len:LOOP,step:0,next:ctx.currentTime+.08,dead:0}}
 function fade(pl,to,sec){const g=pl.bus.gain,t=ctx.currentTime;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(to,t+sec)}
 function tick(){if(!ctx)return;const now=ctx.currentTime;
-  players=players.filter(pl=>{if(pl.dead&&now>pl.dead){try{pl.bus.disconnect()}catch(e){}return false}return true});
+  players=players.filter(pl=>{if(pl.dead&&now>pl.dead){wStop(pl,now);try{pl.bus.disconnect()}catch(e){}return false}return true});players.forEach(pl=>{if(!pl.dead)bubbles(pl,now+.3)});
   players.forEach(pl=>{const sd=60/pl.p.bpm/4;if(pl.dead)return;
     if(pl.next<now-.3){pl.next=now+.05}/* 背景回來不補播 */
     while(pl.next<now+1.2){/* v199zzzzzz62：預排 1.2 s，主執行緒卡頓（換車款、建貼圖）也不斷音 */const st=pl.step%pl.len,t=pl.next+((st%4===2)?pl.p.swing*sd:0);
-      pl.ev[st].forEach(e=>{const v=e[0];if(v==='s')sPlay(pl,e[1],t+e[5],e[2],e[3]*sd*4,e[4]);else if(v==='shk')hat(pl.ib.shk,t,e[3],.06);else if(v==='smk')kick(pl.ib.kick,t,e[3],.5,false);else if(v==='pad')tone(pl.ib.pad,t,e[1],e[2]*sd*4,e[3],PADV);else if(v==='hat')hat(pl.bus,t,e[3],pl.p.hat.vol);else if(v==='kick'||v==='tom')kick(pl.bus,t,e[3],pl.p.kick.vol,v==='tom');else tone(pl.bus,t,e[1],e[2]*sd*.98,e[3],pl.p[v])});
+      pl.ev[st].forEach(e=>{const v=e[0];if(v==='s')sPlay(pl,e[1],t+e[5],e[2],e[3]*sd*4,e[4]);else if(v==='shk')hat(pl.ib.shk,t+(e[4]||0),e[3],.06);else if(v==='smk')kick(pl.ib.kick,t+(e[4]||0),e[3],.5,false);else if(v==='pad')tone(pl.ib.pad,t+(e[4]||0),e[1],e[2]*sd*4,e[3],PADV);else if(v==='tim')timp(pl.ib.tim,t+e[4],e[1],e[2]*sd*4,e[3]);else if(v==='anv')anvil(pl.ib.anv,t+e[4],e[1],e[3]);else if(v==='hat')hat(pl.bus,t,e[3],pl.p.hat.vol);else if(v==='kick'||v==='tom')kick(pl.bus,t,e[3],pl.p.kick.vol,v==='tom');else tone(pl.bus,t,e[1],e[2]*sd*.98,e[3],pl.p[v])});
       pl.step++;pl.next+=sd}})}
 let want=null;
 function startModel(m){if(!ctx)return;if(cur&&cur.m===m&&!cur.dead)return;want=m;
@@ -173,8 +200,8 @@ if(sv==='1')setOn(true,false);else ui();
 window.__bgmModel=m=>{model=m;if(on&&ctx)startModel(m)};
 async function offline(m,loops){ensure();await ready(m);const sv=[ctx,master,comp,verb],a=ARR[m],sd=60/a.bpm/4,len=a.bars*SPB,T=len*sd*(loops||1)+3;
   const oc=new OfflineAudioContext(2,Math.ceil(T*48000),48000);ctx=oc;chain(oc);master.gain.value=vol*vol;
-  try{const pl=player(m,true);pl.bus.gain.value=1;for(let s=0;s<len*(loops||1);s++){const st=s%len,t0=.05+s*sd+((st%4===2)?pl.p.swing*sd:0);
-      pl.ev[st].forEach(e=>{if(e[0]==='s')sPlay(pl,e[1],Math.max(0,t0+e[5]),e[2],e[3]*sd*4,e[4]);else if(e[0]==='shk')hat(pl.ib.shk,t0,e[3],.06);else if(e[0]==='smk')kick(pl.ib.kick,t0,e[3],.5,false);else if(e[0]==='pad')tone(pl.ib.pad,t0,e[1],e[2]*sd*4,e[3],PADV)})}
+  try{const pl=player(m,true);pl.bus.gain.value=1;bubbles(pl,T-1);for(let s=0;s<len*(loops||1);s++){const st=s%len,t0=.05+s*sd+((st%4===2)?pl.p.swing*sd:0);
+      pl.ev[st].forEach(e=>{if(e[0]==='s')sPlay(pl,e[1],Math.max(0,t0+e[5]),e[2],e[3]*sd*4,e[4]);else if(e[0]==='shk')hat(pl.ib.shk,t0+e[4],e[3],.06);else if(e[0]==='smk')kick(pl.ib.kick,t0+e[4],e[3],.5,false);else if(e[0]==='pad')tone(pl.ib.pad,t0+e[4],e[1],e[2]*sd*4,e[3],PADV);else if(e[0]==='tim')timp(pl.ib.tim,t0+e[4],e[1],e[2]*sd*4,e[3]);else if(e[0]==='anv')anvil(pl.ib.anv,t0+e[4],e[1],e[3])})}
     return await oc.startRendering()}finally{[ctx,master,comp,verb]=sv}}
 window.__bgmS=()=>(on?'開':'關')+(ctx?'／'+ctx.state:'／未建')+(cur?(cur.smp?'／取樣':'／合成')+' '+cur.m:'')+(lastErr?'／'+lastErr:'');
 window.VIBE_BGM={ARR,BUF,offline,get _n(){return{ctx,comp}},on:()=>setOn(true,true),off:()=>setOn(false),get state(){return{on,model,persona:(PERSONA[model]||{}).name,ctx:ctx&&ctx.state,players:players.length}},PERSONA,compose};
