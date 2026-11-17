@@ -24,29 +24,33 @@ box.appendChild(wrap);
 const $=id=>document.getElementById(id),say=t=>{$('clMsg').textContent=t||''};
 /* 告知與登入方式 */
 const md=document.createElement('div');md.className='scrim';md.id='clModal';md.hidden=true;
-md.innerHTML='<div class="card modal cl-modal" role="dialog" aria-modal="true" aria-labelledby="clT" style="overflow:auto"><h3 id="clT">'+esc(C.notice.title)+'</h3>'
- +'<div class="cl-row"><button class="btn" id="clG" type="button">以 Google 登入</button><button class="btn" id="clX" type="button">取消</button></div>'
- +'<div class="cl-row"><input id="clEm" type="email" autocomplete="email" placeholder="Email" aria-label="Email"><button class="btn" id="clE" type="button">寄送登入連結</button></div>'
+/* v199zzzzzz78：比照一般平台（使用者 2026-11-17）——右上 ✕ 關閉、Google 官方樣式按鈕置頂、「或」分隔、Email 全寬、底部「繼續即表示您同意《個資蒐集說明》」（可展開） */
+md.innerHTML='<div class="card modal cl-modal" role="dialog" aria-modal="true" aria-labelledby="clT" style="overflow:auto">'
+ +'<button class="cl-x" id="clX" type="button" aria-label="關閉"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>'
+ +'<h3 id="clT">'+esc(C.notice.title)+'</h3>'+(C.notice.sub?'<p class="cl-sub">'+esc(C.notice.sub)+'</p>':'')
+ +'<button class="cl-g" id="clG" type="button">'+'<svg class="cl-gl" viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>'+'<span>使用 Google 帳戶繼續</span></button>'
+ +'<div class="cl-or" aria-hidden="true"><span>或</span></div>'
+ +'<input id="clEm" class="cl-em" type="email" autocomplete="email" placeholder="Email" aria-label="Email"><button class="btn cl-e" id="clE" type="button">寄送登入連結</button>'
  +'<p class="fine" id="clMm" role="status" aria-live="polite"></p>'
- +'<ul class="cl-notice">'+C.notice.body.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul>'
- +'<label class="cl-ck"><input type="checkbox" id="clAg"> '+esc(C.notice.agree)+'</label><label class="cl-ck"><input type="checkbox" id="clMk"> '+esc(C.marketing.label)+'</label></div>';
+ +'<label class="cl-ck"><input type="checkbox" id="clMk"> '+esc(C.marketing.label)+'</label>'
+ +'<p class="cl-legal">'+esc(C.notice.agree)+'<button class="cl-lk" id="clNt" type="button" aria-expanded="false" aria-controls="clNl">《'+esc(C.notice.link||'個資蒐集說明')+'》</button></p>'
+ +'<ul class="cl-notice" id="clNl" hidden>'+C.notice.body.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul></div>';
 document.body.appendChild(md);
 const sm=t=>{$('clMm').textContent=t||''};
-const open=()=>{md.hidden=false;sm('');$('clAg').checked=!!C.notice.agreePreset;$('clMk').checked=!!C.marketing.preset;/* v199zzzzzz60：預設打勾（使用者 2026-11-16） */sync();sdk().catch(()=>sm('雲端服務暫時無法連線'))},close=()=>{md.hidden=true};
-const sync=()=>{const ok=$('clAg').checked;['clG','clE','clEm'].forEach(i=>$(i).disabled=!ok)};
-$('clAg').addEventListener('change',sync);$('clX').onclick=close;md.addEventListener('click',e=>{if(e.target===md)close()});
+const open=()=>{md.hidden=false;sm('');$('clMk').checked=!!C.marketing.preset;/* v199zzzzzz60：行銷同意預設打勾（使用者 2026-11-16） */$('clNl').hidden=true;$('clNt').setAttribute('aria-expanded','false');sdk().catch(()=>sm('雲端服務暫時無法連線'))},close=()=>{md.hidden=true};
+$('clNt').onclick=()=>{const h=!$('clNl').hidden;$('clNl').hidden=h;$('clNt').setAttribute('aria-expanded',String(!h))};$('clX').onclick=close;document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!md.hidden)close()});md.addEventListener('click',e=>{if(e.target===md)close()});
 $('clIn').onclick=open;
-const consent=()=>({ver:C.notice.ver,mk:$('clMk').checked,mver:C.marketing.ver,pre:!!C.marketing.preset,at:Date.now()});
-$('clG').onclick=async()=>{if(!$('clAg').checked)return;sm('');try{await sdk();LS.set('vibe.fb.consent',JSON.stringify(consent()));await F.signInWithPopup(auth,new F.GoogleAuthProvider());close()}
+const consent=()=>({ver:C.notice.ver,mode:C.notice.mode||'check',mk:$('clMk').checked,mver:C.marketing.ver,pre:!!C.marketing.preset,at:Date.now()});
+$('clG').onclick=async()=>{sm('');try{await sdk();LS.set('vibe.fb.consent',JSON.stringify(consent()));await F.signInWithPopup(auth,new F.GoogleAuthProvider());close()}
   catch(e){const c=e&&e.code||'';LS.set('vibe.fb.consent',null);
     sm(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request'?'':c==='auth/popup-blocked'?'瀏覽器擋下了登入視窗，請允許彈出視窗或改用 Email 登入連結':c==='auth/account-exists-with-different-credential'?'這個 Email 已用登入連結註冊，請改用下方「寄送登入連結」':'登入失敗（'+c+'）')}};
-$('clE').onclick=async()=>{const em=$('clEm').value.trim();if(!$('clAg').checked)return;if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){sm('請輸入有效的 Email');return}
+$('clE').onclick=async()=>{const em=$('clEm').value.trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){sm('請輸入有效的 Email');return}
   try{await sdk();await F.sendSignInLinkToEmail(auth,em,{url:C.emailLinkUrl,handleCodeInApp:true});LS.set('vibe.fb.email',em);LS.set('vibe.fb.consent',JSON.stringify(consent()));sm('已寄出登入連結到 '+em+'，請在此裝置開啟信中的連結')}
   catch(e){sm('寄送失敗（'+(e&&e.code||e)+'）')}};
 /* Email 登入連結回到頁面 */
 if(/[?&]oobCode=/.test(location.search)&&/[?&]mode=signIn/.test(location.search)){sdk().then(async()=>{if(!F.isSignInWithEmailLink(auth,location.href))return;
   let em=LS.get('vibe.fb.email');if(!em)em=window.prompt('請輸入收到登入連結的 Email','')||'';if(!em)return;
-  if(!LS.get('vibe.fb.consent')){say('在其他裝置開啟連結時，請先在本頁按「登入以保存配置」閱讀說明並同意');return}
+  if(!LS.get('vibe.fb.consent')){say('在其他裝置開啟連結時，請先在本頁按「登入以保存配置」並重新寄送登入連結');return}
   try{await F.signInWithEmailLink(auth,em,location.href);LS.set('vibe.fb.email',null);history.replaceState(null,'',location.pathname)}catch(e){say('登入連結無效或已過期（'+(e&&e.code||e)+'）')}}).catch(()=>{})}
 /* 已登入過：背景載入 SDK 以恢復登入狀態 */
 else if(LS.get('vibe.fb.seen')==='1'){const go=()=>sdk().catch(()=>{});('requestIdleCallback' in window)?requestIdleCallback(go,{timeout:8000}):setTimeout(go,4000)}
@@ -54,7 +58,7 @@ else if(LS.get('vibe.fb.seen')==='1'){const go=()=>sdk().catch(()=>{});('request
 async function onUser(u){user=u;$('clOut').hidden=!!u;$('clIn2').hidden=!u;if(!u){LS.set('vibe.fb.seen',null);return}
   LS.set('vibe.fb.seen','1');$('clWho').textContent=u.email||'';const ref=F.doc(db,'users',u.uid),pc=LS.get('vibe.fb.consent');
   try{const d={email:u.email||null,lastSeen:F.serverTimestamp()};
-    if(pc){const c=JSON.parse(pc);d.consent={ver:c.ver,at:new Date(c.at)};d.marketing={opt:!!c.mk,ver:c.mver,preset:!!c.pre,at:new Date(c.at)};LS.set('vibe.fb.consent',null);evt('login',{m:u.providerData.map(p=>p.providerId).join(',')})}
+    if(pc){const c=JSON.parse(pc);d.consent={ver:c.ver,mode:c.mode||'check',at:new Date(c.at)};d.marketing={opt:!!c.mk,ver:c.mver,preset:!!c.pre,at:new Date(c.at)};LS.set('vibe.fb.consent',null);evt('login',{m:u.providerData.map(p=>p.providerId).join(',')})}
     await F.setDoc(ref,d,{merge:true})}catch(e){console.warn('cloud profile',e)}
   list();last=summary()}
 $('clOutBtn').onclick=async()=>{try{await F.signOut(auth);say('已登出')}catch(e){}};

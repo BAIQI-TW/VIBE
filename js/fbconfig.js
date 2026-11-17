@@ -8,8 +8,9 @@ window.VIBE_FB={
   config:{apiKey:'AIzaSyB6CQg1D0MitVZInaauQK_bDiM2MgaaAtk',authDomain:'vibe-7eace.firebaseapp.com',projectId:'vibe-7eace',storageBucket:'vibe-7eace.firebasestorage.app',messagingSenderId:'1064028927340',appId:'1:1064028927340:web:9168079cba5ab4c756af49'},/* measurementId 未用：不載入 Analytics */
   emailLinkUrl:'https://baiqi-tw.github.io/VIBE/',
   notice:{
-    ver:'2026-11-16-v3',
+    ver:'2026-11-17-v4',/* v199zzzzzz78：同意方式改為「繼續即表示同意」，版次進 v4 */
     title:'登入以保存配置',
+    sub:'跨裝置保存您的客製化紀錄。',
     body:[
       '佰奇創意機械股份有限公司（RIKULAU）會蒐集您的 Email、帳號識別，以及客製化紀錄。',
       '用途：跨裝置保存客製化紀錄，以改進產品與服務。',
@@ -17,7 +18,7 @@ window.VIBE_FB={
       '查詢、更正、停止使用或刪除，請透過官網 rikulau.com 與我們聯繫。',
       '登入與否只關係到您的客製化紀錄留存，無關本網頁其他功能。'
     ],
-    agree:'我同意上述說明',agreePreset:false/* v199zzzzzz61：使用者 2026-11-16 指示預設不打勾 */
+    agree:'繼續即表示您同意',link:'個資蒐集說明',mode:'continue'/* v199zzzzzz78：使用者 2026-11-17 改為按登入即表示同意（取代 2026-11-16「我同意」勾選、預設不打勾）；說明收進可展開連結 */
   },
   marketing:{ver:'2026-11-16-v3',label:'接收 RIKULAU 新品與活動資訊（可隨時取消）',preset:true}/* v199zzzzzz60：使用者 2026-11-16 指示兩個選項預設打勾；同意紀錄會記 preset */
 };

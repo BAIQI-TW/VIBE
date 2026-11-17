@@ -353,3 +353,18 @@ html[data-theme="light"] .sellist{background:var(--c-line-100)}
 /* v199zzzzzz64：回到全車鈕狀態——拿掉狀態點，就緒＝與其他圓鈕同色；處理中圖示轉黃、錯誤轉紅 */#reset .ri-dot{display:none}#stBar #reset[data-state="busy"],#stBar #reset[data-state="busy"]:hover{color:var(--accent)}#stBar #reset[data-state="err"],#stBar #reset[data-state="err"]:hover{color:#d9534f}#scBtn{color:var(--text-muted)}#scBtn:hover{color:var(--accent)}
 /* v199zzzzzz72：桌機音量滑桿改垂直，置於音樂鈕正上方（上＝大聲） */@media (min-width:761px){#bgmW .bgm-v{right:auto;left:0;top:auto;bottom:calc(100% + 8px);width:100%;height:auto;padding:12px 0;justify-content:center;box-sizing:border-box}#bgmW .bgm-v #bgmVol{writing-mode:vertical-lr;direction:rtl;width:auto;height:96px}}
 /* v199zzzzzz73：窄螢幕英文主分頁改短標籤（Fold5 外螢幕重疊）；尺寸大字可點；卡片拖曳中不做過渡 */@media (max-width:400px){html[lang="en"] #sheetTabs .tab[data-short]{font-size:0}html[lang="en"] #sheetTabs .tab[data-short]::before{content:attr(data-short);font-size:13.5px}}#geoScore [data-next]{cursor:pointer}main[data-drag="1"] *{transition:none!important}.gb{touch-action:none}
+
+/* v199zzzzzz78：登入視窗比照一般平台——Google 按鈕依 Google 品牌規範（淺色：白底、#747775 邊、#1F1F1F 字；深色：#131314 底、#8E918F 邊、#E3E3E3 字；G 標誌 18px） */
+.cl-modal{position:relative;max-width:400px;padding:28px 24px 20px}.cl-modal h3{margin:0 32px 4px 0}.cl-sub{margin:0 0 20px;font-size:var(--fs-sm);color:var(--text-muted)}
+.cl-x{position:absolute;top:12px;right:12px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--text-muted);cursor:pointer}.cl-x:hover{background:var(--hairline);color:var(--text-primary)}
+.cl-g{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:44px;padding:0 16px;border:1px solid #747775;border-radius:var(--r-pill);background:#fff;color:#1f1f1f;font-family:Roboto,Arial,var(--font-sans,sans-serif);font-size:14px;font-weight:500;letter-spacing:.25px;cursor:pointer}
+.cl-g:hover{background:#f8f9fa;box-shadow:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15)}.cl-gl{flex:0 0 18px}
+html[data-theme="dark"] .cl-g{background:#131314;border-color:#8e918f;color:#e3e3e3}html[data-theme="dark"] .cl-g:hover{background:#1f1f20}
+.cl-or{display:flex;align-items:center;gap:12px;margin:16px 0;font-size:var(--fs-xs);color:var(--text-muted)}.cl-or::before,.cl-or::after{content:"";flex:1;height:1px;background:var(--hairline)}
+.cl-modal .cl-em{display:block;width:100%;box-sizing:border-box;height:44px;padding:0 16px;font:inherit;font-size:var(--fs-sm);border-radius:var(--r-pill);border:1px solid var(--border-soft);background:transparent;color:var(--text-primary)}
+.cl-modal .cl-e{display:block;width:100%;height:44px;margin-top:10px}
+.cl-modal #clMm{margin:10px 0 0}.cl-modal #clMm:empty{display:none}
+.cl-modal .cl-ck{margin-top:18px;font-size:var(--fs-xs);color:var(--text-muted)}
+.cl-legal{margin:10px 0 0;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6}.cl-lk{border:0;padding:0;background:none;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.cl-modal .cl-notice{margin:10px 0 0;padding:12px 0 0 18px;border-top:1px solid var(--hairline);font-size:var(--fs-xs);line-height:1.6;color:var(--text-muted)}.cl-modal .cl-notice[hidden]{display:none}
+.cl-modal .cl-ck input{accent-color:var(--accent)}
