@@ -34,7 +34,7 @@ md.innerHTML='<div class="card modal cl-modal" role="dialog" aria-modal="true" a
  +'<p class="fine" id="clMm" role="status" aria-live="polite"></p>'
  +'<label class="cl-ck"><input type="checkbox" id="clMk"> '+esc(C.marketing.label)+'</label>'
  +'<p class="cl-legal">'+esc(C.notice.agree)+'<button class="cl-lk" id="clNt" type="button" aria-expanded="false" aria-controls="clNl">《'+esc(C.notice.link||'個資蒐集說明')+'》</button></p>'
- +'<ul class="cl-notice" id="clNl" hidden>'+C.notice.body.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul></div>';
+ +'<p class="cl-notice" id="clNl" hidden>'+esc(C.notice.body.join(''))+'</p></div>';/* v199zzzzzz80：說明改為單一段落、靠左（使用者 2026-11-17） */
 document.body.appendChild(md);
 const sm=t=>{$('clMm').textContent=t||''};
 const open=()=>{md.hidden=false;sm('');$('clMk').checked=!!C.marketing.preset;/* v199zzzzzz60：行銷同意預設打勾（使用者 2026-11-16） */$('clNl').hidden=true;$('clNt').setAttribute('aria-expanded','false');sdk().catch(()=>sm('雲端服務暫時無法連線'))},close=()=>{md.hidden=true};

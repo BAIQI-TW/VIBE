@@ -372,3 +372,5 @@ html[data-theme="dark"] .cl-g{background:#131314;border-color:#8e918f;color:#e3e
 .cl-modal{text-align:center}.cl-modal h3{margin:0 32px 4px}.cl-modal .cl-em,.cl-modal .cl-em::placeholder{text-align:center}
 .cl-modal .cl-ck{justify-content:center;align-items:center}.cl-modal .cl-notice{list-style:none;padding:12px 0 0}.cl-modal .cl-notice li+li{margin-top:6px}
 .cl-modal h3{justify-content:center}
+
+/* v199zzzzzz80：個資蒐集說明改單一段落、靠左對齊（其餘文字維持置中） */.cl-modal .cl-notice{text-align:left;padding:12px 0 0;margin:10px 0 0}
