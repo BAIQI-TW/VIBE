@@ -368,3 +368,7 @@ html[data-theme="dark"] .cl-g{background:#131314;border-color:#8e918f;color:#e3e
 .cl-legal{margin:10px 0 0;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6}.cl-lk{border:0;padding:0;background:none;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .cl-modal .cl-notice{margin:10px 0 0;padding:12px 0 0 18px;border-top:1px solid var(--hairline);font-size:var(--fs-xs);line-height:1.6;color:var(--text-muted)}.cl-modal .cl-notice[hidden]{display:none}
 .cl-modal .cl-ck input{accent-color:var(--accent)}
+/* v199zzzzzz79：登入視窗全部文字置中（使用者 2026-11-17；含 Email 欄位與其預設灰字）；說明條列置中後改為無項目符號、以間距分條 */
+.cl-modal{text-align:center}.cl-modal h3{margin:0 32px 4px}.cl-modal .cl-em,.cl-modal .cl-em::placeholder{text-align:center}
+.cl-modal .cl-ck{justify-content:center;align-items:center}.cl-modal .cl-notice{list-style:none;padding:12px 0 0}.cl-modal .cl-notice li+li{margin-top:6px}
+.cl-modal h3{justify-content:center}
