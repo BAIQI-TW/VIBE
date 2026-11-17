@@ -144,18 +144,24 @@ const SONGS={};function song(m){return SONGS[m]||(SONGS[m]=compose(PERSONA[m]||P
 const WAT={'325':.45,'64':.3,'audax':.8,'ili':.5,'ss':.5,'ex':.9}/* v199zzzzzz74：隨人設對調；ili 改山魔王、SS 有鐵砧，略降 */;let wNoise=null;
 function wBuf(){if(wNoise&&wNoise.sampleRate===ctx.sampleRate)return wNoise;const n=ctx.sampleRate*3,b=ctx.createBuffer(2,n,ctx.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c),r=rng(777+c);let lp=0;for(let i=0;i<n;i++){lp=lp*.6+(r()*2-1)*.4;d[i]=lp}
   const f=Math.floor(ctx.sampleRate*.05);for(let i=0;i<f;i++){const k=i/f;d[n-f+i]=d[n-f+i]*(1-k)+d[i]*k}}/* 頭尾交叉淡化，循環無接縫 */return wNoise=b}
-function water(pl,amt,t0){if(!amt)return;const wg=ctx.createGain();wg.gain.value=amt;wg.connect(pl.bus);const ws=ctx.createGain();ws.gain.value=.12;wg.connect(ws);ws.connect(verb);pl.wat={g:wg,next:t0,amt,src:[]};
+function water(pl,amt,t0){if(!amt)return;const wg=ctx.createGain();wg.gain.value=amt;wg.connect(pl.bus);const ws=ctx.createGain();ws.gain.value=.12;wg.connect(ws);ws.connect(verb);pl.wat={g:wg,next:t0,nb:t0+.6+Math.random()*1.5,amt,src:[]};
   [[-.6,.11,1050,0],[.6,.17,1350,1.7]].forEach(([pan,lf,fc,ph])=>{const s=ctx.createBufferSource();s.buffer=wBuf();s.loop=true;
     const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fc;bp.Q.value=.7;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3800;
-    const a=ctx.createGain();a.gain.value=.045;const o=ctx.createOscillator();o.frequency.value=lf;const od=ctx.createGain();od.gain.value=fc*.35;o.connect(od);od.connect(bp.frequency);
+    const a=ctx.createGain();a.gain.value=.068;/* v76 加強 */const o=ctx.createOscillator();o.frequency.value=lf;const od=ctx.createGain();od.gain.value=fc*.35;o.connect(od);od.connect(bp.frequency);
     const o2=ctx.createOscillator();o2.frequency.value=lf*1.73;const od2=ctx.createGain();od2.gain.value=.018;o2.connect(od2);od2.connect(a.gain);
     s.connect(bp);bp.connect(lp);lp.connect(a);let out=a;if(ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=pan;a.connect(pn);out=pn}out.connect(wg);
     s.start(t0,ph);o.start(t0);o2.start(t0);pl.wat.src.push(s,o,o2)})}
 function bubbles(pl,until){const w=pl.wat;if(!w)return;const R=Math.random;while(w.next<until){const t=w.next,n=R()<.18?2+Math.floor(R()*3):1;
-    for(let k=0;k<n;k++){const tt=t+k*(.02+R()*.05),f0=900*Math.pow(3.2,R()),d=.04+R()*.05,o=ctx.createOscillator(),g=ctx.createGain(),pk=(.006+R()*.012);
+    for(let k=0;k<n;k++){const tt=t+k*(.02+R()*.05),f0=900*Math.pow(3.2,R()),d=.04+R()*.05,o=ctx.createOscillator(),g=ctx.createGain(),pk=(.008+R()*.016);/* v76 加強 */
       o.frequency.setValueAtTime(f0,tt);o.frequency.linearRampToValueAtTime(f0*(1.45+R()*.3),tt+d);g.gain.setValueAtTime(0,tt);g.gain.linearRampToValueAtTime(pk,tt+.002);g.gain.setTargetAtTime(0,tt+.004,d/3);
       let out=g;if(ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=R()*1.6-.8;g.connect(pn);out=pn}o.connect(g);out.connect(w.g);o.start(tt);o.stop(tt+d*2.5)}
-    w.next=t-Math.log(1-R())/(6+12*w.amt)}}
+    w.next=t-Math.log(1-R())/(6+12*w.amt)}
+  /* v199zzzzzz76：程序化鳥鳴（使用者 2026-11-17 要求加強背景流水鳥鳴）——每 2.5–7 s 一句，2–6 個快速滑音，偶爾顫音；左右隨機、帶少量殘響 */
+  while(w.nb<until){const t=w.nb,n=2+Math.floor(R()*5),base=2500+R()*2300,tr=R()<.3,pan=R()*1.6-.8;let tt=t;
+    for(let k=0;k<n;k++){const d=tr?.035+R()*.02:.05+R()*.07,f0=base*(.85+R()*.35),f1=f0*(R()<.5?.62+R()*.2:1.15+R()*.3),o=ctx.createOscillator(),g=ctx.createGain(),pk=(.03+R()*.025)*(k===0?.7:1);
+      o.frequency.setValueAtTime(f0,tt);o.frequency.exponentialRampToValueAtTime(f1,tt+d);g.gain.setValueAtTime(0,tt);g.gain.linearRampToValueAtTime(pk,tt+.008);g.gain.setTargetAtTime(0,tt+d*.6,d/4);
+      let out=g;if(ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=pan;g.connect(pn);out=pn}o.connect(g);out.connect(w.g);o.start(tt);o.stop(tt+d*1.8);tt+=d+(tr?.012:.03+R()*.08)}
+    w.nb=t+2.5+R()*4.5}}
 function wStop(pl,t){if(pl.wat)pl.wat.src.forEach(s=>{try{s.stop(t)}catch(e){}})}
 function player(m,smp){const p=PERSONA[m]||PERSONA['325'],bus=ctx.createGain(),dry=ctx.createGain(),wet=ctx.createGain();bus.gain.value=0;dry.gain.value=1;
   if(smp){const a=ARR[m],ib={};wet.gain.value=0;bus.connect(master);Object.keys(a.tracks).forEach(i=>{const g=ctx.createGain(),sd=ctx.createGain();g.gain.value=a.gain[i]||1;sd.gain.value=a.send[i]||0;if(a.pan&&a.pan[i]&&ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=a.pan[i];g.gain.value*=Math.SQRT2;/* 等功率聲像會讓單聲道取樣降 3 dB，補回 */g.connect(pn);pn.connect(bus)}else g.connect(bus);/* v199zzzzzz63：輕微左右分離 */g.connect(sd);sd.connect(verb);ib[i]=g});
