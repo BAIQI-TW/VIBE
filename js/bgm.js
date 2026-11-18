@@ -133,7 +133,7 @@ function sPlay(pl,inst,t,m,dur,vel){const L=LAY[inst](vel);let hit=null;if(inst=
   const s=ctx.createBufferSource();s.buffer=b;s.playbackRate.value=rate;const g=ctx.createGain(),pk=Math.pow(10,db/20),off=t+dur,rel=REL[inst];
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+.004);g.gain.setValueAtTime(pk,Math.max(t+.005,off));g.gain.setTargetAtTime(0,off,rel/3);
   s.connect(g);g.connect(pl.ib[inst]);const end=Math.min(t+b.duration/rate,off+rel*3);s.start(t);s.stop(end);pl.vE.push(end);s.onended=()=>{try{g.disconnect()}catch(e){}}}/* 發聲數以結束時間計，不依賴 onended */
-function arrSong(m){const a=ARR[m],ev=[],n=a.bars*SPB,R=rng(9000+a.bpm);for(let i=0;i<n;i++)ev.push([]);
+function arrSong(m){const a=ARR[m],ev=[],n=(a.beats?Math.round(a.beats*4):a.bars*SPB),R=rng(9000+a.bpm);for(let i=0;i<n;i++)ev.push([]);
   const sd=60/a.bpm/4;/* v199zzzzzz74：不在 16 分格線上的拍位（三連音）以時間微移補足 */
   Object.entries(a.tracks).forEach(([inst,list])=>list.forEach(e=>{const ex=((e[0]-1)*4+e[1])*4,st=Math.round(ex),off=(ex-st)*sd;if(st<0||st>=n)return;
     ev[st].push(inst==='shk'?['shk',0,1,e[4]/127,off]:inst==='kick'?['smk',0,1,e[4]/127,off]:inst==='pad'?['pad',e[2],e[3],e[4]/127,off]:inst==='tim'?['tim',e[2],e[3],e[4]/127,off]:inst==='anv'?['anv',e[2],e[3],e[4]/127,off]:['s',inst,e[2],e[3],Math.max(1,Math.min(127,e[4]+Math.round((R()-.5)*6))),(R()-.5)*.01+off])}));return ev}
@@ -165,7 +165,7 @@ function bubbles(pl,until){const w=pl.wat;if(!w)return;const R=Math.random;while
 function wStop(pl,t){if(pl.wat)pl.wat.src.forEach(s=>{try{s.stop(t)}catch(e){}})}
 function player(m,smp){const p=PERSONA[m]||PERSONA['325'],bus=ctx.createGain(),dry=ctx.createGain(),wet=ctx.createGain();bus.gain.value=0;dry.gain.value=1;
   if(smp){const a=ARR[m],ib={};wet.gain.value=0;bus.connect(master);Object.keys(a.tracks).forEach(i=>{const g=ctx.createGain(),sd=ctx.createGain();g.gain.value=a.gain[i]||1;sd.gain.value=a.send[i]||0;if(a.pan&&a.pan[i]&&ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=a.pan[i];g.gain.value*=Math.SQRT2;/* 等功率聲像會讓單聲道取樣降 3 dB，補回 */g.connect(pn);pn.connect(bus)}else g.connect(bus);/* v199zzzzzz63：輕微左右分離 */g.connect(sd);sd.connect(verb);ib[i]=g});
-    const P={m,p:{bpm:a.bpm,swing:a.swing||0,hat:{vol:.05}},ev:SONGS['a'+m]||(SONGS['a'+m]=arrSong(m)),bus,dry,wet,ib,vE:[],smp:1,len:a.bars*SPB,step:0,next:ctx.currentTime+.08,dead:0};water(P,WAT[m]||0,ctx.currentTime+.05);return P}
+    const P={m,p:{bpm:a.bpm,swing:a.swing||0,hat:{vol:.05}},ev:SONGS['a'+m]||(SONGS['a'+m]=arrSong(m)),bus,dry,wet,ib,vE:[],smp:1,len:(a.beats?Math.round(a.beats*4):a.bars*SPB),step:0,next:ctx.currentTime+.08,dead:0};water(P,WAT[m]||0,ctx.currentTime+.05);return P}
   wet.gain.value=p.rv;bus.connect(dry);bus.connect(wet);dry.connect(master);wet.connect(verb);return{m,p,ev:song(m),bus,dry,wet,len:LOOP,step:0,next:ctx.currentTime+.08,dead:0}}
 function fade(pl,to,sec){const g=pl.bus.gain,t=ctx.currentTime;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(to,t+sec)}
 function tick(){if(!ctx)return;const now=ctx.currentTime;
@@ -179,8 +179,14 @@ let want=null;
 function startModel(m){if(!ctx)return;if(cur&&cur.m===m&&!cur.dead)return;want=m;
   if(ARR[m]){ui('ld');ready(m).then(()=>{if(want===m&&on)swap(m,true);ui()},err=>{console.warn('bgm samples',err);lastErr='取樣 '+(err&&err.message||err);if(want===m&&on)swap(m,false);ui()});return}
   swap(m,false)}
-function swap(m,smp){if(cur&&cur.m===m&&!cur.dead)return;const old=cur;cur=player(m,smp);players.push(cur);fade(cur,1,old?1.6:.8);
-  if(old){fade(old,0,1.6);old.dead=ctx.currentTime+1.8}}
+/* v199zzzzzz99（使用者 2026-11-18）：高潮很快就到，開頭音量要節制再回歸正常；切車款改「先收後起」。
+   開頭包絡只套在新 player 的 bus 上一次（只管起聲後的第一遍，循環回頭不再壓低）：0 → INTRO0（0.5 s）→ 1（再 INTRO_S 秒線性）。
+   切車款：舊曲 0.6 s 收到 0（0.8 s 後回收），新曲晚 0.35 s 才起聲＋同一條開頭包絡。不再 1.6 s 重疊交叉淡化——各車款調性／速度不同，重疊時兩首會互相打架，Saturn 又是 fff 開場。 */
+const INTRO0=.30,INTRO_S=6,OUT_S=.6,GAP_S=.35;
+function intro(pl,t0){const g=pl.bus.gain;g.cancelScheduledValues(t0);g.setValueAtTime(0,t0);g.linearRampToValueAtTime(INTRO0,t0+.5);g.linearRampToValueAtTime(1,t0+.5+INTRO_S)}
+function swap(m,smp){if(cur&&cur.m===m&&!cur.dead)return;const old=cur,t=ctx.currentTime,d=old?GAP_S:0;
+  if(old){fade(old,0,OUT_S);old.dead=t+OUT_S+.2}
+  cur=player(m,smp);players.push(cur);cur.next=t+.08+d;intro(cur,t+d)}
 /* v199zzzzzz65：行動版解鎖——iOS 靜音鍵下 Web Audio 預設被靜音，改宣告為播放類；點擊當下同步送出一個空白取樣並 resume（部分 WebView 只認同步呼叫） */
 let st='關',lastErr='';function unlock(){try{if(navigator.audioSession&&navigator.audioSession.type!=='playback')navigator.audioSession.type='playback'}catch(e){}try{const b=ctx.createBuffer(1,1,22050),s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);s.start(0)}catch(e){}try{if(ctx.state!=='running')ctx.resume().catch(e=>{lastErr='resume '+e.name})}catch(e){lastErr='resume '+e.name}}
 /* v199zzzzzz68：Firefox Android 回報按鈕後仍 suspended——在非使用者啟動當下建立的 AudioContext 之後 resume 也不放行。開音樂時若現有 context 不在 running，關掉重建（取樣 AudioBuffer 可跨 context 沿用） */
@@ -204,7 +210,7 @@ let sv=null;try{sv=localStorage.getItem('vibe.bgm')}catch(e){}
 try{if(window.VIBE_API)model=VIBE_API.model()||model}catch(e){}
 if(sv==='1')setOn(true,false);else ui();
 window.__bgmModel=m=>{model=m;if(on&&ctx)startModel(m)};
-async function offline(m,loops){ensure();await ready(m);const sv=[ctx,master,comp,verb],a=ARR[m],sd=60/a.bpm/4,len=a.bars*SPB,T=len*sd*(loops||1)+3;
+async function offline(m,loops){ensure();await ready(m);const sv=[ctx,master,comp,verb],a=ARR[m],sd=60/a.bpm/4,len=(a.beats?Math.round(a.beats*4):a.bars*SPB),T=len*sd*(loops||1)+3;
   const oc=new OfflineAudioContext(2,Math.ceil(T*48000),48000);ctx=oc;chain(oc);master.gain.value=vol*vol;
   try{const pl=player(m,true);pl.bus.gain.value=1;bubbles(pl,T-1);for(let s=0;s<len*(loops||1);s++){const st=s%len,t0=.05+s*sd+((st%4===2)?pl.p.swing*sd:0);
       pl.ev[st].forEach(e=>{if(e[0]==='s')sPlay(pl,e[1],Math.max(0,t0+e[5]),e[2],e[3]*sd*4,e[4]);else if(e[0]==='shk')hat(pl.ib.shk,t0+e[4],e[3],.06);else if(e[0]==='smk')kick(pl.ib.kick,t0+e[4],e[3],.5,false);else if(e[0]==='pad')tone(pl.ib.pad,t0+e[4],e[1],e[2]*sd*4,e[3],PADV);else if(e[0]==='tim')timp(pl.ib.tim,t0+e[4],e[1],e[2]*sd*4,e[3]);else if(e[0]==='anv')anvil(pl.ib.anv,t0+e[4],e[1],e[3])})}

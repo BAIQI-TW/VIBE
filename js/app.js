@@ -822,7 +822,7 @@ let sel=null,hint=false,tab='torque';
 const wrap=document.getElementById('cardWrap');
 function paintHS(){HS.forEach(h=>{const s=st[h.p.id];let c=0xE2703A;if(s.done)c=s.pts===3?(isDark()?0x8DBF78:0x4A7A3A):0x8A7A5C;
   h.core.material.color.setHex(c);h.halo.material.color.setHex(c);
-  h.g.visible=tab==='torque';h.halo.visible=sel===h.p})}
+  h.g.visible=tab==='torque'&&(!sel||sel===h.p);/* v199zzzzzz99：選取（亮起）某點時，其餘橘點先隱藏，只留被選的那一顆；取消選取（closeCard→sel=null→paintHS）即全部恢復 */h.halo.visible=sel===h.p})}
 
 /* ===== 尺寸標註線 ===== */
 const dimMat=new THREE.LineBasicMaterial({color:new THREE.Color(0xE2703A),depthTest:false,toneMapped:false});
@@ -959,7 +959,7 @@ stage.addEventListener('mousedown',e=>{if(e.button===1)e.preventDefault()});stag
 stage.addEventListener('wheel',e=>{e.preventDefault();want.r=Math.min(4.2,Math.max(.6,want.r*(1-Math.sign(e.deltaY)*.1)))},{passive:false});
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
 function pick(e){const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
-  ray.setFromCamera(ndc,camera);const hits=ray.intersectObjects(HS.map(h=>h.hit));return hits.length?hits[0].object.userData.part:null}
+  ray.setFromCamera(ndc,camera);const hits=ray.intersectObjects(HS.filter(h=>h.g.visible).map(h=>h.hit))/* v199zzzzzz99：隱藏的橘點不可被點到（Raycaster 不看 visible） */;return hits.length?hits[0].object.userData.part:null}
 const tipEl=document.getElementById('tip');
 function hover(e){const p=tab==='torque'?pick(e):null;if(p){const r=stage.getBoundingClientRect();tipEl.style.left=(e.clientX-r.left)+'px';tipEl.style.top=(e.clientY-r.top)+'px';tipEl.textContent=p.name;tipEl.style.display='block';renderer.domElement.style.cursor='pointer'}else{tipEl.style.display='none';renderer.domElement.style.cursor=''}}
 /* v86：已在全車（鏡頭目標＝全車視角，左右任一側）時再按一次，轉 180° 看另一側；否則照舊回到全車 */
@@ -1959,7 +1959,7 @@ const hintBtn=null;
      STEM_MM／CAP_MM 隨 HS_GAP 一起加大：上碗組往上走 HS_GAP 之後會頂到龍頭，龍頭與上蓋要讓開。
      AX_GAP：貫通軸完全抽出後，軸尖離最近孔洞外緣的間距。 */
   /* 各階段的時間窗（主進度 t 的區間）。重疊很大是刻意的：動作要互相接續，不是一段停了才換下一段 */
-  const PH_AX=[0,.28],PH_WH=[.18,.74],PH_UP=[0,.80],PH_FK=[.12,.84],PH_MID=[.10,.85],PH_END=[.40,1];/* v199zzzzzz94：改為「提升與炸開同時進行」（使用者 2026-11-18）。車架上移 PH_UP 由 [.38,.86] 提前到 **[0,.80]**，與其餘零件一起起步。
+  const PH_AX=[0,.28],PH_WH=[.18,.74],PH_UP=[0,.80],PH_FK=[.12,.84],PH_MID=[.10,.85],PH_END=[.40,1];/* v199zzzzzz99a：後輪一步到位（使用者 2026-11-18：不是兩段式），沿用 PH_WH，終點即後上叉延長線；曾有的第二段 PH_WR 已刪。 *//* v199zzzzzz94：改為「提升與炸開同時進行」（使用者 2026-11-18）。車架上移 PH_UP 由 [.38,.86] 提前到 **[0,.80]**，與其餘零件一起起步。
      唯一保留的先後是**貫通軸必須先離開勾爪**，輪組才能平移，否則兩者會互穿：PH_AX [0,.28]、PH_WH 從 .18 才起步（此時軸已抽出約七成）。
      曲柄外移與座管上拔（PH_END）起點由 .74 提前到 .40——仍然最後收尾（符合實際組裝順序的反向），但不再等車架到頂才動。 */
   const LIFT_ADD=.075;/* v199zzzzzz95：使用者 2026-11-18——v94 的 150 mm 太高，減半為 75 mm。M 尺寸 325Ti 總上移量＝1/6 輪直徑 114.7＋75＝189.7 mm */
@@ -1969,8 +1969,12 @@ const hintBtn=null;
      後輪改為與前輪等量反向（再加上車架後移量 BACK_MM），兩輪對車身左右對稱地讓開，與上移量脫鉤。rR() 連同它的退回值 .812 一併刪除。
      對位比例：水平/垂直，前輪＝頭管軸（HTb→HTt）。量不到就退回 M 尺寸 325Ti 的實測值 .335 */
   const rF=()=>{try{const d=[N.HTt.x-N.HTb.x,N.HTt.y-N.HTb.y];const r=-d[0]/d[1];return(r>.1&&r<1)?r:.335}catch(e){return .335}};
+  /* v199zzzzzz99（使用者 2026-11-18）：炸開後，後輪組再往後移，直到後軸心落在「後上叉延長線」上（該線＝SSst→RA0，隨車架上移／後移）。
+     車架位移 (−BACK, L) 後，該線在軸心高度的水平位置＝RA.x − BACK − L×rS（rS＝後上叉水平/垂直比），故總後移＝L×rS＋BACK。
+     v99a 改為一步到位：整段後移都在 PH_WH，終點＝L×rS＋BACK（前輪仍是 L×rF−BACK）。量不到 rS 時退回 .812（M 尺寸 325Ti 實測）。 */
+  const rS=()=>{try{const a=N.SSst,b=N.RA0||N.RA,dy=a.y-b.y,r=(a.x-b.x)/dy;return(dy>1&&r>.3&&r<2)?r:.812}catch(e){return .812}};
   const whF=()=>liftM()*rF()-BACK_MM/1000;/* 前輪前移量 */
-  const whR=()=>liftM()*rF()+BACK_MM/1000;/* 後輪後移量＝前輪前移量＋2×BACK_MM（兩輪等量反向讓開；見上方說明） */
+  const whR=()=>liftM()*rS()+BACK_MM/1000;/* v199zzzzzz99a：一步到位＝L×rS＋BACK（後軸心終點落在後上叉延長線上） *//* 後輪後移量＝前輪前移量＋2×BACK_MM（兩輪等量反向讓開；見上方說明） */
   const liftV=()=>V(-BACK_MM/1000,liftM(),0);/* 車架位移：往上並稍微往後 */
   /* 貫通軸手柄在哪一側：取手柄實例化網格頂點 z 的平均值；判不出來就當非驅動側（−z，手柄慣例位置） */
   let hdlS=0;
@@ -2045,10 +2049,12 @@ const hintBtn=null;
      p＝該群組的時間窗；nl（no lift）＝不隨車架上移的群組，其位移要扣回 Lv 才能留在原高度。 */
   const GRP={
     wF  :{p:PH_WH,nl:1,v:()=>V(whF(),0,0) ,o:()=>[G.wF,G.fRotor]},/* 行程由對位解出，見檔頭 */
-    wR  :{p:PH_WH,nl:1,v:()=>V(-whR(),0,0),o:()=>[G.wR,G.rRotor].concat(G.casC||[])},
+    wR  :{raw:1,nl:1,v:()=>V(-whR()*seg(PH_WH),0,0),o:()=>[G.wR,G.rRotor].concat(G.casC||[])},
     axF :{raw:1,nl:1,v:()=>V(0,0,hdlSide()*axD.F).multiplyScalar(seg(PH_AX)).add(V(whF(),0,0).multiplyScalar(seg(PH_WH))),o:()=>[G.axF,G.hdlF]},/* 前貫通軸沿軸心、朝手柄那一側整根抽出（距離見 axUpd），抽出後再跟著前輪組一起前移（v199zzzzzz96） */
-    axR :{raw:1,nl:1,v:()=>V(0,0,hdlSide()*axD.R).multiplyScalar(seg(PH_AX)).add(V(-whR(),0,0).multiplyScalar(seg(PH_WH))),o:()=>[G.axR,G.hdlR]},/* 後貫通軸同上，跟著後輪組一起後移 */
-    fork:{p:PH_FK,d:dn,mm:HS_GAP,o:()=>{const a=[T.FKL,T.FKR,G.crown,G.rsFork];try{a.push(HSl,HSn,HSlD)}catch(e){}return a}},
+    axR :{raw:1,nl:1,v:()=>V(0,0,hdlSide()*axD.R).multiplyScalar(seg(PH_AX)).add(V(-whR()*seg(PH_WH),0,0)),o:()=>[G.axR,G.hdlR]},/* 後貫通軸同上，跟著後輪組一起後移 */
+    fork:{p:PH_FK,d:dn,mm:HS_GAP,o:()=>{return[T.FKL,T.FKR,G.crown,G.rsFork]}},
+    /* v199zzzzzz99a：下碗組（HSl、壓環 HSn、KING 貼字）不再黏在前叉冠部，停在「頭管底端與前叉冠部的正中間」＝前叉滑出量的一半 */
+    hsL :{p:PH_FK,d:dn,mm:HS_GAP/2,o:()=>{try{return[HSl,HSn,HSlD]}catch(e){return[]}}},
     /* 前叉不標 nl：它跟著車架一起被 bike 帶上去，再沿轉向軸往外滑 HS_GAP。相對車架的位移恆為 HS_GAP×轉向軸，轉向管因此全程在頭管軸心延長線上。
        下碗組（連壓環 HSn、KING 貼字）併進本群組＝「前叉帶著下碗組」；轉向管是 G.crown 的子物件，自動跟著。 */
     calF:{p:PH_FK,v:()=>dn().multiplyScalar(HS_GAP/1000).add(V(0,0,-.045)),o:()=>[G.fCal]},/* 前卡鉗鎖在前叉上，跟著前叉同步滑出，再朝非驅動側抽出 45 */
@@ -2060,7 +2066,7 @@ const hintBtn=null;
     bar :{v:()=>V(BAR_X/1000,axHead().y*STEM_MM/1000,0),o:()=>[G.bar,G.cockpit,G.shift,G.cpStem]},/* 原位時把手中間管穿在龍頭把手孔裡（同高），所以把手升高量＝龍頭升高量 */
     stem:{d:axHead,mm:STEM_MM,o:()=>[G.stemStd,T.stem]},
     cap :{d:axHead,mm:CAP_MM,o:()=>[G.cap]},
-    hsU :{d:axHead,mm:HS_GAP,o:()=>{try{return[HSu,HSuD]}catch(e){return[]}}},/* 上碗（連 KING 貼字）往上離開頭管，距離與前叉滑出量相同 */
+    hsU :{d:axHead,mm:STEM_MM/2,o:()=>{try{return[HSu,HSuD]}catch(e){return[]}}},/* 上碗（連 KING 貼字）往上離開頭管，距離與前叉滑出量相同 */
     crk :{p:PH_END,d:()=>V(0,0,1),mm:CRK_MM,o:()=>CRK.map(k=>G[k])},
     crkL:{p:PH_END,v:()=>V(0,0,-(CRK_MM+CRKL_MM)/1000),w:()=>V(0,0,-CRKL_MM/1000),o:crkLeft},/* 左臂為曲柄群組的子物件，故位移須抵銷群組的 +z；熱點在場景層，用 w（世界位移） */
     rd  :{d:()=>V(0,0,1),mm:48,o:()=>[G.rdSram,G.rdSerG].concat(G.rdSerGs?Object.keys(G.rdSerGs).map(k=>G.rdSerGs[k]):[]).concat(G.rdOldC||[])},
