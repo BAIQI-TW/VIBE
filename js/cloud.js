@@ -79,7 +79,9 @@ async function rm(id,nm){if(!window.confirm('刪除「'+(nm||'未命名')+'」�
 let last=null,sent=0;const Q=[];
 function summary(){try{const J=API.gather(),c=J.車款,p=J.塗裝,a=J.加購;return{model:c.model,size:c.size,tw:c.tw&&c.tw[c.model],hs:c.hs&&c.hs[c.model],fin:p.fin,paint:p.paint,anoM:p.anoM,anoG:p.anoG,spl:p.splI,dt:p.dtCol,logo:p.logoCol,hsCol:p.hsCol,sm:p.smCol,ser:a.ser,ti:JSON.stringify(a.ti),bk:JSON.stringify(a.bk)}}catch(e){return null}}
 function evt(type,data){if(!user||sent>=200)return;sent++;Q.push({t:F.serverTimestamp(),type,data:data||{},app:(API.ver&&API.ver())||''})}
-setInterval(()=>{if(!user)return;const s=summary();if(!s)return;if(last){const ch={};let n=0;for(const k in s)if(s[k]!==last[k]){ch[k]=[last[k]===undefined?null:last[k],s[k]===undefined?null:s[k]];n++}if(n)evt('select',ch)}last=s},4000);
+/* v199zzzzzz111（D2）：只在使用者操作過後才組一次設定摘要（原本登入後每 4 秒無條件跑完整 gather）。旗標在登入前不清，登入後第一輪必跑建立基準。 */
+let dirty=true;['click','input','change','pointerup','keyup'].forEach(e=>window.addEventListener(e,()=>{dirty=true},{capture:true,passive:true}));
+setInterval(()=>{if(!user||!dirty)return;dirty=false;const s=summary();if(!s)return;if(last){const ch={};let n=0;for(const k in s)if(s[k]!==last[k]){ch[k]=[last[k]===undefined?null:last[k],s[k]===undefined?null:s[k]];n++}if(n)evt('select',ch)}last=s},4000);
 setInterval(()=>{if(!user||!Q.length)return;const col=F.collection(db,'users',user.uid,'events');Q.splice(0,10).forEach(e=>F.addDoc(col,e).catch(err=>console.warn('cloud evt',err&&err.code)))},10000);
 window.addEventListener('pagehide',()=>{if(!user||!Q.length)return;const col=F.collection(db,'users',user.uid,'events');Q.splice(0).forEach(e=>F.addDoc(col,e).catch(()=>{}))});
 /* v199zzzzzz73：進入客製服務就在背景載入 SDK；客人第一次在客製服務改動後約 0.8 秒跳出登入說明（未登入、未曾登入、此瀏覽器未問過才跳；使用者 2026-11-17 選定） */
