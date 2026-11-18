@@ -1,74 +1,154 @@
 {
- "頭管標": {
+ "hd": {
+  "name": "頭管標",
   "img": "img/feat/hd.webp",
   "ph": true,
-  "sub": "頭管・品牌標示",
-  "body": [
-   "（假文）頭管是前叉與車架的交會處，品牌標示置於此處。此段落為佔位文字，正式說明待補。",
-   "（假文）可放材質、焊接工法、標示製程等說明；每段約兩到三行。"
-  ]
+  "sub": {
+   "tw": "頭管・品牌標示",
+   "en": "Head tube · Brand marking"
+  },
+  "body": {
+   "tw": [
+    "（假文）頭管是前叉與車架的交會處，品牌標示置於此處。此段落為佔位文字，正式說明待補。",
+    "（假文）可放材質、焊接工法、標示製程等說明；每段約兩到三行。"
+   ],
+   "en": [
+    "(Placeholder) The head tube is where the fork meets the frame; the brand marking sits here. This paragraph is placeholder text; final copy to follow.",
+    "(Placeholder) Material, welding method and marking process can go here; two to three lines per paragraph."
+   ]
+  }
  },
- "上碗組": {
+ "bowl": {
+  "name": "上碗組",
   "img": "img/feat/bowl.webp",
   "ph": true,
-  "sub": "頭碗組・上碗",
-  "body": [
-   "（假文）上碗組承接轉向軸並與頭管內壁配合。此段落為佔位文字。",
-   "（假文）可放軸承規格、預壓調整與維護週期。"
-  ]
+  "sub": {
+   "tw": "頭碗組・上碗",
+   "en": "Headset · Upper cup"
+  },
+  "body": {
+   "tw": [
+    "（假文）上碗組承接轉向軸並與頭管內壁配合。此段落為佔位文字。",
+    "（假文）可放軸承規格、預壓調整與維護週期。"
+   ],
+   "en": [
+    "(Placeholder) The upper cup carries the steerer and fits the inside of the head tube. This paragraph is placeholder text.",
+    "(Placeholder) Bearing spec, preload adjustment and service interval can go here."
+   ]
+  }
  },
- "上管標": {
+ "tt": {
+  "name": "上管標",
   "img": "img/feat/tt.webp",
   "ph": true,
-  "sub": "上管・標示",
-  "body": [
-   "（假文）上管標示位於上管側面。此段落為佔位文字。",
-   "（假文）可放管材斷面、壁厚與焊道處理說明。"
-  ]
+  "sub": {
+   "tw": "上管・標示",
+   "en": "Top tube · Marking"
+  },
+  "body": {
+   "tw": [
+    "（假文）上管標示位於上管側面。此段落為佔位文字。",
+    "（假文）可放管材斷面、壁厚與焊道處理說明。"
+   ],
+   "en": [
+    "(Placeholder) The top tube marking sits on the side of the top tube. This paragraph is placeholder text.",
+    "(Placeholder) Tube profile, wall thickness and weld finishing can go here."
+   ]
+  }
  },
- "中管標": {
+ "st": {
+  "name": "中管標",
   "img": "img/feat/st.webp",
   "ph": true,
-  "sub": "中管・標示",
-  "body": [
-   "（假文）中管標示位於座管側面。此段落為佔位文字。",
-   "（假文）可放座管尺寸與車架編號說明。"
-  ]
+  "sub": {
+   "tw": "中管・標示",
+   "en": "Seat tube · Marking"
+  },
+  "body": {
+   "tw": [
+    "（假文）中管標示位於座管側面。此段落為佔位文字。",
+    "（假文）可放座管尺寸與車架編號說明。"
+   ],
+   "en": [
+    "(Placeholder) The seat tube marking sits on the side of the seat tube. This paragraph is placeholder text.",
+    "(Placeholder) Seatpost size and frame number can go here."
+   ]
+  }
  },
- "座管束": {
+ "clamp": {
+  "name": "座管束",
   "img": "img/feat/clamp.webp",
   "ph": true,
-  "sub": "座管束環",
-  "body": [
-   "（假文）座管束環固定座管高度。此段落為佔位文字。",
-   "（假文）可放鎖附扭力、材質與顏色選項。"
-  ]
+  "sub": {
+   "tw": "座管束環",
+   "en": "Seat clamp ring"
+  },
+  "body": {
+   "tw": [
+    "（假文）座管束環固定座管高度。此段落為佔位文字。",
+    "（假文）可放鎖附扭力、材質與顏色選項。"
+   ],
+   "en": [
+    "(Placeholder) The seat clamp ring fixes the seatpost height. This paragraph is placeholder text.",
+    "(Placeholder) Tightening torque, material and color options can go here."
+   ]
+  }
  },
- "下管標": {
+ "dt": {
+  "name": "下管標",
   "img": "img/feat/dt.webp",
   "ph": true,
-  "sub": "下管・標示",
-  "body": [
-   "（假文）下管標示位於下管側面。此段落為佔位文字。",
-   "（假文）可放水壺架孔位與管材說明。"
-  ]
+  "sub": {
+   "tw": "下管・標示",
+   "en": "Down tube · Marking"
+  },
+  "body": {
+   "tw": [
+    "（假文）下管標示位於下管側面。此段落為佔位文字。",
+    "（假文）可放水壺架孔位與管材說明。"
+   ],
+   "en": [
+    "(Placeholder) The down tube marking sits on the side of the down tube. This paragraph is placeholder text.",
+    "(Placeholder) Bottle-cage mounts and tube notes can go here."
+   ]
+  }
  },
- "BB": {
+ "bb": {
+  "name": "BB",
   "img": "img/feat/bb.webp",
   "ph": true,
-  "sub": "五通",
-  "body": [
-   "（假文）五通承接曲柄軸承並連接下管、中管與後下叉。此段落為佔位文字。",
-   "（假文）可放軸承規格、安裝扭力與防水處理。"
-  ]
+  "sub": {
+   "tw": "五通",
+   "en": "Bottom bracket"
+  },
+  "body": {
+   "tw": [
+    "（假文）五通承接曲柄軸承並連接下管、中管與後下叉。此段落為佔位文字。",
+    "（假文）可放軸承規格、安裝扭力與防水處理。"
+   ],
+   "en": [
+    "(Placeholder) The bottom bracket shell carries the crank bearings and joins the down tube, seat tube and chainstays. This paragraph is placeholder text.",
+    "(Placeholder) Bearing spec, installation torque and sealing can go here."
+   ]
+  }
  },
- "後勾爪": {
+ "dropout": {
+  "name": "後勾爪",
   "img": "img/feat/dropout.webp",
   "ph": true,
-  "sub": "後勾爪",
-  "body": [
-   "（假文）後勾爪固定後輪貫通軸與變速吊耳。此段落為佔位文字。",
-   "（假文）可放勾爪規格、軸距與鈦件加工說明。"
-  ]
+  "sub": {
+   "tw": "後勾爪",
+   "en": "Rear dropout"
+  },
+  "body": {
+   "tw": [
+    "（假文）後勾爪固定後輪貫通軸與變速吊耳。此段落為佔位文字。",
+    "（假文）可放勾爪規格、軸距與鈦件加工說明。"
+   ],
+   "en": [
+    "(Placeholder) The rear dropout holds the thru-axle and the derailleur hanger. This paragraph is placeholder text.",
+    "(Placeholder) Dropout spec, axle spacing and titanium machining notes can go here."
+   ]
+  }
  }
 }

@@ -34,11 +34,11 @@ md.innerHTML='<div class="card modal cl-modal" role="dialog" aria-modal="true" a
  +'<p class="fine" id="clMm" role="status" aria-live="polite"></p>'
  +'<label class="cl-ck"><input type="checkbox" id="clMk"> '+esc(C.marketing.label)+'</label>'
  +'<p class="cl-legal">'+esc(C.notice.agree)+'<button class="cl-lk" id="clNt" type="button" aria-expanded="false" aria-controls="clNl">《'+esc(C.notice.link||'個資蒐集說明')+'》</button></p>'
- +'<p class="cl-notice" id="clNl" hidden>'+esc(C.notice.body.join(''))+'</p></div>';/* v199zzzzzz80：說明改為單一段落、靠左（使用者 2026-11-17） */
+ +'<p class="cl-notice" id="clNl" hidden data-noi18n>'+esc(C.notice.body.join(''))+'</p></div>';/* v199zzzzzz80：說明改為單一段落、靠左（使用者 2026-11-17） */
 document.body.appendChild(md);
 const sm=t=>{$('clMm').textContent=t||''};
-const open=()=>{md.hidden=false;sm('');$('clMk').checked=!!C.marketing.preset;/* v199zzzzzz60：行銷同意預設打勾（使用者 2026-11-16） */$('clNl').hidden=true;$('clNt').setAttribute('aria-expanded','false');sdk().catch(()=>sm('雲端服務暫時無法連線'))},close=()=>{md.hidden=true};
-$('clNt').onclick=()=>{const h=!$('clNl').hidden;$('clNl').hidden=h;$('clNt').setAttribute('aria-expanded',String(!h))};$('clX').onclick=close;document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!md.hidden)close()});md.addEventListener('click',e=>{if(e.target===md)close()});
+const open=()=>{md.hidden=false;window.VIBE_MODAL&&window.VIBE_MODAL.push('cl',close);sm('');$('clMk').checked=!!C.marketing.preset;/* v199zzzzzz60：行銷同意預設打勾（使用者 2026-11-16） */$('clNl').hidden=true;$('clNt').setAttribute('aria-expanded','false');sdk().catch(()=>sm('雲端服務暫時無法連線'))},close=()=>{md.hidden=true;window.VIBE_MODAL&&window.VIBE_MODAL.pop('cl')};
+$('clNt').onclick=()=>{const h=!$('clNl').hidden;$('clNl').hidden=h;$('clNt').setAttribute('aria-expanded',String(!h))};$('clX').onclick=close;md.addEventListener('click',e=>{if(e.target===md)close()});
 $('clIn').onclick=open;
 const consent=()=>({ver:C.notice.ver,mode:C.notice.mode||'check',mk:$('clMk').checked,mver:C.marketing.ver,pre:!!C.marketing.preset,at:Date.now()});
 $('clG').onclick=async()=>{sm('');try{await sdk();LS.set('vibe.fb.consent',JSON.stringify(consent()));await F.signInWithPopup(auth,new F.GoogleAuthProvider());close()}
