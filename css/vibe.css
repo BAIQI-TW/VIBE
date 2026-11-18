@@ -374,3 +374,23 @@ html[data-theme="dark"] .cl-g{background:#131314;border-color:#8e918f;color:#e3e
 .cl-modal h3{justify-content:center}
 
 /* v199zzzzzz80：個資蒐集說明改單一段落、靠左對齊（其餘文字維持置中） */.cl-modal .cl-notice{text-align:left;padding:12px 0 0;margin:10px 0 0}
+
+/* v199zzzzzz100：卡片頂端前伸量／堆疊高可點（點亮＝3D 正在標示該尺寸） */
+.score [data-dim]{cursor:pointer;border-radius:6px;padding:2px 6px;margin:-2px -6px}.score [data-dim]:hover,.score [data-dim].on{background:var(--hl)}.score [data-dim]:focus-visible{outline:2px solid var(--accent,currentColor);outline-offset:1px}
+/* v199zzzzzz100：特寫展示說明區。上方正方形圖（實景參照）、下方標題＋詳細說明；圖與字目前為佔位。 */
+.scinfo{display:block}.scinfo[hidden]{display:none}
+.scinfo .sci-fig{margin:var(--sp-3) 0 0;aspect-ratio:1/1;width:100%;border-radius:12px;overflow:hidden;background:var(--surface-card);border:1px solid var(--border-soft);position:relative}
+.scinfo .sci-fig img{display:block;width:100%;height:100%;object-fit:cover}
+.scinfo figcaption{position:absolute;left:10px;bottom:8px;font-size:var(--fs-sm);color:var(--text-muted);background:color-mix(in srgb,var(--surface-card) 80%,transparent);padding:2px 8px;border-radius:999px}
+.scinfo h2{margin-top:var(--sp-3)}.scinfo .sci-sub{margin:2px 0 var(--sp-2);color:var(--text-muted);font-size:var(--fs-sm)}
+.scinfo .sci-body p{margin:0 0 var(--sp-2);line-height:1.7;color:var(--text-primary)}
+aside .scinfo h2#scTitle{font-size:var(--fs-xl);color:var(--text-strong);font-weight:600;letter-spacing:.02em}
+
+/* v199zzzzzz104：整車組裝「特色說明」清單。列樣式沿用 .plist（與扭力巡檢一致），平時收折，點選在該列下方展開 1:1 照片與簡介。 */
+.featlist{margin:var(--sp-2,8px) 0 var(--sp-3,12px)}
+.featlist .feat-h[aria-expanded="true"]{color:var(--accent)}
+.featlist .feat-b{padding:var(--sp-2,8px) 4px var(--sp-3,12px);border-bottom:1px solid var(--hairline)}.featlist .feat-b[hidden]{display:none}
+.feat-b figure{margin:0;aspect-ratio:1/1;width:100%;border-radius:10px;overflow:hidden;background:var(--surface-card);border:1px solid var(--border-soft);position:relative}
+.feat-b figure img{display:block;width:100%;height:100%;object-fit:cover}
+.feat-b figcaption{position:absolute;left:10px;bottom:8px;font-size:var(--fs-sm);color:var(--text-muted);background:color-mix(in srgb,var(--surface-card) 80%,transparent);padding:2px 8px;border-radius:999px}
+.feat-x{margin-top:var(--sp-2,8px)}.feat-x p{margin:0 0 var(--sp-2,8px);line-height:1.7;color:var(--text-primary)}

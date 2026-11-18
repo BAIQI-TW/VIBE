@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" data-theme="dark">
 <head>
-<!-- VIBE 幾何探索 v199zzzzzz99｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
+<!-- VIBE 幾何探索 v199zzzzzz107｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>VIBE 幾何探索｜RKL 自行車互動體驗平台</title>
@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/vibe.css?h=828e3bfb3f">
+<link rel="stylesheet" href="css/vibe.css?h=e4134cd96c">
 </head>
 <body>
 <div id="s3dVeil" role="status" aria-label="載入中"><div class="logo"></div></div>
@@ -37,10 +37,20 @@
     </div>
   </div>
   <aside>
+    <!-- v199zzzzzz100：特寫展示說明區（版面先行，圖與字皆為佔位）。整車組裝分頁、展示停在車架特寫節點時，取代該分頁面板顯示；離開節點即還原。 -->
+    <section class="scinfo" id="scInfo" hidden aria-live="polite">
+      <figure class="sci-fig"><img id="scImg" alt="" width="600" height="600"><figcaption id="scCap"></figcaption></figure>
+      <h2 id="scTitle"></h2><p class="sci-sub" id="scSub"></p>
+      <div class="sci-body" id="scBody"></div>
+    </section>
     <section class="panel" data-panel="torque">
       <h2>整車拆解</h2>
       <div class="row"><button class="btn" id="exBtn" type="button" aria-pressed="false">拆解</button></div>
       <p class="fine">把整車攤開看零件關係與安裝方向；再按一次復原。攤開狀態下按播放鈕照樣會自動環繞與特寫。</p>
+      <!-- v199zzzzzz103：特色說明（自旋特寫節點的照片與簡介；點選跳到該特寫） -->
+      <h2>特色說明</h2>
+      <p class="fine">車架八處特色，平時收折。點選任一項，3D 跳到該處特寫並展開照片與說明；再點一次收起並回整車。</p>
+      <ul class="plist featlist" id="featList"></ul>
       <h2>扭力巡檢</h2>
       <div class="score"><span>得分 <b class="num" id="sc">0</b><span class="num"> / 48</span></span><span>完成 <b class="num" id="dn">0</b><span class="num"> / 16</span></span></div>
       <div class="row"><button class="btn" id="tableBtn">查表</button></div>
@@ -94,7 +104,7 @@
 <script src="data/series.js?h=d7edc879fb"></script>
 <script src="data/ex.js?h=e28673cb76"></script>
 <script src="data/addons.js?h=def97cba44"></script>
-<script src="js/app.js?h=9f0fe2f659"></script>
+<script src="js/app.js?h=233b583d50"></script>
 <script src="js/fbconfig.js?h=e757b15d82"></script>
 <script src="js/cloud.js?h=1050cf0119"></script>
 <script src="js/bgm-arr.js?h=c9fa7deebd"></script>
