@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" data-theme="dark">
 <head>
-<!-- VIBE 幾何探索 v199zzzzzz80｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
+<!-- VIBE 幾何探索 v199zzzzzz97｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>VIBE 幾何探索｜RKL 自行車互動體驗平台</title>
@@ -31,16 +31,21 @@
       <div id="stBar"><button class="btn" id="reset" type="button" aria-label="回到全車" title="回到全車"><svg class="ri-ic" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.34 17A10 10 0 1 0 3.34 7"/><path d="M8.10 5.27L3.34 7L2.77 2.57"/><circle class="ri-dot" cx="12" cy="12" r="4.2"/></svg><span class="rt">回到全車</span></button><div class="tabs" role="tablist" aria-label="主分頁（可左右滑動切換）">
         <button class="tab" role="tab" data-tab="geo" data-short="Geometry" aria-selected="true"><span class="tl">尺寸幾何</span></button>
         <button class="tab" role="tab" data-tab="custom" data-short="Custom" aria-selected="false"><span class="tl">客製服務</span></button>
-        <button class="tab" role="tab" data-tab="torque" data-short="Torque" aria-selected="false"><span class="tl">扭力巡檢</span></button>
+        <button class="tab" role="tab" data-tab="torque" data-short="Assembly" aria-selected="false"><span class="tl">整車組裝</span></button>
       </div></div>
       <div id="cardWrap" hidden><div class="card" id="card"></div></div>
     </div>
   </div>
   <aside>
     <section class="panel" data-panel="torque">
+      <h2>整車拆解</h2>
+      <div class="row"><button class="btn" id="exBtn" type="button" aria-pressed="false">拆解</button></div>
+      <p class="fine">把整車攤開看零件關係與安裝方向；再按一次復原。攤開狀態下按播放鈕照樣會自動環繞與特寫。</p>
+      <h2>扭力巡檢</h2>
       <div class="score"><span>得分 <b class="num" id="sc">0</b><span class="num"> / 48</span></span><span>完成 <b class="num" id="dn">0</b><span class="num"> / 16</span></span></div>
       <div class="row"><button class="btn" id="tableBtn">查表</button></div>
-      <h2>巡檢點</h2><ul class="plist" id="plist"></ul>
+      <p class="fine">點 3D 上的橘點或下方清單進入該點；同一個點再按一下收起卡片。</p>
+      <ul class="plist" id="plist"></ul>
     </section>
     <section class="panel" data-panel="geo" hidden>
       <div class="score" id="geoScore"></div>
@@ -68,7 +73,7 @@
       <h2>計算結果（mm）</h2><div id="bottom"></div>
       <form id="cform" onsubmit="return false"></form>
       <details class="spec"><summary>說明</summary><p class="fine">範例值取自「車架客製需求表-260415_GS相容」客製表單現值。座艙、落差與 fitting 不在本系統範圍；把手、座墊與輪組皆為示意，輪徑依輪胎規格換算。</p></details>
-      <div id="cfgBox" data-sub="all" style="margin-top:20px;padding-top:12px;border-top:1px dashed var(--border-soft)"><h2>3D 設定檔（預設個人化用）</h2><p class="fine">把目前 3D 的全部設定（車型、尺寸、塗裝顏色、加購、騎士與幾何客製、透明度、畫質材質）存成 .md；貼回即可還原。不含鏡頭視角與分頁位置。</p><div class="row"><button class="btn" id="cfgDl" type="button">下載 .md</button><button class="btn" id="cfgCp" type="button">複製 .md</button><button class="btn" id="cfgPs" type="button">貼上並套用</button></div><textarea id="cfgTa" rows="6" aria-label="3D 設定檔內容" placeholder="按「下載」或「複製」後內容會顯示在這裡；要還原時，把設定檔貼在這裡再按「套用文字框」。" style="width:100%;box-sizing:border-box;margin-top:8px;font:12px/1.5 monospace;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:8px;resize:vertical"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="cfgAp" type="button">套用文字框</button></div><p class="fine" id="cfgMsg" role="status" aria-live="polite"></p></div>
+      <div id="cfgBox" data-sub="all" style="margin-top:20px;padding-top:12px;border-top:1px dashed var(--border-soft)"><h2>3D 設定檔（預設個人化用）</h2><p class="fine">把目前 3D 的全部設定（車型、尺寸、塗裝顏色、加購、騎士與幾何客製、透明度、畫質材質）存成 .md；貼回即可還原。不含鏡頭視角與分頁位置。</p><div style="margin-top:10px"><div class="fine" style="margin:0 0 4px">參考碼</div><textarea id="cfgRc" rows="2" readonly aria-label="參考碼" style="width:100%;box-sizing:border-box;font:13px/1.5 monospace;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:6px 8px;resize:none;word-break:break-all"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="cfgCard" type="button">輸出圖卡</button><button class="btn" id="cfgRcCp" type="button">複製參考碼</button></div><div class="row" style="margin-top:8px"><input id="cfgRcIn" type="text" placeholder="貼上參考碼" aria-label="貼上參考碼" autocomplete="off" spellcheck="false" style="flex:1;min-width:0;box-sizing:border-box;font:13px/1.5 monospace;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:6px 8px"><button class="btn" id="cfgRcAp" type="button">用參考碼還原</button></div></div><div class="row" style="margin-top:12px"><button class="btn" id="cfgDl" type="button">下載 .md</button><button class="btn" id="cfgCp" type="button">複製 .md</button><button class="btn" id="cfgPs" type="button">貼上並套用</button></div><textarea id="cfgTa" rows="6" aria-label="3D 設定檔內容" placeholder="按「下載」或「複製」後內容會顯示在這裡；要還原時，把設定檔貼在這裡再按「套用文字框」。" style="width:100%;box-sizing:border-box;margin-top:8px;font:12px/1.5 monospace;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:8px;resize:vertical"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="cfgAp" type="button">套用文字框</button></div><p class="fine" id="cfgMsg" role="status" aria-live="polite"></p></div>
     </section>
   <details id="qp"><summary>臨時畫質設定（試機用）</summary><div id="qpBody"></div></details>
   </aside>
@@ -89,11 +94,11 @@
 <script src="data/series.js?h=d7edc879fb"></script>
 <script src="data/ex.js?h=e28673cb76"></script>
 <script src="data/addons.js?h=def97cba44"></script>
-<script src="js/app.js?h=9d6266509b"></script>
+<script src="js/app.js?h=c73f176110"></script>
 <script src="js/fbconfig.js?h=e757b15d82"></script>
 <script src="js/cloud.js?h=1050cf0119"></script>
-<script src="js/bgm-arr.js?h=76293120e1"></script>
-<script src="js/bgm.js?h=a9fab88b27"></script>
-<script src="js/i18n.js?h=2a8a5bd4b3"></script>
+<script src="js/bgm-arr.js?h=61694be2fa"></script>
+<script src="js/bgm.js?h=467b2e060a"></script>
+<script src="js/i18n.js?h=80fbcf8237"></script>
 </body>
 </html>

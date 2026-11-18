@@ -139,6 +139,7 @@ const bike=new THREE.Group();scene.add(bike);M.ti.userData.frame=true;/* 車架�
   gn.putImageData(dn,0,0);gr.putImageData(dr,0,0);
   [cn,cr].forEach((cv,i)=>{const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=1000;t.repeat.set(40,2);t.anisotropy=4;if(i===0)M.tire.normalMap=t,M.tire.normalScale=new THREE.Vector2(.4,.4);else M.tire.roughnessMap=t});
   M.tire.needsUpdate=true})();
+const ST_IN=.88;/* 座管內孔比（佔外徑）。示意值，與實際壁厚無關。宣告須早於下方 T.ST 旋轉體建構 */
 const UCYL=new THREE.CylinderGeometry(1,1,1,96,1);
 function mkTube(m){const x=new THREE.Mesh(UCYL,m);bike.add(x);return x}
 function setTube(m,a,b,r,r2){const len=a.distanceTo(b)||1e-4;m.position.copy(a).add(b).multiplyScalar(.5);m.scale.set(r,len,r);
@@ -157,13 +158,13 @@ function htSet(Lm){if(Math.abs((T.HT.userData.hl||0)-Lm)>2e-5){const o=T.HT.geom
 /* 頭管、座管：頭管見 htGeom（v199zzzv 起依剖面圖）；座管內孔半徑為外徑 88%；材質為雙面鈦色 */
 (function(){const tm=M.tiFr;
   T.HT.geometry=htGeom(.15);T.HT.userData.hl=.15;T.HT.material=tm;
-  T.ST.geometry=new THREE.LatheGeometry([[1,-.5],[1,.5],[.88,.5],[.88,-.5],[1,-.5]].map(p=>new THREE.Vector2(p[0],p[1])),144);T.ST.material=tm;
+  T.ST.geometry=new THREE.LatheGeometry([[1,-.5],[1,.5],[ST_IN,.5],[ST_IN,-.5],[1,-.5]].map(p=>new THREE.Vector2(p[0],p[1])),144);T.ST.material=tm;T.ST.userData.g0=T.ST.geometry;T.ST.userData.gq=ST_IN;
   /* 座管束環：中空（內孔＝座管內孔） */
   T.collar.geometry=new THREE.LatheGeometry([[1,-.38],[1,.38],[.88,.5],[.78,.5],[.73,.45],[.73,-.45],[.78,-.5],[.88,-.5],[1,-.38]].map(p=>new THREE.Vector2(p[0],p[1])),144);T.collar.material=tm;
   /* 上管、下管、後上叉：自訂幾何，端面依相接管（頭管／座管）外壁裁切成魚口形，不穿入內孔 */
   ['TT','DT','SSL','SSR'].forEach(k=>{const g=new THREE.BufferGeometry(),N=48,idx=[];g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(2*N*3),3));
     for(let i=0;i<N;i++){const j=(i+1)%N;idx.push(i,j,N+i,j,N+j,N+i)}g.setIndex(idx);
-    T[k].geometry=g;T[k].material=tm;T[k].frustumCulled=false;T[k].position.set(0,0,0);T[k].scale.set(1,1,1);T[k].quaternion.identity()})})();
+    T[k].geometry=g;T[k].material=tm;T[k].frustumCulled=false;T[k].position.set(0,0,0);T[k].scale.set(1,1,1);T[k].quaternion.identity();})})();
 /* 前叉：叉腿由 STEP（Fork.stp）實測截面放樣（沿轉向管軸每 6–12 mm 一站、每站 32 點，叉腿錐度與前傾取自實測）；叉冠＝以叉腿頂端截面外形掃過 180° 圓拱接成一體，頸部為短圓柱。
    局部座標 (a=沿轉向管軸向下、p=前後、l=左右，單位 mm，a 由叉冠頂面起算)。每次 applyNodes 只更新一個矩陣（叉冠頂面對 HTb、軸向縮放使軸心對 FA、剪切吸收偏移量差）。資料單位 0.1 mm。 */
 /* v199zzzzzz31：叉腿中心線——前視（橫向 cl）改為連接兩端的直線（原資料 S 形起伏最大約 1.5 mm）；側視（cp）三次曲線平滑，末端中心線以線性分攤落在軸心（原 DY·smo 在末端 80 mm 內加 6.3 mm 位移造成末段內彎／前凸，現資料末列 cp＝軸心，DY＝0） */
@@ -299,13 +300,14 @@ var CRK_GD=0.014,CRK_GDL=0.005,CRK_GZ=.045,CRKG=false,CRK_GR=80.9,CRKA=false,CRK
    不增加額外重繪：鏡頭移動時本來就連續重繪；停手後延續的半秒以 wake 補畫。輪廓線（第二遍反向外殼）以同一批網格繪製，自然跟著轉。
    角速度 SPIN_W＝5 rad/s（約 48 rpm，向前踩方向＝由驅動側看順時針＝z 軸負向）；飛輪 ×SPIN_CAS＝2.6（≈50T／19T）。
    扭力分頁的熱點（踏板、曲柄螺絲）固定在預設曲柄角，故扭力分頁不轉並把角度歸零。 */
-var spinA=0,spinT=0,spinL=0,SPIN_W=.36,SPIN_WK=1,SPIN_ON=true,SPIN_HOLD=500,SPIN_CAS=2.6;/* v180：角速度 5→2.5 rad/s（約 24 rpm），使用者要求放慢一半 */
+var spinA=0,spinT=0,spinL=0,SPIN_W=.36,SPIN_WK=1,SPIN_ON=true,SPIN_HOLD=500,SPIN_CAS=2.6,SPIN_K=.2,SPIN_SC=false;/* v199zzzzzz93：SPIN_K＝角速度起伏幅度，ω(θ)＝SPIN_W×(1+SPIN_K·cos θ)，每圈頭尾（θ≈0、2π）快、中段（θ≈π）慢；角速度本身是 θ 的週期函數，故接圈處速度與加速度皆連續，不會有一次性 easing 的斷點。平均角速度仍為 SPIN_W（cos 的一圈平均為 0）。SPIN_SC＝展示（Live Showcase）執行中，由 scPlay0／scUI 維護；用 var 另設旗標而非直接讀 SC，是因為 SC 宣告在本行之後（const，TDZ）。 */
+function spinW(a){return SPIN_W*(1+SPIN_K*Math.cos(a))}/* v180：角速度 5→2.5 rad/s（約 24 rpm），使用者要求放慢一半 */
 function applySpin(){if(G.crkNewG)G.crkNewG.rotation.z=-.8727-spinA;if(G.crkGrvG)G.crkGrvG.rotation.z=-.8727-spinA;if(G.crkF1G)G.crkF1G.rotation.z=-.8727-spinA;if(G.crkAudG)G.crkAudG.rotation.z=-.8727-spinA;if(G.crkTiG)G.crkTiG.rotation.z=-.8727-spinA;if(G.crkSerG)G.crkSerG.rotation.z=-.8727-spinA;
   /* v191：鏈條帶動——鏈速＝大盤轉角×大盤節圓半徑 chR()；飛輪（最小片半徑 CH_RC）、前後碟盤（含鎖固螺絲，同軸同轉速）轉速比＝chR()/CH_RC；上導輪（物理上逆時針）、下導輪（順時針）轉速比＝chR()/CH_RP；齒的相位不處理（使用者指示） */
   const ok=typeof CH_RC==='number',kc=(ok?chR()/CH_RC:2.6)*SPIN_WK,kp=ok?chR()/rpR():4.1;const c=G.rear&&G.rear.children[4];if(c)c.rotation.z=-spinA*kc;
   if(G.rRotor)G.rRotor.rotation.z=-spinA*kc;if(G.fRotor)G.fRotor.rotation.z=-spinA*kc;
   if(G.rdPu){G.rdPu[0].rotation.z=0;G.rdPu[1].rotation.z=0}/* v191：導輪與導輪軸心不轉（使用者指示） */
-  if(G.chPos)chainPlace(-spinA*chR())}/* v178：CRK_D＝大盤與右臂外移、CRK_DL＝左臂外移（皆 mm→m）；依整圈旋轉掃描決定，見下 *//* v176：新曲柄組左右各向外 CRK_D＝18 mm（大盤與右臂＋蜘蛛 +z、左臂 −z）；v175 大盤與右後下叉最大干涉 10.3 mm，外移 18 mm 後大盤淨距約 4.9、右臂約 3.1 mm（四款車一致）；v177：左臂不外移（使用者指示；左側原本已通過，淨距 2 mm），只有大盤與右臂（含蜘蛛）外移。須在曲柄組建構之前宣告（曲柄組建構早於 paintSel 那行 var 的執行） */
+  if(G.chPos)chainPlace(-spinA*chR());if(tab==='torque')try{placeHS()}catch(_){}/* v199zzzzzz94：placeHS 只在節點改變時呼叫，所以 v93 的「熱點跟著曲柄角轉」實際上沒生效（踏板橘點不動）。示意旋轉每幀都呼叫 applySpin，在這裡補一次重放；只有扭力分頁會顯示熱點，其他分頁不花這個成本。spinA 歸零時也會進來一次，把熱點放回預設曲柄角。 */}/* v178：CRK_D＝大盤與右臂外移、CRK_DL＝左臂外移（皆 mm→m）；依整圈旋轉掃描決定，見下 *//* v176：新曲柄組左右各向外 CRK_D＝18 mm（大盤與右臂＋蜘蛛 +z、左臂 −z）；v175 大盤與右後下叉最大干涉 10.3 mm，外移 18 mm 後大盤淨距約 4.9、右臂約 3.1 mm（四款車一致）；v177：左臂不外移（使用者指示；左側原本已通過，淨距 2 mm），只有大盤與右臂（含蜘蛛）外移。須在曲柄組建構之前宣告（曲柄組建構早於 paintSel 那行 var 的執行） */
 /* v181（使用者 2026-11-03 上傳 BB_For_all.stp／integrated_handlebar.stp／Shifter.stp）：減面後編碼同 CRK_NEW（位置 int16×0.01 mm、法線 int8、索引 uint16）。
    座標：STEP（x 橫向、y 向前、z 向上）→ 頁面（x 向前、y 向上、z 橫向）＝(y,z,x) 循環排列，無鏡射。bar：一體把（含龍頭）原點＝STEP 原點（把手中心）；bbA／bbB：BB 左右杯（軸沿 z，原點＝五通中心）；
    sh*：右側變速煞車把手；hbTL／hbTR／hbC：標準把（HandleBar.stp，左右包把帶段＋中央管）。v182：Shifter 與 HandleBar 同一組裝座標，原點＝把手上把中心 (0,457.8,621) mm，標準把直接對位；一體把另加位移（見 applyNodes）。左側 Shifter 以 scale.z=−1 鏡射。 */
@@ -366,7 +368,7 @@ G.rear=grp();
     for(let i=0;i<q.length;i+=3){P[i]=q[i+1]*1e-5;P[i+1]=q[i+2]*1e-5;P[i+2]=q[i]*1e-5}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setIndex(new THREE.BufferAttribute(F,1));g.computeVertexNormals();
     g.addGroup(DR[k].n1*3,(DR[k].nf-DR[k].n1)*3,1);/* v199zzzx：此網格只畫黑件（隨輪組後移）；鈦件另立 exTi 網格留在幾何表軸心 */const m=new THREE.Mesh(g,[sm,sb]);m.frustumCulled=false;m.visible=false;m.position.z=0;/* EX 勾爪向外 29 mm（v63）*/G.rear.add(m);m.userData.n1=DR[k].n1;m.userData.nf=DR[k].nf;G['exDrop'+k]=m;{const gt=new THREE.BufferGeometry();gt.setAttribute('position',g.attributes.position);gt.setAttribute('normal',g.attributes.normal);gt.setIndex(new THREE.BufferAttribute(F.slice(0,DR[k].n1*3),1));const mt=new THREE.Mesh(gt,sm);mt.frustumCulled=false;mt.visible=false;bike.add(mt);G['exTi'+k]=mt}})})();
-(function(){/* 飛輪：由 STEP（Cassette.stp，SRAM 10-44T 12 速）每片實測截面簡化（容差 0.3 mm）後擠出；最大片分三層（孔環／輻條／輪轂）。資料為差分編碼、單位 0.1 mm、相對飛輪軸心 */
+var _casA=G.rear.children.length;(function(){/* 飛輪：由 STEP（Cassette.stp，SRAM 10-44T 12 速）每片實測截面簡化（容差 0.3 mm）後擠出；最大片分三層（孔環／輻條／輪轂）。資料為差分編碼、單位 0.1 mm、相對飛輪軸心 */
   const CAS=VIBE_D.CAS,Z0=.0105,cm=M.steel.clone();cm.side=THREE.DoubleSide;cm.roughness=.5;cm.color.set(0x7f7b73);M.casM=cm;/* v143：飛輪片材質，供示意齒片、RD 導輪共用（v199zzzzr 起鍊條不再共用） */M.chn=M.tiP.clone();M.chn.userData={};M.chn.side=THREE.DoubleSide;/* v199zzzzr：鍊條專用材質＝鈦原色（M.ti 同值 #C8C4B8、金屬度 .92、粗糙度 .36）；與 M.casM、M.tiP 皆為獨立物件，不連動 */
   const dec=a=>{const p=[];let x=a[0],y=a[1];p.push(new THREE.Vector2(x*1e-4,y*1e-4));for(let i=2;i<a.length;i+=2){x+=a[i];y+=a[i+1];p.push(new THREE.Vector2(x*1e-4,y*1e-4))}return p};
   const P=[],NR=[];
@@ -377,7 +379,7 @@ G.rear=grp();
   const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));bg.setAttribute('normal',new THREE.Float32BufferAttribute(NR,3));
   if(!M.darkD){M.darkD=M.dark.clone();M.darkD.side=THREE.DoubleSide}const cd=M.darkD;/* 同 RD：M.dark（0x3d3c36、金屬度 .45、粗糙度 .5） */bg.addGroup(0,VS,0);bg.addGroup(VS,P.length/3-VS,1);
   G.rear.add(new THREE.Mesh(bg,[cm,cd]));
-  zc(G.rear,.0155,.004,M.dark,.0536);zc(G.rear,.0172,.052,M.dark,.026)})();
+  zc(G.rear,.0155,.004,M.dark,.0536);zc(G.rear,.0172,.052,M.dark,.026)})();G.casC=G.rear.children.slice(_casA);/* v199zzzzzz87：飛輪片與墊片（爆炸圖隨後輪移動） */
 var _rdA=G.rear.children.length;(function(){/* 後變速器：倒角擠出本體＋兩片膠囊形導輪架＋兩顆導輪 */
   const RD_DX=-.020,RD_DY=-.011/* v95：RD 總成整體移動（x＝−後方、y＝−下方；使用者：吊耳孔應在勾爪軸心孔的斜下方）。吊耳孔由 (−1,−17) 移到 (−21,−28) mm、與軸心連線偏離垂直約 37°；與勾爪凸座的間隙 UDH 約 4.5 mm／EX 約 2.5 mm（皆為我估的，可調）；導輪架、導輪、鏈條下段與扭力熱點同步移動 */,RD_BODY=.7/* v94：本體長度比例（使用者：縮短至 70%）；吊耳端（y −.004）固定，下緣上移，導輪架與鏈條下段隨之上移、長度不變 */,RDY0=-.004,RDDY=(RDY0+.108)*(1-RD_BODY);
   const sh=new THREE.Shape();/* RD 頂端仿曲柄臂端（v70）：圓弧收頭（半徑 13 mm，圓心 (−1,−17)），兩面以深色孔面＋亮環示意吊耳螺栓孔 */sh.moveTo(-.014,-.017);sh.absarc(-.001,-.017,.013,Math.PI,0,true);[[.015,-.05],[.005,-.1],[-.01,-.108],[-.016,-.05]].forEach(p=>sh.lineTo(p[0],RDY0+(p[1]-RDY0)*RD_BODY));
@@ -500,11 +502,52 @@ G.seat=grp();(function(){/* 座墊：由 STEP（Saddle_02.stp）實測；座墊�
   const g2=new THREE.BufferGeometry();g2.setAttribute('position',new THREE.Float32BufferAttribute(P2,3));g2.setIndex(I2);g2.computeVertexNormals();
   G.seat.add(new THREE.Mesh(g2,M.saddle));
   zc(G.seat,.0105,.042,M.dark)})();
-// 地面陰影
-(function(){const cv=document.createElement('canvas');cv.width=cv.height=128;const x=cv.getContext('2d'),gr=x.createRadialGradient(64,64,4,64,64,64);
-  gr.addColorStop(0,'rgba(0,0,0,.45)');gr.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gr;x.fillRect(0,0,128,128);
-  G.shadow=new THREE.Mesh(new THREE.PlaneGeometry(2,.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false}));
-  G.shadow.rotation.x=-Math.PI/2;G.shadow.position.y=.002;scene.add(G.shadow)})();
+// 地面陰影（v199zzzzzz85）：由正上方離屏取車身剪影（全高＋兩層貼地薄片）→ 各層以不同半徑模糊、疊成接地陰影 → 貼在地面。換車款／尺寸／零件後停手 SH_WAIT ms 重算一次；算完前先用舊的橢圓。
+(function(){
+  const SW=2.6,SD=1,TW=512,TH=Math.round(TW*SD/SW),SH_WAIT=320;/* 取景範圍 2.6×1.0 m（車身 x 約 ±0.85、z ±0.26 m，置中；六款×XS／XL 實測羽化帶內不透明度 ≤0.012），每像素約 5 mm */
+  const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const x=cv.getContext('2d');
+  {const gr=x.createRadialGradient(0,0,4,0,0,64);gr.addColorStop(0,'rgba(0,0,0,.45)');gr.addColorStop(1,'rgba(0,0,0,0)');x.save();x.translate(TW/2,TH/2);x.scale(TW*(2/SW)/128,TH*(.5/SD)/128);x.fillStyle=gr;x.fillRect(-64,-64,128,128);x.restore()}/* 舊橢圓：2×0.5 m，第一次重算完成前的暫用 */
+  const tex=new THREE.CanvasTexture(cv);
+  G.shadow=new THREE.Mesh(new THREE.PlaneGeometry(SW,SD),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+  G.shadow.rotation.x=-Math.PI/2;G.shadow.position.y=.002;scene.add(G.shadow);
+  /* 離屏工具：借主畫布的左下角取景（viewport），畫完立刻 drawImage 到 2D 畫布；主畫面在同一個 drawFrame 內隨後整張重畫，所以不留殘影。 */
+  const sc=new THREE.PerspectiveCamera(),shM=new THREE.MeshBasicMaterial({color:0,side:THREE.DoubleSide,toneMapped:false}),ZH=3;
+  sc.position.set(0,ZH,0);sc.up.set(0,0,-1);sc.lookAt(0,0,0);sc.updateMatrixWorld(true);/* 相機在 y＝3 m 向下看；畫面右＝+x、上＝−z（與地面 plane 的貼圖方向一致） */
+  const rd=document.createElement('canvas');rd.width=TW;rd.height=TH;const rx=rd.getContext('2d',{willReadFrequently:true});
+  const N=TW*TH,acc=new Float32Array(N),A=new Float32Array(N),T=new Float32Array(N);
+  function bblur(a,w,h,r){const n=2*r+1;for(let it=0;it<3;it++){
+    for(let y=0;y<h;y++){let s=0;const o=y*w;for(let q=0;q<=r&&q<w;q++)s+=a[o+q];for(let q=0;q<w;q++){T[o+q]=s/n;const xa=q+r+1,xb=q-r;if(xa<w)s+=a[o+xa];if(xb>=0)s-=a[o+xb]}}
+    for(let q=0;q<w;q++){let s=0;for(let y=0;y<=r&&y<h;y++)s+=T[y*w+q];for(let y=0;y<h;y++){a[y*w+q]=s/n;const ya=y+r+1,yb=y-r;if(ya<h)s+=T[ya*w+q];if(yb>=0)s-=T[yb*w+q]}}}}
+  /* 三層：[薄片頂高 m（0＝不切，整台）, 模糊半徑 px, 強度]。整台＝大範圍柔影；<0.22 m＝輪組與曲柄的中等影；<0.05 m＝胎面與地面接觸處的深色接觸影 */
+  const LAY=[[0,30,.66],[.22,16,.48],[.05,8,.66]];/* v199zzzzzz87：模糊半徑加大讓過渡柔和（30／16／8），強度調深三階（使用者 2026-11-17） */
+  let dirty=true,at=performance.now()+1500,busy=false,li=0;
+  const ss=new THREE.Vector2();
+  /* 每次只畫一層（1 次離屏繪製＋1 次模糊），分攤到連續幾個畫面，避免換車款停手後出現一次性卡頓；中途又被標髒就從頭來。 */
+  function step(){
+    if(busy||window.__ctxLost)return false;
+    const gl=renderer.domElement,pr=renderer.getPixelRatio(),bw=gl.width,bh=gl.height,vw=Math.min(TW,bw),vh=Math.min(Math.round(vw*SD/SW),bh);
+    if(vw<64||vh<26)return false;
+    busy=true;const[h,r,k]=LAY[li],vis=scene.children.map(c=>c.visible),oM=scene.overrideMaterial;renderer.getSize(ss);let ok=true;
+    scene.children.forEach(c=>{c.visible=(c===bike)});scene.overrideMaterial=shM;
+    try{renderer.setViewport(0,0,vw/pr,vh/pr);
+      sc.projectionMatrix.makeOrthographic(-SW/2,SW/2,SD/2,-SD/2,h?ZH-h:.2,ZH+.05);sc.projectionMatrixInverse.copy(sc.projectionMatrix).invert();
+      renderer.render(scene,sc);rx.clearRect(0,0,TW,TH);rx.drawImage(gl,0,bh-vh,vw,vh,0,0,TW,TH);
+      const d=rx.getImageData(0,0,TW,TH).data;for(let i=0;i<N;i++)A[i]=d[i*4+3]/255;
+      bblur(A,TW,TH,r);if(li===0)acc.fill(1);for(let i=0;i<N;i++)acc[i]*=1-Math.min(1,A[i]*k)
+    }catch(e){ok=false;console.warn('shadow bake',e)}
+    scene.children.forEach((c,i)=>{c.visible=vis[i]});scene.overrideMaterial=oM;renderer.setViewport(0,0,ss.x,ss.y);busy=false;return ok}
+  function commit(){
+    const im=x.createImageData(TW,TH),D=im.data,fx=Math.round(TW*.06),fy=Math.round(TH*.06);let eg=0;
+    for(let yy=0;yy<TH;yy++){const ey=Math.min(1,Math.min(yy,TH-1-yy)/fy);for(let xx=0;xx<TW;xx++){const ex=Math.min(1,Math.min(xx,TW-1-xx)/fx),f=ex*ey,i=yy*TW+xx,a=1-acc[i];if(f<1&&a>eg)eg=a;D[i*4+3]=Math.round(255*a*f*f*(3-2*f))}}/* 邊緣羽化，避免取景框邊界露出直線；eg＝羽化帶內原本的最大不透明度；v199zzzzzz88 陰影加深後實測 0.017–0.022（模糊尾端所致，非車身出框），門檻改為 0.03 */
+    x.putImageData(im,0,0);tex.needsUpdate=true;window.__SH.edge=eg}
+  function bake(){li=0;for(;li<LAY.length;li++)if(!step())return false;commit();li=0;dirty=false;return true}/* 一次做完（測試用） */
+  G.shMark=(ms)=>{dirty=true;li=0;at=performance.now()+(ms||SH_WAIT)};
+  G.shTick=()=>{if(G.exOn&&G.exOn())return;/* v199zzzzzz87：拆解中不重算陰影（零件散開的剪影無意義），復原後再補 */if(!dirty||performance.now()<at)return;if(!step()){at=performance.now()+2000;li=0;return}
+    if(++li>=LAY.length){commit();li=0;dirty=false}else if(typeof wk==='function')wk(3)};
+  window.__SH={bake,mark:G.shMark,cv,dirty:()=>dirty,edge:0};
+  setTimeout(()=>G.shMark(100),4000);/* 開場補一次（延後載入的零件） */
+  ['click','change','input','keyup'].forEach(e=>window.addEventListener(e,()=>G.shMark(),{passive:true,capture:true}));
+})();
 
 /* v199zzzo：管徑依使用者 2026-11-11 規格（半徑 m）。頭管規格只給內徑，外徑＝內徑＋2×3 mm 壁厚（暫估）。325Ti／EX 上下管走 LOFT／LOFTEX（STEP 實測，使用者決定不動），tt／dt 只用於 AO、封口與下管 BB 端起點。SS-2205（'ss'）與 EX 原無鍵、退用 64Ti 半徑。 */
 var ST_TAP={'325':.02};/* v199zzzr：錐形中管 BB 端半徑（m） */
@@ -673,7 +716,7 @@ function htEq(n){if(!n||!n.HTt||!n.HTb||!n.TTst||!n.TTht||!n.DTht||!n.BB||!n.FA|
   for(let i=0;i<3;i++){const p=ext(n.TTht,n.TTst,rt,1),e=(n.HTt.x-p.x)*up.x+(n.HTt.y-p.y)*up.y,s=(n.HTt.x-n.TTht.x)*up.x+(n.HTt.y-n.TTht.y)*up.y,s2=s+(HT_EQ.top-e);n.TTht={x:n.HTt.x-up.x*s2,y:n.HTt.y-up.y*s2}}
   for(let i=0;i<3;i++){const p=ext(n.DTht,n.BB,rd,-1),e=(p.x-hb2.x)*up.x+(p.y-hb2.y)*up.y,q=(n.DTht.x-hb2.x)*up.x+(n.DTht.y-hb2.y)*up.y,q2=q+(HT_EQ.bot-e);n.DTht={x:hb2.x+up.x*q2,y:hb2.y+up.y*q2}}
   n.DTmid=P((n.BB.x+n.DTht.x)/2,(n.BB.y+n.DTht.y)/2)}
-function applyNodes(n){const t0=performance.now();applyNodes0(n);barW(n);serFD(n);NODE_MS=performance.now()-t0}
+function applyNodes(n){const t0=performance.now();if(G.shMark)G.shMark();applyNodes0(n);barW(n);serFD(n);NODE_MS=performance.now()-t0}
 /* ===== v199zzzx：EX 後輪組沿下叉方向後移（兩件式勾爪黑件滑動）＋後上叉與中管交接處上移。
    後移：以「外胎外緣到座管表面的間隙」為準，EX 達到 EX_CLR（≈ili-ili 325Ti 同尺寸的 20.8 mm）；實測 EX M 原間隙 4.4 mm（ili-ili 20.8、MASTER 325Ti 13.4）。外胎實際外徑＝n.R−3.8（量測：EX 361.2／ili 356.2／325 346.3 vs n.R 365／360／350），餘 +0.7 為量測殘差。
    做法：n.RA 改為「後輪軸心」（滑移後），n.RA0 為幾何表節點（鈦件勾爪、後下叉、後上叉端點、尺寸線仍用它）。n._raS 標記「n.RA 是我設的」，同一組節點重複套用不會累加。滑移量上限 EX_SLIDE_MAX。
@@ -693,12 +736,16 @@ function exRearSlide(n){if(!n||!n.RA||!n.BB||!n.STtop)return;const tb=(n._raS&&n
   const ux=n.STtop.x-n.BB.x,uy=n.STtop.y-n.BB.y,L=Math.hypot(ux,uy)||1,nx=-uy/L,ny=ux/L,rx=tb.x-n.BB.x,ry=tb.y-n.BB.y,Lc=Math.hypot(rx,ry)||1,ex=rx/Lc,ey=ry/Lc,perp=rx*nx+ry*ny,k=ex*nx+ey*ny;if(!(k>.3))return;
   const clr0=perp-((n.R||365)-3.8)-RADS.ex.st*1e3+.7;let sl=(EX_CLR-clr0)/k;sl=Math.max(0,Math.min(EX_SLIDE_MAX,sl));
   if(sl>.05){n._raS=P(tb.x+ex*sl,tb.y+ey*sl);n.RA=n._raS}G._exSlide=sl}
-function applyNodes0(n){N=n;exRearSlide(n);if(n&&n.RA)G.nLast=n;/* v199zzu：記住最後一組有效節點，供 serCalAdj 在 N 暫時為空時仍能套姿態 *//* v199e：分離把節點上移（stemC／steerTop／bar 沿轉向管軸 +STM_LIFT；一體把維持基準）；分離把不畫轉向管 T.steer */if(n.stemC0){const L=stmLift(),uh=rad(n.hta),uu=P(-Math.cos(uh),Math.sin(uh));n.stemC=add(n.stemC0,mul(uu,L));n.steerTop=add(n.steerTop0,mul(uu,L));n.bar=add(n.bar0,mul(uu,L))}T.steer.visible=!!extras.blktec;const o=-n.FA.x/2000;bike.position.x=o;G.shadow.position.x=0;
+function applyNodes0(n){N=n;exRearSlide(n);if(n&&n.RA)G.nLast=n;/* v199zzu：記住最後一組有效節點，供 serCalAdj 在 N 暫時為空時仍能套姿態 *//* v199e：分離把節點上移（stemC／steerTop／bar 沿轉向管軸 +STM_LIFT；一體把維持基準）；分離把不畫轉向管 T.steer */if(n.stemC0){const L=stmLift(),uh=rad(n.hta),uu=P(-Math.cos(uh),Math.sin(uh));n.stemC=add(n.stemC0,mul(uu,L));n.steerTop=add(n.steerTop0,mul(uu,L));n.bar=add(n.bar0,mul(uu,L))}T.steer.visible=!!extras.blktec;const o=-n.FA.x/2000;bike.position.x=o;bike.position.y=0;/* v199zzzzzz90：爆炸圖把 bike 整體上移；放樣與射線檢測（叉腿貼面、螺栓孔）期間先歸零，下一幀由 exTick 重新套用 */G.shadow.position.x=0;
   const h=rad(n.hta);
   LOFTON=(model==='325'||model==='ex');T.TT.visible=!LOFTON;T.DT.visible=!LOFTON;loft.TT.visible=LOFTON;loft.DT.visible=LOFTON;
   const RD=(RADS[model]||RADS['64']);const HTc={A:v(n.HTb),d:v(n.HTt).sub(v(n.HTb)).normalize(),R:RD.ht*.985},STc={A:v(n.BB),d:v(n.STtop).sub(v(n.BB)).normalize(),R:RD.st*.985};
   setTrimTube(T.TT,v(n.TTst),v(n.TTht),RD.tt,STc,HTc);const dtS=Math.max(.01,Math.sqrt(Math.max(0,.0325*.0325-(model==='ex'?.0312:RD.dt)*(model==='ex'?.0312:RD.dt)))-.002);/* v199w：下管 BB 端起點由固定 31 mm 改為「封蓋整圈落在五通殼（半徑 32.5 mm）內」：起點距 BB 中心 √(32.5²−管半徑²)−2 mm，最少 10 mm。原 31 mm 使封蓋周緣離殼面 5–11 mm，露出縫隙與封蓋環 */setTrimTube(T.DT,shf(v(n.BB),v(n.DTht),dtS),v(n.DTht),RD.dt,null,HTc);/* v199zzzr：MASTER 325Ti 中管（座管）改錐形管——BB 端 Ø40、頂端 Ø31.8（使用者 2026-11-11 指示，沿全長線性漸縮；原規格寫「靠近 BB 端 40 mm Tapper」，取使用者本次直徑解讀）。T.ST 為單位中空旋轉體（scale＝頂端半徑），錐形版 BB 端半徑比 k＝ST_TAP/RD.st。 */
-{const k0=ST_TAP[model]?ST_TAP[model]/RD.st:1,tp=k0>1;if(T.ST.userData.k!==k0){if(!T.ST.userData.g0)T.ST.userData.g0=T.ST.geometry;if(tp){const pr=[[k0,-.5],[1,.5],[.88,.5],[.88*k0,-.5],[k0,-.5]].map(p=>new THREE.Vector2(p[0],p[1]));if(T.ST.userData.g1)T.ST.userData.g1.dispose();T.ST.userData.g1=new THREE.LatheGeometry(pr,144)}T.ST.geometry=tp?T.ST.userData.g1:T.ST.userData.g0;T.ST.userData.k=k0;T.ST.userData.tp=tp}}
+{const k0=ST_TAP[model]?ST_TAP[model]/RD.st:1,tp=k0>1,q=ST_IN,sk=k0+'|'+q;
+  if(T.ST.userData.sk!==sk){if(T.ST.userData.g0&&T.ST.userData.gq!==q){T.ST.userData.g0.dispose();T.ST.userData.g0=null}
+    if(!T.ST.userData.g0){T.ST.userData.g0=new THREE.LatheGeometry([[1,-.5],[1,.5],[q,.5],[q,-.5],[1,-.5]].map(p=>new THREE.Vector2(p[0],p[1])),144);T.ST.userData.gq=q}
+    if(tp){if(T.ST.userData.g1)T.ST.userData.g1.dispose();T.ST.userData.g1=new THREE.LatheGeometry([[k0,-.5],[1,.5],[q,.5],[q*k0,-.5],[k0,-.5]].map(p=>new THREE.Vector2(p[0],p[1])),144)}
+    T.ST.geometry=tp?T.ST.userData.g1:T.ST.userData.g0;T.ST.userData.k=k0;T.ST.userData.tp=tp;T.ST.userData.sk=sk}}
 const stR0=RD.st*(T.ST.userData.k||1),stS=Math.max(.01,Math.sqrt(Math.max(0,.0325*.0325-stR0*stR0))-.002);setTube(T.ST,shf(v(n.BB),v(n.STtop),stS),v(n.STtop),RD.st);/* v199zc：座管 BB 端起點同下管——封蓋整圈落在五通殼（半徑 32.5 mm）內，原固定 31 mm 使 θ=0 側離殼面 2.7 mm（Ø35 管）、露縫 */
   const fdH=(model==='ex')?exFd():Math.max(0,Math.min(FK_DROP_MAX,dist(n.HTb,n.FA)-FK_CROWN-n.R-FK_GAP));{const dH=v(n.HTb).sub(v(n.HTt)).normalize(),rl=rsLift();G._rsl=rl;const pa=v(n.HTb).addScaledVector(dH,-(hsT()==='hid'?.001:.015)+fdH*1e-3-rl),pb=v(n.HTt).addScaledVector(dH,-rl);htSet(pa.distanceTo(pb));setTube(T.HT,pa,pb,RD.ht)}/* v199zzzv：EX 掛 RS 前叉時頭管＋上下碗組整體沿頭管軸上移 rsLift（下碗厚度）；上下管接點不動 *//* v170：頭管下端上移 15 mm，騰出位置給下碗（下管等接頭仍依節點）；v199g：頭管下端與下碗隨叉冠一同下移 fdH mm（＝叉冠下移量），頭管向下延伸、下碗貼叉冠 */
   if(LOFTON){updateLoft('TT',v(n.TTst),v(n.TTht),STc,HTc);updateLoft('DT',shf(v(n.BB),v(n.DTht),dtS),v(n.DTht),null,HTc)}
@@ -764,7 +811,8 @@ PARTS.forEach((p,i)=>{const g=new THREE.Group();scene.add(g);
   const hit=new THREE.Mesh(hitGeo,new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
   core.renderOrder=halo.renderOrder=10;hit.userData.part=p;g.add(core,halo,hit);HS.push({p,g,core,halo,hit,phase:i*.7})});
 /* v196：龍頭前蓋螺絲（下排右）、立管夾螺絲（下方，頭在 −z 側）、頂蓋螺絲＝Stem.stl 的實際螺絲頭，局部座標（m）隨龍頭群組轉動；一體把（cockpit）仍用 PARTS 的節點偏移 */function stemHS(h){const id=h.p.id;if(!(id==='stemFace'||id==='stemSteer'||id==='topCap')||!G.stemStd||!G.stemStd.visible)return false;const L=id==='stemFace'?[.114,.0039,.0175]:id==='stemSteer'?[-.0147,-.0189,-.012]:[-.0083,.0241,0],th=G.stemStd.rotation.z,c=Math.cos(th),s=Math.sin(th);h.g.position.set(G.stemStd.position.x+L[0]*c-L[1]*s+bike.position.x,G.stemStd.position.y+L[0]*s+L[1]*c,L[2]);return true}
-function placeHS(){if(!N)return;HS.forEach(h=>{if(stemHS(h))return;const b=N[h.p.node],o=h.p.off;let ox=o[0],oy=o[1],oz=o[2];/* v184：SRAM RD 的固定螺絲＝吊耳螺栓，位於勾爪吊耳孔 (−11.7,+4.3) mm、孔口外側 */if(h.p.id==='rd'&&rdSr()){ox=-11.7+RD_DX*1e3;oy=4.3+RD_DY*1e3;oz=110+rdDZ()*1e3}/* v183：ili-ili 曲柄組的臂外側面在 ±72.5 mm（MASTER 組為右 87.45、左 −79.45；熱點在外側面外 5.5／9.5 mm）→ 依 CRK_GD／CRK_GDL 重算 */if(CRKG){if(h.p.id==='crank')oz=-(72.5+CRK_GDL*1000+9.5);else if(h.p.id==='pedal')oz=72.5+CRK_GD*1000+5.5}if(CRKA){if(h.p.id==='crank')oz=-(72.5+CRK_ADL*1000+9.5);else if(h.p.id==='pedal')oz=72.5+CRK_AD*1000+5.5}if(CRKF){if(h.p.id==='crank')oz=-(77.5+9.5);else if(h.p.id==='pedal')oz=85.6+5.5}/* v199zzzl：Force 1 Gravel 曲柄組外側面：左 −77.5、右＋85.6 mm（STEP 右臂外側 54.5＋CRK_FD） */const rdS=G.rdSerG&&G.rdSerG.visible,crS=G.crkSerG&&G.crkSerG.visible,fcS=G.fCal&&G.fCal.userData.sa;
+function placeHS(){if(!N)return;HS.forEach(h=>{if(stemHS(h))return;const b=N[h.p.node],o=h.p.off;let ox=o[0],oy=o[1],oz=o[2];/* v184：SRAM RD 的固定螺絲＝吊耳螺栓，位於勾爪吊耳孔 (−11.7,+4.3) mm、孔口外側 */if(h.p.id==='rd'&&rdSr()){ox=-11.7+RD_DX*1e3;oy=4.3+RD_DY*1e3;oz=110+rdDZ()*1e3}/* v183：ili-ili 曲柄組的臂外側面在 ±72.5 mm（MASTER 組為右 87.45、左 −79.45；熱點在外側面外 5.5／9.5 mm）→ 依 CRK_GD／CRK_GDL 重算 */if(CRKG){if(h.p.id==='crank')oz=-(72.5+CRK_GDL*1000+9.5);else if(h.p.id==='pedal')oz=72.5+CRK_GD*1000+5.5}if(CRKA){if(h.p.id==='crank')oz=-(72.5+CRK_ADL*1000+9.5);else if(h.p.id==='pedal')oz=72.5+CRK_AD*1000+5.5}if(CRKF){if(h.p.id==='crank')oz=-(77.5+9.5);else if(h.p.id==='pedal')oz=85.6+5.5}/* v199zzzl：Force 1 Gravel 曲柄組外側面：左 −77.5、右＋85.6 mm（STEP 右臂外側 54.5＋CRK_FD） *//* v199zzzzzz93：示意旋轉時曲柄螺絲、踏板、碟盤螺絲的熱點要跟著轉，否則扭力分頁展示中橘點會離開零件。曲柄群組的轉角＝−0.8727−spinA，基準偏移已含 −0.8727，故只需再繞 BB 的 z 軸轉 −spinA；碟盤同軸但轉速比 kc。 */if(spinA){const _rt=(a)=>{const c=Math.cos(a),si=Math.sin(a),x=ox*c-oy*si,y=ox*si+oy*c;ox=x;oy=y};if(h.p.id==='crank'||h.p.id==='pedal')_rt(-spinA);else if(h.p.id==='rotor'){const _ok=typeof CH_RC==='number';_rt(-spinA*(_ok?chR()/CH_RC:2.6)*SPIN_WK)}}
+const rdS=G.rdSerG&&G.rdSerG.visible,crS=G.crkSerG&&G.crkSerG.visible,fcS=G.fCal&&G.fCal.userData.sa;
 if(h.p.id==='rd'&&rdS){ox=G.rdSerG.position.x*1e3;oy=G.rdSerG.position.y*1e3;oz=110}/* v199zzzh：105／Dura-Ace RD 固定螺栓＝吊耳 RD 端孔，孔口外側 */
 if(crS&&(h.p.id==='crank'||h.p.id==='pedal')){if(!G.crkSerG.userData.zr||G.crkSerG.userData.zk!==G.crkSerKey){bike.updateMatrixWorld(true);let zmn=1e9,zmx=-1e9;G.crkSerG.traverse(o=>{if(!o.isMesh)return;const g=o.geometry;if(!g.boundingBox)g.computeBoundingBox();const bb=g.boundingBox;o.updateMatrixWorld(true);[bb.min.z,bb.max.z].forEach(zz=>[[bb.min.x,bb.min.y],[bb.max.x,bb.max.y]].forEach(q=>{const z=bike.worldToLocal(new V3(q[0],q[1],zz).applyMatrix4(o.matrixWorld)).z;zmn=Math.min(zmn,z);zmx=Math.max(zmx,z)}))});G.crkSerG.userData.zr=[zmn,zmx];G.crkSerG.userData.zk=G.crkSerKey}const zr=G.crkSerG.userData.zr;if(h.p.id==='crank')oz=zr[0]*1e3-9.5;else oz=zr[1]*1e3+5.5}/* 系列曲柄：依實際臂外側面（同現行「外側面外 9.5／5.5 mm」） */
 if(h.p.id==='caliper'&&fcS){bike.updateMatrixWorld(true);const hp=[SERCAL_A,SERCAL_B].map(q=>bike.worldToLocal(G.fCal.localToWorld(new V3(q[0],q[1],0)))),up=hp[0].y>hp[1].y?hp[0]:hp[1];h.g.position.set(up.x+bike.position.x,up.y,up.z-.010);return}/* 系列前卡鉗：上方鎖孔、卡鉗面外側 10 mm */
@@ -874,10 +922,10 @@ function updateGhost(){if(!N||!cmp||tab!=='geo'){ghost.visible=false;return}cons
 /* ===== 相機 ===== */
 let offY=0;const cam={tgt:new V3(0,.55,0),r:2.5,th:.38,ph:1.36},want={tgt:cam.tgt.clone(),r:2.5,th:.38,ph:1.36};
 /* v88：全車視角兩側為「鏡像」而非單純 +180°（扭力分頁主視角偏航 −.38、旋轉點 z −.018，單純轉 180° 構圖不對稱）：翻轉側＝偏航取 π＋.38、旋轉點 z 取 +.018 */
-const homeTh=(tq,f)=>tq?(f?Math.PI+.38:-.38):(f?Math.PI:0),homeTgt=(tq,f)=>tq?new V3(-.045,.55,f?.018:-.018):new V3(0,camY(),0);
+const homeTh=(tq,f)=>tq?(f?Math.PI+.38:-.38):(f?Math.PI:0),homeTgt=(tq,f)=>tq?new V3(-.045,.55+(G.exY?G.exY():0),f?.018:-.018):new V3(0,camY(),0);
 let homeFlip=0;/* v87：全車視角目前在哪一側（0＝預設側、1＝翻轉 180°）；goHome 與切換分頁沿用，不轉回預設側 */
 function nearest(cur,t){return t+Math.round((cur-t)/(2*Math.PI))*2*Math.PI}
-const TK=()=>Math.max(window.innerWidth<=760?.72:.84,TQ_MINR/fitR());/* v107：扉力分頁取景距離不得小於 TQ_MINR（車高需完整入鏡：半高 .60 m 除以 .82·tan15°）。舊值在寬矮舞台（手機橫向、折疊機內螢幕）只依寬高比分段，車頂被切掉 */
+const TK=()=>(G.exK?G.exK():1)*Math.max(window.innerWidth<=760?.72:.84,TQ_MINR/fitR());/* v107：扉力分頁取景距離不得小於 TQ_MINR（車高需完整入鏡：半高 .60 m 除以 .82·tan15°）。舊值在寬矮舞台（手機橫向、折疊機內螢幕）只依寬高比分段，車頂被切掉 */
 const TQ_MINR=2.7;/* 扭力分頁放大倍率（取景距離乘數） */
 function fitR(){const a=stage.clientWidth/Math.max(1,stage.clientHeight);return a<1?3.8:a<1.4?3.5:a<1.7?3.0:2.55}
 function fitSide(){const cov=stage.clientWidth<=480?.74:.88,asp=Math.max(.3,stage.clientWidth/Math.max(1,stage.clientHeight-ovPx)),t=Math.tan(15*Math.PI/180),T=riderTop(),hv=T?Math.max(.5,T/2+.03):.5;return Math.max(2.1,Math.max(.86/(cov*t*asp),hv/(.82*t)))}
@@ -904,7 +952,7 @@ function endPtr(e){if(!ptrs.has(e.pointerId))return;const wasPan=ptrs.get(e.poin
   if(ptrs.size>0)return;const wasMulti=multi;multi=false;
   if(wasPan||wasMulti||dragMoved>=6||e.target!==renderer.domElement||e.type==='pointercancel'){lastTap=null;return}
   /* 點一下：扭力巡檢點到零件＝開卡片；其餘情況 350 ms 內再點一下（相距 30 px 內）＝回到全車（單指雙擊） */
-  if(tab==='torque'){const h=pick(e);if(h){openPart(h);lastTap=null;return}}
+  if(tab==='torque'){const h=pick(e);if(h){if(sel===h&&!wrap.hidden)closeCard();else openPart(h);/* v199zzzzzz96：同一個巡檢點再按一下＝關閉卡片（使用者 2026-11-18）；視角保留在該點，不回全車 */lastTap=null;return}}
   const now=performance.now();
   if(lastTap&&now-lastTap.t<350&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<30){lastTap=null;closeCard();goHome()}else lastTap={t:now,x:e.clientX,y:e.clientY}}
 stage.addEventListener('mousedown',e=>{if(e.button===1)e.preventDefault()});stage.addEventListener('auxclick',e=>{if(e.button===1)e.preventDefault()});stage.addEventListener('pointerup',endPtr);stage.addEventListener('pointercancel',endPtr);
@@ -1439,7 +1487,7 @@ document.querySelectorAll('#cSub button').forEach(b=>b.addEventListener('click',
 const STYLES={std:{outline:false},line:{outline:true},toon:{outline:true,toon:true}};let curStyle='line';/* v199s：顯示風格鈕已取消，輪廓線（line）固定 *//* v100：風格鈕只剩標準／插畫；toon 保留但無按鈕；matcap 改由「客製服務→塗裝客製」控制，與風格無關 *//* v97：預設為插畫 */
 function setStyle(k){if(!STYLES[k])return;const was=!!STYLES[curStyle].toon,now=!!STYLES[k].toon;if(was&&!now)toonLeave();if(!was&&now)toonEnter();curStyle=k;if(!STYLES[k].outline)tagOutline(false);document.querySelectorAll('#styleSeg button').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.style===k)));wk(150)}
 document.querySelectorAll('#styleSeg button').forEach(b=>b.addEventListener('click',()=>setStyle(b.dataset.style)));
-function drawFrame(){if(window.__ctxLost)return;if(G.instSync)G.instSync();if(G.btSync)G.btSync();if(STYLES[curStyle].toon){toonPass(true);toonSync()}mcSync();renderer.render(scene,camera);if(!STYLES[curStyle].outline||OLskip)return;
+function drawFrame(){if(window.__ctxLost)return;if(G.exTick)G.exTick();/* v199zzzzzz87：爆炸位移要在實例化／批次同步之前 */if(G.instSync)G.instSync();if(G.btSync)G.btSync();if(G.shTick)G.shTick();/* v199zzzzzz85：陰影重算要在主畫面繪製之前（借用主畫布左下角取景，隨後整張重畫） */if(STYLES[curStyle].toon){toonPass(true);toonSync()}mcSync();renderer.render(scene,camera);if(!STYLES[curStyle].outline||OLskip)return;
   tagOutline(true);renderer.getDrawingBufferSize(outV);outU.uRes.value.copy(outV);const mobK=(()=>{const cw=renderer.domElement.clientWidth;return cw>window.innerWidth*.85?OUT_STK*Math.max(.7,Math.min(1.1,Math.pow(cw/OUT_STK_W,.5)))/OUT_PX:Math.max(OUT_MOB_MIN,Math.min(1,Math.pow(cw/OUT_MOB_W,.8)))})();/* v106：上下堆疊版面（舞台寬≈視窗寬，手機與折疊機）改以 OUT_STK（CSS px，全車視角）為基準，並隨舞台寬度（基準 OUT_STK_W）微調；並排版面（桌面）維持原算法 *//* v92：行動版（舞台寬度小於 OUT_MOB_W）線寬依寬度縮小；下限 OUT_FLOOR CSS px */
   outU.uPx.value=Math.max(OUT_FLOOR,OUT_PX*Math.max(OUT_MIN,Math.min(OUT_MAX,Math.pow(OUT_R0/Math.max(.2,cam.r),OUT_ZG)))*mobK)*renderer.getPixelRatio();
   const ink=isDark()?OUT_INK.dark:OUT_INK.light;outMat.color.setHex(ink);outMatInv.color.setHex(ink);
@@ -1465,10 +1513,11 @@ const clock=new THREE.Timer();
   if(vTween){const k=Math.min(1,(performance.now()-vTween.t0)/vTween.d),e=1-Math.pow(1-k,3);
     if(k>=1){liveV=Object.assign({},vTween.to);vTween=null}else VK.forEach(q=>{liveV[q]=vTween.from[q]+(vTween.to[q]-vTween.from[q])*e});updLive()}
   refreshDimText();applyCam();setRS();if(Math.abs(RS-RSdone)>.04){RSdone=RS;updateGhost();updateDim()}HS.forEach(h=>{h.halo.lookAt(camera.position);const s=1+.35*Math.sin(t*3+h.phase);h.halo.scale.setScalar(st[h.p.id].done?1.3:s);h.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(sel===h.p?3:2):1))});
+  if(G.exBusy&&G.exBusy())wk(5);/* v199zzzzzz87：拆解動畫進行中保持繪製 */
   const sg=cam.tgt.x+cam.tgt.y*3+cam.tgt.z*7+cam.r*11+cam.th*13+cam.ph*17+offY*19+RS*23,mv=Math.abs(sg-lastSig)>1e-7;lastSig=sg;if(wake>0)wake--;
-  {const _n=performance.now(),_dt=Math.min(.05,(_n-spinL)/1000);spinL=_n;if(tab==='torque'){if(spinA!==0){spinA=0;applySpin()}}else{if(mv)spinT=_n+SPIN_HOLD;if(_n<spinT&&SPIN_ON){spinA+=_dt*SPIN_W;applySpin();wake=Math.max(wake,2)}}}/* v179：示意旋轉 */
+  {const _n=performance.now(),_dt=Math.min(.05,(_n-spinL)/1000);spinL=_n;if(tab==='torque'&&!SPIN_SC){if(spinA!==0){spinA=0;applySpin();wake=Math.max(wake,2)}}/* v199zzzzzz93：離開展示即歸零回預設曲柄角（同 v179）。曾試過補完整圈再停，但一圈在 60 fps 要 17 秒、停不下來反而像沒停；熱點在展示期間已改為跟著曲柄角走（placeHS），所以不需要靠歸零來對位 */else{if(mv)spinT=_n+SPIN_HOLD;if(_n<spinT&&SPIN_ON){spinA+=_dt*spinW(spinA);applySpin();wake=Math.max(wake,2)}}}/* v199zzzzzz93：扭力分頁在展示執行中（SPIN_SC）照常示意旋轉——曲柄與鏈條連動，自旋路徑與其他分頁相同；展示期間 scTick0 每幀續約 spinT。 *//* v179：示意旋轉 */
   const lo=((inter||wheelT>performance.now())&&mv)||swT>performance.now();if(lo||mv)mvT=performance.now();if(lo&&!lowRes&&!(DESK&&!SLOW))setRes(true);/* v199v：桌機且未被探測為慢機時，動作中不降像素比 */else if(lowRes&&!lo&&(wake<=0||(SLOW&&performance.now()-mvT>300))&&!inter){setRes(false);wake=Math.max(wake,2)}/* v199g：慢機停動 300 ms 就補回完整像素比（原要等 wake 耗盡，約 150 個畫面，慢機上達 10 秒）；描邊在停動後第一幀就補，且該幀仍為低像素比（較快） */
-  const need=mv||wake>0||act,now=performance.now();OLskip=SLOW&&!DESK&&(mv||act);/* v199zzzzzz18：桌機（DESK）輪廓線永遠開啟，慢機旗標只影響行動裝置（原 OLskip＝SLOW&&(mv||act) 使被判慢機的桌機動作中不畫輪廓，與 v199r 註解不符） *//* v199zg：「輪廓線強制開啟」選項移除，慢機動作中一律略過輪廓線 *//* v199r：桌機（非 iOS／Android、精準指標）輪廓線永不略過，慢機判斷只影響行動裝置 *//* v199g：示意旋轉的 0.5 秒尾巴不算動，描邊不等它 *//* 只有選取光圈在脈動時降為約 15 fps，且不更新標籤 */
+  const need=mv||wake>0||act||!!(G.exBusy&&G.exBusy()),now=performance.now();OLskip=SLOW&&!DESK&&(mv||act);/* v199zzzzzz18：桌機（DESK）輪廓線永遠開啟，慢機旗標只影響行動裝置（原 OLskip＝SLOW&&(mv||act) 使被判慢機的桌機動作中不畫輪廓，與 v199r 註解不符） *//* v199zg：「輪廓線強制開啟」選項移除，慢機動作中一律略過輪廓線 *//* v199r：桌機（非 iOS／Android、精準指標）輪廓線永不略過，慢機判斷只影響行動裝置 *//* v199g：示意旋轉的 0.5 秒尾巴不算動，描邊不等它 *//* 只有選取光圈在脈動時降為約 15 fps，且不更新標籤 */
   if(need||(sel&&now-lastPulse>66)){lastPulse=now;drawFrame();if(need){projectLabel();placeTags();placeRider();avoidRL()}}})();
 
 /* ===== v193：示意零件材質表（使用者 2026-11-04 項目 26）=====
@@ -1591,7 +1640,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
    加購（鈦零件、BLKTEC）、幾何客製表單與騎士尺寸、零組件透明度、畫質與材質（臨時面板的現值）。上半是給人看的表格，下半「JSON」區塊是機器可讀版。
    「貼上並套用」只讀 JSON 區塊，逐欄驗證（無效欄位略過並回報），再依序還原：胎寬／頭碗 → 塗裝與加購變數 → 畫質 → 車型與尺寸 → 表單與騎士 → 重畫。
    不含：鏡頭視角、主分頁與子分頁位置、疊圖比較、扭力巡檢進度。 */
-const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz80';
+const CFG_SCHEMA='rkl-3d-config',CFG_VER='v199zzzzzz92';
 function cfgTs(){const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())}
 function cfgGather(){const nn=v=>(typeof v==='number'&&isFinite(v))?v:null,fo={};Object.keys(F).forEach(k=>{const v=F[k];fo[k]=typeof v==='number'?nn(v):v});
   const ma={};MT_G.forEach(g=>{const m=MTS[g[0]];if(m.p||m.c||m.b!==1)ma[g[0]]={p:m.p,c:m.c,b:m.b}});
@@ -1666,6 +1715,140 @@ function cfgApply(J){const skip=[],isI=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b,
   /* 8 重畫 */
   smApply();hsUI();smUI();renderPaint();addonChanged();extras=addonExtras();recalc();if(tab==='custom'&&CN)goNodes(custTarget());wk(150);
   return skip}
+/* ===== v199zzzzzz86：參考碼（可解碼）與配置圖卡（使用者 2026-11-17 決定：參考碼要可解碼；圖卡走 A-1）=====
+   參考碼＝把「配置」位元封裝後以 Crockford Base32 輸出（每 4 碼以 - 分組；讀入時不分大小寫，O→0、I／L→1，忽略 - 與空白）。零後端，貼回「用參考碼還原」即原樣還原。
+   內容：車型・尺寸・胎寬・頭碗型式、表面處理、車架顏色與陽極色號、漸層端點與反向、下管標／Logo／座管束・頭碗組／螺絲／前叉圖樣顏色、鈦件與 BLKTEC 加購、曲柄、傳動系列、騎乘類型／煞車／輪胎、
+   客製幾何十欄（與預設範例不同時才寫入，0.1 單位）、騎士身高／跨高／臂長（有填才寫入，0.5 cm）。（v199zzzzzz97 起為第 2 版編碼，見 rcEncode 上方說明）不含：客戶編號（只由 TRAILMARK 發）、透明度、畫質材質、鏡頭視角。
+   版面：[版本 3 bit][結構簽章 6 bit][欄位…][CRC-8][補 0 至 5 的倍數]。結構簽章由各選項清單的長度算出，選項增減後舊碼會被明確拒絕（不會誤解碼）。與 VIBE Match 共用同一格式（Match 之後沿用）。 */
+const RC_ABC='0123456789ABCDEFGHJKMNPQRSTVWXYZ',RC_CT=['ti','k','f','m','g','s'],RC_GK=['reach','stack','hta','htl','a2c','off','bbd','rc','sta','stl'],RC_PS=['ti','mono','grad','spl'],RC_SZ=[100,160,260];
+const rcN=n=>{let b=0;while((1<<b)<n)b++;return b};
+function rcDom(){const MK=Object.keys(MNAME),RK=Object.keys(OPT.ride),d={mk:MK.length,sz:8,fin:FIN_OPTS.length,pa:4,ps:4,am:ANO_MONO.length,ag:ANO_GRAD.length,sp:SPL.length,ss:3,ct:7,ci:16,lf:3,sm:SM_OPTS.length+1,ci2:CR_INT.length,cl:CR_LEN.length,bk:BK_COL.length+1,se:4,hs:3,tw:8,rd:RK.length,br:OPT.brake.length,ti:OPT.tire.length},T=TI_ITEMS.map(it=>Math.max(1,it.opts.length)+1);
+  return{MK,RK,d,T,sig:Object.values(d).concat(T).reduce((a,x,i)=>(a*31+x*(i+3))%61,7)}}
+function rcCrc(b){let c=0;for(let i=0;i<b.length;i++){const x=((c>>7)&1)^b[i];c=(c<<1)&255;if(x)c^=7}return c}
+function rcCol(c){if(typeof c==='number')return[6,c];const m=/^([msg])(\d+)$/.exec(c||'');if(m)return[RC_CT.indexOf(m[1]),+m[2]];const t=RC_CT.indexOf(c);return[t<0?0:t,0]}
+function rcColS(t,i){return t===6?i:t>=3?RC_CT[t]+i:RC_CT[t]}
+/* v199zzzzzz97：參考碼第 2 版（使用者 2026-11-18：位數再精簡）。版本位元 1→2，第 1 版的碼一律回「參考碼版本不符」，不會誤解。
+   與第 1 版的差別（只寫「看得到、會影響結果」的狀態；看不到的暫存值還原成預設）：
+   1. 塗裝：單色／漸層／碎花的色號只在目前塗裝或記住的塗裝（paintSaved）是該模式時才寫；paintSaved 只在塗裝＝鈦原色時寫；漸層反向與自訂軸線只在漸層時寫；碎花尺寸只在碎花時寫。
+   2. 四個顏色欄：類型 3 bit，只有陽極／漸層／碎花類才接色號（3 bit，依該色表長度）；下管標反向只在下管標是漸層時寫；Logo 連動下管標時不寫 Logo 色與 Logo 反向。
+   3. 加購：先 1 bit「有無任何加購或傳動系列」，全預設時整段省略。
+   4. 客製幾何：每欄 1 bit「有無改動」，有改才寫與預設範例（SAMPLE）的差值，指數哥倫布（Exp-Golomb）變長編碼；
+      mm 欄全為整數時以 1 mm 為單位（多 1 bit 旗標），否則 0.1 mm；角度一律 0.1°。
+   5. 騎士：與 170／80／60 cm 的差值，0.5 cm 為單位，指數哥倫布編碼（不設上下限，超出表單範圍也能原樣還原）。
+   不動：版本 3 bit、結構簽章 6 bit、CRC-8、Crockford Base32 與容錯、每 4 碼一個 -。 */
+const RC_V=2,RC_D0={am:2,ag:1,sp:0,ss:160,cLen:1,ser:3}/* 不寫入時還原成的預設值，須與 anoM／anoG／splI／splSz 與 ADD_S 的初值一致 */,RC_MM=['reach','stack','htl','a2c','off','bbd','rc','stl'],RC_RC={h:170,i:80,a:60};
+const rcZ=x=>x>=0?2*x:-2*x-1,rcUZ=n=>n%2?-(n+1)/2:n/2;
+function rcColDom(t){return t===3||t===6?ANO_MONO.length:t===4?ANO_GRAD.length:t===5?SPL.length:0}
+function rcEncode(){
+  const J=cfgGather(),K=J.車款,P=J.塗裝,A=J.加購,FO=J.客製表單,R=J.騎士,Z=rcDom(),d=Z.d,m=K.model,b=[];
+  const wr=(v,n)=>{v=Math.max(0,Math.min((1<<n)-1,Math.round(v)||0));for(let i=n-1;i>=0;i--)b.push((v>>i)&1)},w=(v,dom)=>wr(v<0?0:v,rcN(dom));
+  const eg=(n,k)=>{n=Math.max(0,Math.round(n));const v=n+Math.pow(2,k);let L=0;while(Math.pow(2,L)<=v)L++;for(let i=0;i<L-k-1;i++)b.push(0);for(let i=L-1;i>=0;i--)b.push(Math.floor(v/Math.pow(2,i))%2)};
+  const col=c=>{const q=rcCol(c),n=rcColDom(q[0]);w(q[0],d.ct);if(n)w(q[1],n);return q[0]};
+  const gi=GEOS[m]?GEOS[m].findIndex(g=>g.size===K.size):-1;
+  w(Z.MK.indexOf(m),d.mk);w(gi<0?7:gi,d.sz);w(FIN_OPTS.findIndex(o=>o[0]===P.fin),d.fin);
+  const pa=RC_PS.indexOf(P.paint),ps=pa===0&&P.paintSaved?RC_PS.indexOf(P.paintSaved):0,has=k=>pa===k||ps===k;w(pa,d.pa);if(pa===0)w(ps,d.ps);
+  if(has(1))w(P.anoM,d.am);if(has(2)){w(P.anoG,d.ag);wr(P.gRev?1:0,1);wr(P.gCustom?1:0,1);if(P.gCustom)P.gCustom.forEach(v=>wr(v+2048,12))}if(has(3)){w(P.splI,d.sp);w(RC_SZ.indexOf(P.splSz),d.ss)}
+  if(col(P.dtCol)===4)wr(P.dtRev?1:0,1);wr(P.logoLinked?1:0,1);if(!P.logoLinked&&col(P.logoCol)===4)wr(P.lgRev?1:0,1);col(P.hsCol);col(P.fkPat);
+  w(P.logoFin==='blast'?1:P.logoFin==='std'?2:0,d.lf);w(P.smCol==='d'?0:1+SM_OPTS.findIndex(o=>o[0]===P.smCol),d.sm);
+  const bkv=k=>A.bk[k]==null?-1:A.bk[k],add=TI_ITEMS.some(it=>A.ti[it.id])||A.ti.cInt||(A.ti.cLen==null?RC_D0.cLen:A.ti.cLen)!==RC_D0.cLen||BK_POS.some(([k])=>bkv(k)!==-1)||(A.ser==null?RC_D0.ser:A.ser)!==RC_D0.ser;wr(add?1:0,1);
+  if(add){TI_ITEMS.forEach((it,i)=>w(A.ti[it.id]||0,Z.T[i]));w(A.ti.cInt||0,d.ci2);w(A.ti.cLen||0,d.cl);BK_POS.forEach(([k])=>w(bkv(k)+1,d.bk));w(A.ser||0,d.se)}
+  w(K.hs&&K.hs[m]==='hid'?1:K.hs&&K.hs[m]==='ex'?2:0,d.hs);{const o=twOpts(m),t=K.tw&&K.tw[m];w(t?o.indexOf(t)+1:0,d.tw)}
+  w(Z.RK.indexOf(FO.ride),d.rd);w(OPT.brake.indexOf(FO.brake),d.br);w(OPT.tire.indexOf(FO.tire),d.ti);
+  const gv=k=>Number.isFinite(FO[k])?FO[k]:SAMPLE[k],geo=RC_GK.some(k=>Math.abs(gv(k)-SAMPLE[k])>.05);wr(geo?1:0,1);
+  if(geo){const mi=RC_MM.every(k=>Math.abs(gv(k)-Math.round(gv(k)))<.005);wr(mi?1:0,1);
+    RC_GK.forEach(k=>{const dl=gv(k)-SAMPLE[k],ch=Math.abs(dl)>.05;wr(ch?1:0,1);if(!ch)return;const ang=!RC_MM.includes(k);
+      if(!ang&&mi)eg(rcZ(Math.round(dl)),2);else eg(rcZ(Math.round(dl*10)),ang?2:4)})}
+  ['h','i','a'].forEach(k=>{const ok=Number.isFinite(R[k]);wr(ok?1:0,1);if(ok)eg(rcZ(Math.round(R[k]*2)-RC_RC[k]*2),3)});
+  const all=[];const hv=(v,n)=>{for(let i=n-1;i>=0;i--)all.push((v>>i)&1)};hv(RC_V,3);hv(Z.sig,6);all.push(...b);hv(rcCrc(all),8);while(all.length%5)all.push(0);
+  let s='';for(let i=0;i<all.length;i+=5)s+=RC_ABC[all[i]<<4|all[i+1]<<3|all[i+2]<<2|all[i+3]<<1|all[i+4]];
+  return s.replace(/(.{4})(?=.)/g,'$1-')}
+function rcDecode(txt){
+  const s=String(txt||'').toUpperCase().replace(/O/g,'0').replace(/[IL]/g,'1').replace(/[^0-9A-Z]/g,'');if(s.length<8)return{err:'參考碼格式錯誤'};
+  const a=[];for(const ch of s){const v=RC_ABC.indexOf(ch);if(v<0)return{err:'參考碼格式錯誤'};for(let i=4;i>=0;i--)a.push((v>>i)&1)}
+  let p=0;const E={};const rb=n=>{if(p+n>a.length)throw E;let v=0;for(let i=0;i<n;i++)v=v*2+a[p++];return v},r=dom=>{const v=rb(rcN(dom));if(v>=dom)throw E;return v};
+  const eg=k=>{let z=0;while(rb(1)===0){if(++z>24)throw E}const n=z+k;let v=1;for(let i=0;i<n;i++)v=v*2+rb(1);return v-Math.pow(2,k)};
+  const col=()=>{const t=r(rcDom().d.ct),n=rcColDom(t);return[t,n?r(n):0]};
+  try{
+    if(rb(3)!==RC_V)return{err:'參考碼版本不符'};const Z=rcDom();if(rb(6)!==Z.sig)return{err:'參考碼版本不符（選項已更新）'};const d=Z.d;
+    const o={am:RC_D0.am,ag:RC_D0.ag,sp:RC_D0.sp,ss:RC_D0.ss,gc:null,gRev:false};o.mk=Z.MK[r(d.mk)];const si=r(d.sz);o.fin=FIN_OPTS[r(d.fin)][0];
+    const pa=r(d.pa),ps=pa===0?r(d.ps):0,has=k=>pa===k||ps===k;o.pa=RC_PS[pa];o.ps=ps?RC_PS[ps]:null;
+    if(has(1))o.am=r(d.am);if(has(2)){o.ag=r(d.ag);o.gRev=!!rb(1);if(rb(1))o.gc=[0,1,2,3].map(()=>rb(12)-2048)}if(has(3)){o.sp=r(d.sp);const ss=r(d.ss);if(ss>2)throw E;o.ss=RC_SZ[ss]}
+    const dc=col(),dtRev=dc[0]===4?!!rb(1):false,lk=!!rb(1);let lc=[0,0],lgRev=false;if(!lk){lc=col();if(lc[0]===4)lgRev=!!rb(1)}const hc=col(),fc=col();
+    const lf=r(d.lf),sm=r(d.sm);
+    const ti={};TI_ITEMS.forEach(it=>{ti[it.id]=0});ti.cInt=0;ti.cLen=RC_D0.cLen;const bk={};BK_POS.forEach(([k])=>{bk[k]=-1});let ser=RC_D0.ser;
+    if(rb(1)){TI_ITEMS.forEach((it,i)=>{ti[it.id]=r(Z.T[i])});ti.cInt=r(d.ci2);ti.cLen=r(d.cl);BK_POS.forEach(([k])=>{bk[k]=r(d.bk)-1});ser=r(d.se)}
+    const hs=r(d.hs),tw=r(d.tw),ride=Z.RK[r(d.rd)],brake=OPT.brake[r(d.br)],tire=OPT.tire[r(d.ti)];
+    const FO={ride,brake,tire};RC_GK.forEach(k=>{FO[k]=SAMPLE[k]});
+    if(rb(1)){const mi=!!rb(1);RC_GK.forEach(k=>{if(!rb(1))return;const ang=!RC_MM.includes(k),dl=(!ang&&mi)?rcUZ(eg(2)):rcUZ(eg(ang?2:4))/10;FO[k]=Math.round((SAMPLE[k]+dl)*10)/10})}
+    const R={};['h','i','a'].forEach(k=>{R[k]=rb(1)?RC_RC[k]+rcUZ(eg(3))/2:null});
+    const body=a.slice(0,p),crc=rb(8);if(crc!==rcCrc(body))return{err:'參考碼檢查碼不符，請確認是否抄錯'};if(a.length-p>=5||a.slice(p).some(x=>x))throw E;
+    const J=cfgGather();delete J.畫質;const K={model:o.mk,size:null,hs:{},tw:{}};
+    const szs=GEOS[o.mk];if(szs&&si<szs.length)K.size=szs[si].size;if(hs)K.hs[o.mk]=hs===1?'hid':'ex';if(tw){const op=twOpts(o.mk);if(tw>op.length)throw E;K.tw[o.mk]=op[tw-1]}
+    const cs=q=>rcColS(q[0],q[1]);
+    J.車款=K;J.塗裝={fin:o.fin,paint:o.pa,paintSaved:o.ps,anoM:o.am,anoG:o.ag,splI:o.sp,splSz:o.ss,gCustom:o.gc,gRev:o.gRev,dtCol:cs(dc),dtRev,logoFin:lf===1?'blast':lf===2?'std':null,logoLinked:lk,logoCol:lk?'ti':cs(lc),lgRev,hsCol:cs(hc),smCol:sm?SM_OPTS[sm-1][0]:'d',fkPat:cs(fc)};
+    J.加購={ti,bk,ser};J.客製表單=FO;J.騎士=R;return{J}
+  }catch(e){return{err:e===E?'參考碼無法解讀':'參考碼無法解讀（'+(e&&e.message||e)+'）'}}}
+window.__RC={enc:rcEncode,dec:rcDecode,gather:cfgGather,apply:cfgApply};
+/* 配置圖卡：直式 4:5（1080×1350）。3D 以全車側視離屏 2× 渲染後縮到 1080 寬；其餘用 2D 畫布排版；顏色與明暗跟隨目前主題。 */
+function rcShot(CW,CH,S){
+  const w0=stage.clientWidth,h0=stage.clientHeight,p0=camera.position.clone(),a0=camera.aspect,o0=OLskip;
+  const t=Math.tan(15*Math.PI/180),asp=CW/CH,r=Math.max(2.1,.86/(.88*t*asp),.5/(.82*t)),th=homeTh(false,homeFlip),tg=new V3(0,.5,0);
+  renderer.setPixelRatio(S);renderer.setSize(CW,CH,false);camera.aspect=asp;camera.clearViewOffset();camera.updateProjectionMatrix();
+  camera.position.set(tg.x+r*Math.sin(th),tg.y,tg.z+r*Math.cos(th));camera.lookAt(tg);camera.updateMatrixWorld(true);
+  const hid=[];scene.children.forEach(o=>{if(o.visible&&((o.renderOrder>=19&&o.renderOrder<=22)||(typeof HS!=='undefined'&&HS.some(h=>h.g===o))||(typeof gradGrp!=='undefined'&&o===gradGrp))){hid.push(o);o.visible=false}});/* 尺寸線、疊圖比較、扭力熱點、漸層軸線不進圖卡 */
+  OLskip=false;let c=null;try{drawFrame();c=document.createElement('canvas');c.width=CW;c.height=CH;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(renderer.domElement,0,0,CW*S,CH*S,0,0,CW,CH)}catch(e){console.warn('card shot',e)}
+  hid.forEach(o=>{o.visible=true});OLskip=o0;renderer.setPixelRatio(PRC());renderer.setSize(w0,h0,false);camera.aspect=a0;camera.updateProjectionMatrix();camera.position.copy(p0);wk(150);return c}
+async function rcCard(){
+  const CW=1080,CH=1350,IH=600,IY=206,css=getComputedStyle(document.documentElement),cv=n=>css.getPropertyValue(n).trim(),sf=(f,d)=>{try{return f()}catch(e){return d}};
+  const code=rcEncode(),J=cfgGather(),shot=rcShot(CW,IH,2);if(!shot)return null;
+  const c=document.createElement('canvas');c.width=CW;c.height=CH;const x=c.getContext('2d'),ff=getComputedStyle(document.body).fontFamily||'sans-serif',mono='ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
+    top=cv('--stage-top')||'#ede6d2',bot=cv('--stage-bot')||'#cfc4a8',ink=cv('--text-strong')||cv('--text-primary')||'#1c1a10',mut=cv('--text-muted')||'#6b6b64',acc=cv('--accent')||'#b85a28',dk=isDark();
+  const g=x.createLinearGradient(0,0,0,CH);g.addColorStop(0,top);g.addColorStop(1,bot);x.fillStyle=g;x.fillRect(0,0,CW,CH);
+  x.drawImage(shot,0,IY);
+  /* 品牌標誌：與頁首相同的處理（淺色主題＝整體壓暗，保留左上橘色小標） */
+  await new Promise(ok=>{const u=/url\((['"]?)(.*?)\1\)/.exec(cv('--logo'));if(!u){ok();return}const im=new Image();im.onload=()=>{try{const LH=54,LW=LH*im.naturalWidth/im.naturalHeight,t=document.createElement('canvas');t.width=Math.round(LW*2);t.height=Math.round(LH*2);const q=t.getContext('2d');q.drawImage(im,0,0,t.width,t.height);
+      if(!dk){q.globalCompositeOperation='source-atop';q.fillStyle='rgba(0,0,0,.726)';q.fillRect(0,0,t.width,t.height);q.globalCompositeOperation='source-over';const sx=im.naturalWidth*.125,sw=im.naturalWidth*.1,sh=im.naturalHeight*.2;q.clearRect(sx/im.naturalWidth*t.width,0,sw/im.naturalWidth*t.width,sh/im.naturalHeight*t.height);q.drawImage(im,sx,0,sw,sh,sx/im.naturalWidth*t.width,0,sw/im.naturalWidth*t.width,sh/im.naturalHeight*t.height)}
+      x.drawImage(t,Math.round((CW-LW)/2),64,LW,LH)}catch(e){}ok()};im.onerror=()=>ok();im.src=u[2]});
+  x.textBaseline='alphabetic';x.textAlign='left';
+  const K=J.車款,nm=(MNAME[K.model]||'')+(GEOS[K.model]?'・'+K.size:'');x.fillStyle=ink;x.letterSpacing='-1.5px';x.font='600 46px '+ff;let fs=46;while(x.measureText(nm).width>CW-128&&fs>30){fs-=2;x.font='600 '+fs+'px '+ff}x.textAlign='center';x.fillText(nm,CW/2,186);x.textAlign='left';x.letterSpacing='0px';
+  const rows=[];if(sf(finOk,false))rows.push(['表面處理',sf(finLabel,'')]);if(sf(paintOk,false))rows.push(['車架顏色',sf(paintLabel,'').split('（')[0]]);if(sf(hsOk,false))rows.push(['座管束・頭碗組',sf(hsLabel,'').split('（')[0]]);
+  const ad=sf(addonRows,[]).filter(q=>q[0]!=='加購');if(ad.length)rows.push(['加購',ad.map(q=>q[0]).join('、')]);
+  const FO=J.客製表單;if(RC_GK.some(k=>Number.isFinite(FO[k])&&Math.abs(FO[k]-SAMPLE[k])>.05))rows.push(['幾何客製','REACH '+FO.reach+'｜STACK '+FO.stack+'｜HTA '+FO.hta+'°']);
+  const wrap=(s,mw,n)=>{const o=[];while(s&&o.length<n){let k=s.length;while(k>1&&x.measureText(s.slice(0,k)).width>mw)k--;if(k<s.length&&o.length===n-1){let t=s.slice(0,k);while(t.length>1&&x.measureText(t+'…').width>mw)t=t.slice(0,-1);o.push(t+'…');s='';break}o.push(s.slice(0,k));s=s.slice(k)}return o};
+  const LBW=236;x.font='30px '+ff;rows.forEach(q=>{q[2]=wrap(q[1],CW-128-LBW,2)});const vW=Math.max(0,...rows.flatMap(q=>q[2].map(t=>x.measureText(t).width))),bx=Math.round((CW-(LBW+vW))/2);/* 中間文本區塊（標籤＋內容）整塊置中 */
+  const lines=[];{const gs=code.split('-'),per=8;for(let i=0;i<gs.length;i+=per)lines.push(gs.slice(i,i+per).join('-'))}
+  const codeH=lines.length*46,footTop=CH-56-codeH-64,rowsTop=IY+IH+44,nL=rows.reduce((a,q)=>a+q[2].length,0),lh=Math.min(46,Math.floor((footTop-rowsTop-8*rows.length)/Math.max(1,nL)));let yy=rowsTop;
+  rows.forEach(q=>{const y=yy+30;x.fillStyle=mut;x.font='26px '+ff;x.fillText(q[0],bx,y);x.fillStyle=ink;x.font='30px '+ff;q[2].forEach((t,j)=>x.fillText(t,bx+LBW,y+j*lh));yy+=q[2].length*lh+8});
+  x.strokeStyle=mut;x.globalAlpha=.35;x.lineWidth=2;x.beginPath();x.moveTo(64,footTop);x.lineTo(CW-64,footTop);x.stroke();x.globalAlpha=1;
+  x.textAlign='center';x.fillStyle=mut;x.font='24px '+ff;x.fillText('參考碼',CW/2,footTop+42);x.fillStyle=acc;x.font='600 34px '+mono;lines.forEach((l,i)=>x.fillText(l,CW/2,footTop+42+16+(i+1)*46-8));x.textAlign='left';
+  return c}
+(function(){
+  const ov=document.createElement('div');ov.id='rcOv';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','配置圖卡');
+  ov.style.cssText='display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;box-sizing:border-box';/* v199zzzzzz96：調暗之外再加毛玻璃（使用者 2026-11-18）；模糊 14px 與開場毛玻璃一致，底色由 .62 降到 .5，免得疊起來太暗 */
+  ov.innerHTML='<img id="rcImg" alt="配置圖卡" style="max-width:min(100%,640px);max-height:74vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.4)"><div class="row" style="justify-content:center"><button class="btn" id="rcDl" type="button">下載圖卡</button><button class="btn" id="rcRcCp" type="button">複製參考碼</button><button class="btn" id="rcSh" type="button" hidden>分享</button><button class="btn" id="rcX" type="button">關閉</button></div>';/* v199zzzzzz96：膠囊列加「複製參考碼」；「長按或右鍵可另存圖片」整行移除；PNG 改 JPG、鈕名改「下載圖卡」（使用者 2026-11-18） */
+  {const stl=document.createElement('style');stl.textContent='#rcOv .btn{color:#fff;border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.08)}#rcOv .btn:hover{background:rgba(255,255,255,.18)}#rcOv .row{flex-wrap:wrap;gap:8px}#rcOv .fine{color:#fff;margin:0;min-height:1.2em}';document.head.appendChild(stl)}document.body.appendChild(ov);const img=ov.querySelector('#rcImg'),dl=ov.querySelector('#rcDl'),sh=ov.querySelector('#rcSh');let blob=null,url='';
+  const close=()=>{ov.style.display='none';if(url){URL.revokeObjectURL(url);url=''}img.removeAttribute('src');blob=null};
+  ov.querySelector('#rcX').onclick=close;ov.addEventListener('pointerdown',e=>{if(e.target===ov)close()});document.addEventListener('keydown',e=>{if(ov.style.display!=='none'&&e.key==='Escape')close()});
+  const fn=()=>'VIBE配置圖卡_'+qpStamp()+'.jpg';/* v199zzzzzz96：JPG（圖卡本身整張都畫了漸層底，沒有透明區，換 JPG 不掉資訊，檔案小很多） */
+  dl.onclick=()=>{if(!blob)return;const a=document.createElement('a');a.href=url;a.download=fn();document.body.appendChild(a);a.click();a.remove()};
+  sh.onclick=async()=>{if(!blob)return;try{await navigator.share({files:[new File([blob],fn(),{type:'image/jpeg'})],title:'VIBE 配置圖卡'})}catch(e){}};
+  const ta=document.getElementById('cfgTa'),msg=document.getElementById('cfgMsg'),inp=document.getElementById('cfgRc'),inI=document.getElementById('cfgRcIn');if(!msg||!inp)return;
+  const say=t=>{msg.textContent=t},refresh=()=>{try{inp.value=rcEncode()}catch(e){inp.value=''}};
+  ['click','input','change'].forEach(e=>window.addEventListener(e,()=>setTimeout(refresh,60),{passive:true}));refresh();setInterval(()=>{if(document.getElementById('cfgBox').offsetParent)refresh()},1500);
+  document.getElementById('cfgRcCp').onclick=async()=>{refresh();let ok=false;try{await navigator.clipboard.writeText(inp.value);ok=true}catch(e){}if(!ok){inp.focus();inp.select();try{ok=document.execCommand('copy')}catch(e){}}say(ok?'已複製參考碼':'此環境無法直接複製，請全選欄位內容複製')};
+  document.getElementById('cfgRcAp').onclick=()=>{const t=inI.value;if(!t.trim()){say('請先貼上參考碼');return}const q=rcDecode(t);if(q.err){say(q.err);return}let sk;try{sk=cfgApply(q.J)}catch(e){say('還原失敗：'+(e&&e.message||e));return}say(sk.length?'已用參考碼還原，略過 '+sk.length+' 項：'+sk.slice(0,6).join('、'):'已用參考碼還原');setTimeout(refresh,200)};
+  document.getElementById('cfgCard').onclick=async()=>{say('產生圖卡中…');try{const c=await rcCard();if(!c){say('此環境無法產生圖卡');return}
+      await new Promise(ok=>c.toBlob(b=>{blob=b;ok()},'image/jpeg',.92));if(!blob){say('此環境無法產生圖卡');return}if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(blob);img.src=url;
+      sh.hidden=!(navigator.canShare&&sf0());{const q=document.getElementById('rcMsg');if(q)q.textContent=''}/* 每次開啟圖卡先清掉上次的複製訊息 */ov.style.display='flex';say('')}catch(e){say('產生圖卡失敗：'+(e&&e.message||e))}};
+  const sf0=()=>{try{return navigator.canShare({files:[new File([blob],'a.jpg',{type:'image/jpeg'})]})}catch(e){return false}};
+  /* 圖卡視窗內的「複製參考碼」：與設定區那顆同一條路徑（refresh→clipboard→退回選取複製），訊息改顯示在圖卡視窗內，關閉時清掉 */
+  {const m2=document.createElement('div');m2.id='rcMsg';m2.className='fine';m2.setAttribute('role','status');m2.setAttribute('aria-live','polite');ov.appendChild(m2);
+   ov.querySelector('#rcRcCp').onclick=async()=>{const el=document.getElementById('cfgRc');let v='';try{v=rcEncode()}catch(e){v=el?el.value:''}if(el)el.value=v;
+     let ok=false;try{await navigator.clipboard.writeText(v);ok=true}catch(e){}
+     if(!ok&&el){el.focus();el.select();try{ok=document.execCommand('copy')}catch(e){}}
+     m2.textContent=ok?'已複製參考碼':'此環境無法直接複製，請到「3D 設定檔」區全選參考碼複製'};
+  }
+})();
 (function(){const ta=document.getElementById('cfgTa'),msg=document.getElementById('cfgMsg');if(!ta||!msg)return;
   const say=t=>{msg.textContent=t},mk=()=>{const t=cfgMD();ta.value=t;return t};
   const run=t=>{const r=cfgParse(t);if(r.err){say(r.err);return}let sk;try{sk=cfgApply(r.J)}catch(e){say('套用失敗：'+(e&&e.message||e));return}
@@ -1683,7 +1866,7 @@ function cfgApply(J){const skip=[],isI=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b,
 const plist=document.getElementById('plist'),card=document.getElementById('card'),MAX=60;
 function renderList(){plist.innerHTML='';PARTS.forEach(p=>{const s=st[p.id],li=document.createElement('li'),b=document.createElement('button');
   b.innerHTML=`<span class="dot ${s.done?(s.pts===3?'ok':'part'):''}"></span><span>${p.name}</span><span class="pts num">${s.done?s.pts+' / 3':''}</span>`;
-  b.onclick=()=>openPart(p);li.appendChild(b);plist.appendChild(li)})}
+  b.onclick=()=>{if(sel===p&&!wrap.hidden)closeCard();else openPart(p)};/* v199zzzzzz97：清單也改成再按一下收起（使用者 2026-11-18：右側清單點選後關不掉） */li.appendChild(b);plist.appendChild(li)})}
 function updScore(){let sc=0,dn=0;PARTS.forEach(p=>{sc+=st[p.id].pts;if(st[p.id].done)dn++});document.getElementById('sc').textContent=sc;document.getElementById('dn').textContent=dn}
 function closeCard(){wrap.hidden=true;sel=null;paintHS()}
 const head=(p,x='')=>`<h3><span>${p.name}</span>${x}<button class="btn close x" data-act="close" aria-label="收起" title="收起"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button></h3><div class="meta">工具：${p.tool}</div>`;
@@ -1743,6 +1926,191 @@ function showTable(end){const body=document.getElementById('tblBody');body.inner
 document.getElementById('tableBtn').onclick=()=>showTable(false);document.getElementById('tblClose').onclick=()=>tm.hidden=true;
 document.getElementById('againBtn').onclick=()=>{PARTS.forEach(p=>st[p.id]={done:false,pts:0,val:null,decision:null});tm.hidden=true;paintHS();renderList();updScore();goHome()};
 const hintBtn=null;
+
+/* ===== 爆炸圖（拆解）v199zzzzzz92 =====
+   扭力巡檢分頁的「拆解」鈕：依使用者 2026-11-17 第四輪指示，分五個階段演出（總長 EX_MS ms），扭力橘點跟著所屬群組走；再按一次復原。
+   階段（主進度 t 線性 0→1，各群組在自己的時間窗內再 EZ 緩動；時間窗刻意大幅重疊，動作才連得上、不像機械節點逐段啟停；
+   EZ 用 smootherstep，兩端的速度與加速度都為零，接起來沒有折點）：
+     ① 抽貫通軸 ② 前後輪往前後平移 ③ 車架組往上並稍微往後（斜上角度），上移量＝1/6 輪直徑
+     ④ 同時前叉帶著下碗組沿轉向軸往外滑出 HS_GAP（世界座標是稍微往前往上），其餘零件繼續分開 ⑤ 車架到位後曲柄往外、座管往上拔。
+   復原時 t 反向跑，順序自動倒過來＝先裝座管曲柄、再降車架、再合輪、最後插軸。
+   前叉與車架的相對位移恆為「HS_GAP×轉向軸方向」，所以轉向管全程都在頭管軸心的延長線上滑動，與兩者各自的時間窗無關。
+   完成時下碗組與頭管的間距＝上碗組與頭管的間距＝HS_GAP。
+   v92 對位（使用者 2026-11-18）：完成時車架頭管軸心的延長線要穿過前輪軸心、後上叉的延長線要穿過後輪軸心。
+   做法：輪組只做水平移動，所以「輪相對車架的位移」必須平行於各自的安裝軸線——前輪沿頭管軸、後輪沿後上叉（SSst→RA，該線本來就通過後軸）。
+   由此解出輪組行程（每幀依目前車款尺寸的節點重算，不是寫死的常數）：
+     前輪前移 ＝ 上移量 × (頭管軸水平/垂直比) − 車架後移量
+     後輪後移 ＝ 上移量 × (後上叉水平/垂直比) ＋ 車架後移量
+   所以上移量是唯一的槓桿：拉高 → 輪組跟著拉開、縫同步變大。1/8 輪直徑時前輪只前移 18 mm、叉尖離輪軸只剩 35 mm，太擠，故改 1/6。
+   車架上移的做法：bike 是所有零件的父節點，直接把 bike 往上移，再讓「不上移」的群組在自己的位移裡扣回 Lv——
+   這樣不必列舉車架本體的每一根管件，新增零件也不會漏掉。熱點在場景層、不是 bike 的子物件，所以另算世界位移 wf（見 pass）。
+   做法：不重新掛載父子（outRoots／批次／實例化白名單皆依物件本身，故不受影響），只在每幀主繪製前改 position。
+   位置基準以 {base,last} 追蹤：外部（applyNodes、placeHS、seatFitPost…）改過位置就重設基準，避免位移被重複累加或被覆寫。
+   必須在 drawFrame 的 instSync／btSync 之前執行，實例化與批次網格才會讀到移動後的世界矩陣。 */
+(function(){
+  const EX_MS=2100,EZ=k=>k*k*k*(k*(k*6-15)+10),V=(x,y,z)=>new THREE.Vector3(x,y,z);/* smootherstep：兩端一階、二階導數皆為 0 */
+  const nz=(a,b,f)=>{const v=new THREE.Vector3().subVectors(a,b);return v.lengthSq()<1e-9?f:v.normalize()};
+  const axSeat=()=>(T.post&&G.bb)?nz(T.post.position,G.bb.position,V(0,1,0)):V(0,1,0);/* 座管軸：五通→座管 */
+  const axHead=()=>(G.stemStd&&G.crown)?nz(G.stemStd.position,G.crown.position,V(0,1,0)):V(0,1,0);/* 轉向軸：前叉肩→龍頭（向上） */
+  const dn=()=>axHead().multiplyScalar(-1);
+  const CRK=['crkNewG','crkGrvG','crkF1G','crkTiG','crkAudG','crkSerG'],CRK_MM=78,CRKL_MM=72,STEM_MM=80,CAP_MM=112,BAR_X=56,HS_GAP=55,BACK_MM=11,AX_GAP=26;
+  /* HS_GAP：前叉（帶著下碗組）沿轉向軸滑出的距離，也是上碗組往上離開頭管的距離——兩者相等，完成時頭管上下兩端的縫一樣寬。
+     BACK_MM：車架上移時同時往後的量，用來做出斜上角度；要小於 HS_GAP×轉向軸的水平分量（約 0.31×HS_GAP），否則前叉在世界座標會變成往後而不是往前。
+     STEM_MM／CAP_MM 隨 HS_GAP 一起加大：上碗組往上走 HS_GAP 之後會頂到龍頭，龍頭與上蓋要讓開。
+     AX_GAP：貫通軸完全抽出後，軸尖離最近孔洞外緣的間距。 */
+  /* 各階段的時間窗（主進度 t 的區間）。重疊很大是刻意的：動作要互相接續，不是一段停了才換下一段 */
+  const PH_AX=[0,.28],PH_WH=[.18,.74],PH_UP=[0,.80],PH_FK=[.12,.84],PH_MID=[.10,.85],PH_END=[.40,1];/* v199zzzzzz94：改為「提升與炸開同時進行」（使用者 2026-11-18）。車架上移 PH_UP 由 [.38,.86] 提前到 **[0,.80]**，與其餘零件一起起步。
+     唯一保留的先後是**貫通軸必須先離開勾爪**，輪組才能平移，否則兩者會互穿：PH_AX [0,.28]、PH_WH 從 .18 才起步（此時軸已抽出約七成）。
+     曲柄外移與座管上拔（PH_END）起點由 .74 提前到 .40——仍然最後收尾（符合實際組裝順序的反向），但不再等車架到頂才動。 */
+  const LIFT_ADD=.075;/* v199zzzzzz95：使用者 2026-11-18——v94 的 150 mm 太高，減半為 75 mm。M 尺寸 325Ti 總上移量＝1/6 輪直徑 114.7＋75＝189.7 mm */
+  const liftM=()=>((N&&N.R?N.R:350)/1000)/3+LIFT_ADD;/* 車架組上移量＝1/6 輪直徑（輪半徑的 1/3，n.R 為外胎半徑 mm）＋LIFT_ADD。M 尺寸 325Ti 實測 114.7＋150＝264.7 mm。v90＝1/4 輪直徑、v91＝1/8、v92＝1/6 */
+  /* v199zzzzzz94：**後上叉對位鎖點已刪除**（使用者 2026-11-18）。原本後輪後移量由「後上叉延長線穿過後軸」解出，使得上移量一拉高、後輪就被迫同步拉開，上移量因此成了唯一槓桿、拉不動。
+     現在只保留前輪的對位：頭管軸心的延長線沿著前叉仍指向前輪軸心（差的只有前叉偏移量 rake，與未拆解時相同），因為那條線就是前叉本身的方向，看起來才像裝得回去。
+     後輪改為與前輪等量反向（再加上車架後移量 BACK_MM），兩輪對車身左右對稱地讓開，與上移量脫鉤。rR() 連同它的退回值 .812 一併刪除。
+     對位比例：水平/垂直，前輪＝頭管軸（HTb→HTt）。量不到就退回 M 尺寸 325Ti 的實測值 .335 */
+  const rF=()=>{try{const d=[N.HTt.x-N.HTb.x,N.HTt.y-N.HTb.y];const r=-d[0]/d[1];return(r>.1&&r<1)?r:.335}catch(e){return .335}};
+  const whF=()=>liftM()*rF()-BACK_MM/1000;/* 前輪前移量 */
+  const whR=()=>liftM()*rF()+BACK_MM/1000;/* 後輪後移量＝前輪前移量＋2×BACK_MM（兩輪等量反向讓開；見上方說明） */
+  const liftV=()=>V(-BACK_MM/1000,liftM(),0);/* 車架位移：往上並稍微往後 */
+  /* 貫通軸手柄在哪一側：取手柄實例化網格頂點 z 的平均值；判不出來就當非驅動側（−z，手柄慣例位置） */
+  let hdlS=0;
+  const hdlSide=()=>{if(hdlS)return hdlS;try{const a=G.hdlI.geometry.attributes.position.array;let t=0,n=0;for(let i=2;i<a.length;i+=48){t+=a[i];n++}
+    hdlS=(n&&Math.abs(t/n)>.005)?(t/n<0?-1:1):-1}catch(e){hdlS=-1}return hdlS};
+  /* 左曲柄臂：先找曲柄群組內「整件都在非驅動側」的網格（bike 座標 z 上界 < −20 mm）。
+     系列曲柄組把左右臂合併在同一網格，挑不出整件時改用索引切割：該網格的三角形若無一跨越中線（實測 crkSerG 為 0 件），
+     就依三角形所在側切成左／右兩份索引（共用同一份頂點屬性），原網格改用右份、另立一個左份網格掛回同一群組。
+     切完要重跑 tagOutline 與 btBuild，新網格才有輪廓線並重新納入批次。 */
+  const splitOne=(c,dz)=>{const q=c.geometry;if(!q||!q.index||!q.attributes.position)return null;if(q.groups&&q.groups.length>1)return null;
+    const pa=q.attributes.position.array,ix=q.index.array,L=[],R=[];
+    for(let i=0;i<ix.length;i+=3){let zmn=1e9,zmx=-1e9;
+      for(let v=0;v<3;v++){const z=pa[ix[i+v]*3+2]+dz;if(z<zmn)zmn=z;if(z>zmx)zmx=z}
+      if(zmx<-.02){L.push(ix[i],ix[i+1],ix[i+2])}else if(zmn>.02){R.push(ix[i],ix[i+1],ix[i+2])}else return null/* 有三角形跨中線→整件不分 */}
+    if(!L.length||!R.length)return null;
+    const mk=arr=>{const g2=new THREE.BufferGeometry();Object.keys(q.attributes).forEach(k=>g2.setAttribute(k,q.attributes[k]));
+      g2.setIndex(new THREE.BufferAttribute(ix.constructor===Uint16Array?new Uint16Array(arr):new Uint32Array(arr),1));return g2};
+    const gl=mk(L);c.geometry=mk(R);
+    const m=new THREE.Mesh(gl,c.material);m.frustumCulled=false;m.position.copy(c.position);m.rotation.copy(c.rotation);m.scale.copy(c.scale);
+    m.userData=Object.assign({},c.userData);m.renderOrder=c.renderOrder;c.parent.add(m);return m};
+  const crkLeft=()=>{const o=[];let made=false;CRK.forEach(k=>{const g=G[k];if(!g)return;
+    const cache=g.userData.exL;
+    if(cache===undefined||cache.some(c=>c.parent!==g)){const L=[];
+      g.children.forEach(c=>{const q=c.geometry&&c.geometry.attributes&&c.geometry.attributes.position;if(!q)return;
+        let mx=-1e9;const a=q.array;for(let i=2;i<a.length;i+=3)if(a[i]>mx)mx=a[i];
+        if(mx+c.position.z+g.position.z<-.02)L.push(c)});
+      if(!L.length)g.children.slice().forEach(c=>{const m=splitOne(c,c.position.z+g.position.z);if(m){L.push(m);made=true}});
+      g.userData.exL=L}
+    g.userData.exL.forEach(c=>o.push(c))});
+    if(made){try{if(typeof tagOutline==='function'&&G.olOn!==undefined)tagOutline(G.olOn)}catch(e){}try{if(G.btBuild)G.btBuild()}catch(e){}}
+    return o};
+  /* 貫通軸抽出距離（v89）：軸尖要整根退出手柄側那一面孔洞的外緣，再留 AX_GAP。
+     孔洞面＝前叉（前軸）或車架勾爪／後下叉／後上叉（後軸）在手柄側、距軸心 30 mm 內的最外頂點 z；軸尖＝貫通軸本體在另一側的最遠 z。
+     每幀依「基準座標」量測（扣掉各物件目前的拆解位移），所以換車款、換尺寸、拆解中途都一致；量不到就退回保守常數。 */
+  const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true};
+  const off0=o=>{const q=stM.get(o);return q?q.last.clone().sub(q.base):new THREE.Vector3()};
+  /* 掃一組根物件：回傳 [zmin,zmax]（world，已扣根物件位移）；cx,cy 給定時只取距 (cx,cy) 30 mm 內的頂點 */
+  const zSpan=(roots,cx,cy,R)=>{let lo=1e9,hi=-1e9;
+    roots.forEach(r=>{if(!r||!r.isObject3D||!vis(r))return;const of=off0(r);r.updateWorldMatrix(true,true);
+      r.traverse(c=>{if(!c.isMesh||!c.geometry||!vis(c))return;const pa=c.geometry.attributes&&c.geometry.attributes.position;if(!pa)return;const e=c.matrixWorld.elements,a=pa.array;
+        for(let i=0;i<a.length;i+=3){const x=a[i],y=a[i+1],z=a[i+2];
+          if(cx!==undefined){const X=e[0]*x+e[4]*y+e[8]*z+e[12]-of.x,Y=e[1]*x+e[5]*y+e[9]*z+e[13]-of.y;if((X-cx)*(X-cx)+(Y-cy)*(Y-cy)>R*R)continue}
+          const Z=e[2]*x+e[6]*y+e[10]*z+e[14]-of.z;if(Z<lo)lo=Z;if(Z>hi)hi=Z}})});
+    return[lo,hi]};
+  const axD={F:.16,R:.2};/* 退回值（m） */
+  const axUpd=()=>{try{const s=hdlSide();
+    [['F',G.axF,[T.FKL,G.rsFork],.15],['R',G.axR,[G.dropoutL,G.dropoutR,G.exDropL,G.exDropR,T.CSL,T.CSR,T.csL,T.csR,T.SSL,T.SSR,T.ssL,T.ssR,G.rdHg],.2]].forEach(([k,ax,hole,fb])=>{
+      if(!ax||!vis(ax)){axD[k]=fb;return}
+      const of=off0(ax);ax.updateWorldMatrix(true,false);const e=ax.matrixWorld.elements,cx=e[12]-of.x,cy=e[13]-of.y;
+      const a=zSpan([ax]),h=zSpan(hole,cx,cy,.03);
+      if(!(a[1]>a[0])||!(h[1]>h[0])){axD[k]=fb;return}
+      const zf=s<0?a[1]:a[0],zn=s<0?h[0]:h[1];/* 軸尖（遠側）、手柄側孔洞外緣 */
+      axD[k]=Math.max(.05,Math.min(.4,-s*(zf-zn)+AX_GAP/1000))})}catch(e){axD.F=.16;axD.R=.2}};
+  /* 轉向管（steer rod）v91：原模型沒有這一段——平常它整根藏在頭管裡，看不見也就沒做。
+     但拆解時前叉沿轉向軸滑出，叉冠上空無一物，少掉的正是使用者要看的那根；故補一根，只在拆解時顯示。
+     做法：掛在 G.crown 底下當子物件（G.crown 的 rotation.z＝π/2−頭管角，區域 +y 就是轉向軸），所以前叉一動它就跟著動，不必另外列進群組。
+     錐形：上 1-1/8"（Ø28.6）、下 1.5"（Ø38.1），對應頭管的 FSA No.55R 1.5"/CR/STD 碗組。長度＝頭管長＋上端外露 62＋埋入叉冠 20。
+     不進批次（noBT）：它是拆解時才出現的單件，省得每次顯示切換都要重建批次。
+     blktec（一體把）本來就會畫出頭管上方那段 T.steer，拆解時改由這根涵蓋，故暫時隱藏 T.steer，免得兩根重疊。 */
+  const SR_RT=.0143,SR_RB=.019,SR_UP=.062,SR_IN=.02;let srM=null,srK='';
+  const steerUpd=on=>{
+    if(T.steer)T.steer.visible=on?false:!!extras.blktec;
+    if(!on&&!srM)return;
+    if(!N||!N.HTt||!N.HTb||!G.crown){if(srM)srM.visible=false;return}
+    const L=(Math.hypot(N.HTt.x-N.HTb.x,N.HTt.y-N.HTb.y)+SR_UP*1000+SR_IN*1000)/1000,k=L.toFixed(4);
+    if(!srM){srM=new THREE.Mesh(new THREE.CylinderGeometry(SR_RT,SR_RB,1,28),M.dark);srM.frustumCulled=false;
+      srM.userData.keepOpaque=true;srM.userData.noBT=true;G.crown.add(srM);
+      try{if(typeof tagOutline==='function'&&G.olOn!==undefined)tagOutline(G.olOn)}catch(e){}}
+    if(srK!==k){srK=k;srM.geometry.dispose();srM.geometry=new THREE.CylinderGeometry(SR_RT,SR_RB,L,28);srM.position.set(0,L/2-SR_IN,0)}
+    srM.visible=on};
+  /* 位移量（mm）為我估的：抽出後仍看得出原位關係，且不與鄰件重疊。
+     p＝該群組的時間窗；nl（no lift）＝不隨車架上移的群組，其位移要扣回 Lv 才能留在原高度。 */
+  const GRP={
+    wF  :{p:PH_WH,nl:1,v:()=>V(whF(),0,0) ,o:()=>[G.wF,G.fRotor]},/* 行程由對位解出，見檔頭 */
+    wR  :{p:PH_WH,nl:1,v:()=>V(-whR(),0,0),o:()=>[G.wR,G.rRotor].concat(G.casC||[])},
+    axF :{raw:1,nl:1,v:()=>V(0,0,hdlSide()*axD.F).multiplyScalar(seg(PH_AX)).add(V(whF(),0,0).multiplyScalar(seg(PH_WH))),o:()=>[G.axF,G.hdlF]},/* 前貫通軸沿軸心、朝手柄那一側整根抽出（距離見 axUpd），抽出後再跟著前輪組一起前移（v199zzzzzz96） */
+    axR :{raw:1,nl:1,v:()=>V(0,0,hdlSide()*axD.R).multiplyScalar(seg(PH_AX)).add(V(-whR(),0,0).multiplyScalar(seg(PH_WH))),o:()=>[G.axR,G.hdlR]},/* 後貫通軸同上，跟著後輪組一起後移 */
+    fork:{p:PH_FK,d:dn,mm:HS_GAP,o:()=>{const a=[T.FKL,T.FKR,G.crown,G.rsFork];try{a.push(HSl,HSn,HSlD)}catch(e){}return a}},
+    /* 前叉不標 nl：它跟著車架一起被 bike 帶上去，再沿轉向軸往外滑 HS_GAP。相對車架的位移恆為 HS_GAP×轉向軸，轉向管因此全程在頭管軸心延長線上。
+       下碗組（連壓環 HSn、KING 貼字）併進本群組＝「前叉帶著下碗組」；轉向管是 G.crown 的子物件，自動跟著。 */
+    calF:{p:PH_FK,v:()=>dn().multiplyScalar(HS_GAP/1000).add(V(0,0,-.045)),o:()=>[G.fCal]},/* 前卡鉗鎖在前叉上，跟著前叉同步滑出，再朝非驅動側抽出 45 */
+    cal :{d:()=>V(0,0,-1),mm:45,o:()=>[G.rCal]},
+    sdl :{p:PH_END,d:axSeat,mm:120,o:()=>[G.seat]},
+    post:{p:PH_END,d:axSeat,mm:80,o:()=>[T.post].concat(G.seatGl?[G.seatGl.PostStd,G.seatGl.PostDropEX]:[])},/* 車架到定位後才往上拔 */
+    clp :{d:axSeat,mm:26,o:()=>[T.collar].concat(G.seatGl?[G.seatGl.Clamp]:[])},
+    /* 把手：向前 BAR_X，並抬到與龍頭（移動後）等高 */
+    bar :{v:()=>V(BAR_X/1000,axHead().y*STEM_MM/1000,0),o:()=>[G.bar,G.cockpit,G.shift,G.cpStem]},/* 原位時把手中間管穿在龍頭把手孔裡（同高），所以把手升高量＝龍頭升高量 */
+    stem:{d:axHead,mm:STEM_MM,o:()=>[G.stemStd,T.stem]},
+    cap :{d:axHead,mm:CAP_MM,o:()=>[G.cap]},
+    hsU :{d:axHead,mm:HS_GAP,o:()=>{try{return[HSu,HSuD]}catch(e){return[]}}},/* 上碗（連 KING 貼字）往上離開頭管，距離與前叉滑出量相同 */
+    crk :{p:PH_END,d:()=>V(0,0,1),mm:CRK_MM,o:()=>CRK.map(k=>G[k])},
+    crkL:{p:PH_END,v:()=>V(0,0,-(CRK_MM+CRKL_MM)/1000),w:()=>V(0,0,-CRKL_MM/1000),o:crkLeft},/* 左臂為曲柄群組的子物件，故位移須抵銷群組的 +z；熱點在場景層，用 w（世界位移） */
+    rd  :{d:()=>V(0,0,1),mm:48,o:()=>[G.rdSram,G.rdSerG].concat(G.rdSerGs?Object.keys(G.rdSerGs).map(k=>G.rdSerGs[k]):[]).concat(G.rdOldC||[])},
+    cage:{d:()=>V(0,0,1),mm:55,o:()=>[G.cageG,G.cageS]}
+  };
+  const HM={stemFace:'stem',stemSteer:'stem',topCap:'cap',lever:'bar',seatClamp:'clp',saddle:'sdl',bottle:'cage',bb:'frame',crank:'crkL',pedal:'crk',rd:'rd',cassette:'wR',rotor:'wR',caliper:'calF',axle:'axF',valve:'wF'};
+  let t=0,from=0,to=0,t0=0,anim=false,chain0=null,nT=0;
+  const stM=new Map(),tmp=new THREE.Vector3(),tmpL=new THREE.Vector3();
+  const seg=w=>EZ(Math.max(0,Math.min(1,(t-w[0])/(w[1]-w[0]))));/* 某時間窗在目前主進度下的緩動值 */
+  function put(o,v){if(!o||!o.isObject3D)return;
+    /* 前叉 T.FKL 是 matrixAutoUpdate=false（setFork 直接寫 matrix），改 position 無效，這類物件改平移項 matrix.elements[12..14] */
+    const mx=o.matrixAutoUpdate===false,e=mx?o.matrix.elements:null,cur=mx?tmp.set(e[12],e[13],e[14]):o.position;let s=stM.get(o);
+    if(!s){s={base:cur.clone(),last:cur.clone()};stM.set(o,s)}
+    else if(!cur.equals(s.last))s.base.copy(cur);/* 外部改過→重設基準 */
+    if(mx){e[12]=s.base.x+v.x;e[13]=s.base.y+v.y;e[14]=s.base.z+v.z;o.matrixWorldNeedsUpdate=true;s.last.set(e[12],e[13],e[14])}
+    else{o.position.copy(s.base).add(v);s.last.copy(o.position)}}
+  function pass(){
+    axUpd();
+    const Lv=tmpL.copy(liftV()).multiplyScalar(seg(PH_UP));put(bike,Lv);/* 車架組往上並稍微往後；bike 是所有零件的父節點 */
+    steerUpd(t>0.001);
+    const off={},wf={};
+    Object.keys(GRP).forEach(k=>{const g=GRP[k],sg=g.raw?1:seg(g.p||PH_MID),
+      o=g.raw?g.v():(g.v?g.v():g.d().multiplyScalar(g.mm/1000)).multiplyScalar(sg);/* v199zzzzzz96：raw＝v() 已自行套好各時間窗的緩動（貫通軸同時吃 PH_AX 與 PH_WH 兩個窗），外層不再乘 sg */
+      wf[k]=g.w?g.w().multiplyScalar(sg):o.clone();if(!g.nl)wf[k].add(Lv);/* 熱點用世界位移（bike 的上移要自己加回來） */
+      off[k]=g.nl?o.sub(Lv):o;
+      const L=g.o();for(let i=0;i<L.length;i++)put(L[i],off[k])});
+    wf.frame=Lv;/* 鎖在車架上、沒有自己位移的熱點（中軸碗） */
+    HS.forEach(h=>{const k=HM[h.p.id];put(h.g,k&&wf[k]?wf[k]:tmp.set(0,0,0))});
+    if(G.chainI){if(chain0===null)chain0=G.chainI.visible;G.chainI.visible=t<.02?chain0:false}}/* 鏈條橫跨大盤與飛輪，拆解時隱藏 */
+  const EXZ=()=>innerWidth<=760?1.5:.55,kOf=()=>1+EXZ()*EZ(t);/* 行動版原本就為了車高而犧牲寬度（TQ_MINR），拆解後攤得更開，故另給較大的拉遠倍率 */let lastK=1,lastY=0;/* 拆解時取景拉遠並隨車架上移抬高，依 t 連續變化，使用者自己的縮放與平移保留 */
+  G.exK=kOf;G.exOn=()=>t>0.001;G.exBusy=()=>anim;/* 主迴圈據此保持繪製，不倚賴 wake 計數 */
+  G.exY=()=>liftM()*seg(PH_UP)*.5;/* 鏡頭目標抬高量：輪組留在原地，整體重心只升一半（homeTgt 也用這個值，兩邊才一致） */
+  const camAdj=()=>{const zk=kOf();if(Math.abs(zk-lastK)>1e-6){want.r=Math.min(9,Math.max(.6,want.r*zk/lastK))/* 上限 9（原 4.2）：行動版拆解的取景距離會到 6.7，被夾住的話復原時除不回原值 */;lastK=zk}
+    const yk=G.exY();if(Math.abs(yk-lastY)>1e-9){want.tgt.y+=yk-lastY;lastY=yk}};
+  G.exTick=()=>{nT++;/* 呼叫次數（除錯用） */
+    if(anim){const k=Math.min(1,(performance.now()-t0)/EX_MS);t=from+(to-from)*k;/* 主進度線性，緩動在各群組的時間窗內做 */
+      if(k>=1){t=to;anim=false;if(t<=0){pass();stM.clear();if(G.chainI&&chain0!==null){G.chainI.visible=chain0;chain0=null}
+        camAdj();if(G.shMark)G.shMark(80);return}}
+      camAdj();
+      if(typeof wk==='function')wk(5)}
+    if(t>0||stM.size)pass()};
+  /* inst＝不走動畫直接到位（切離扭力分頁時用，免得帶著 1.9 秒的復原動畫跳到別的分頁） */
+  G.exSet=(on,inst)=>{const v=on?1:0;if(v===to&&!anim&&(!inst||!stM.size))return;/* 沒拆過就不必為了 inst 白跑一次 pass */
+    if(inst){from=t=to=v;anim=false;pass();camAdj();if(v<=0){stM.clear();if(G.chainI&&chain0!==null){G.chainI.visible=chain0;chain0=null}}}
+    else{from=t;to=v;t0=performance.now();anim=true}
+    if(typeof wk==='function')wk(40);
+    const b=document.getElementById('exBtn');if(b){b.setAttribute('aria-pressed',on?'true':'false');b.textContent=on?'復原':'拆解'}};
+  const bt=document.getElementById('exBtn');if(bt)bt.onclick=()=>G.exSet(to===0);
+  window.__EX={set:G.exSet,on:G.exOn,t:()=>t,grp:GRP,n:()=>nT};
+})();
 
 /* ===== 尺寸幾何 ===== */
 const bottom=document.getElementById('bottom'),geoTable=document.getElementById('geoTable');let size='M';
@@ -1809,14 +2177,16 @@ function specBox(){const el=document.getElementById('specBox');if(!el)return;con
   h+=`<details class="spec"><summary>加購升級（全車系共通）</summary><ul class="addl">`+ADDON_ALL.map(x=>`<li>${x}</li>`).join('')+`</ul><p class="fine">相容性仍須逐款確認前叉、頭碗組、走線、座管、Q-Factor 與胎寬。</p>${pill()}</details>`;el.innerHTML=h}
 function GEOV(){return GEO}
 var SER_DEF={'64':3,'325':1,'audax':0,'ili':2,'ss':0,'ex':0};/* v199zzzg：各車款預設傳動／煞車系列（0 現行、1 Shimano 105、2 SRAM Force、3 Dura-Ace）；SS-2205、EX 維持現行 */ /* v199zzzl：AUDAX 325 與 ili-ili 325 的傳動／煞車套件互換——AUDAX 改為現行（含 AUDAX 曲柄組）、ili-ili 325 改為 SRAM Force（曲柄組隨系列，不再是 M64 曲柄組）（使用者 2026-11-10） */
-function setModel(m){selM=m;try{window.__bgmModel&&window.__bgmModel(m)}catch(e){}/* v199zzzzzz58：BGM 換主題 */if(typeof SER_DEF!=='undefined'&&m in SER_DEF&&!ADD_S.serUser){ADD_S.ser=SER_DEF[m];try{renderAddon()}catch(e){}}/* v199zzzzzz30：使用者自選過傳動系列就不再被車款預設蓋掉 */try{addonApply()}catch(e){}try{F.model=MNAME[m];const q=form.querySelector('[name=model]');if(q)q.value=F.model}catch(e){}syncSub();if(GEOS[m]){model=m;GEO=GEOS[m];if(!GEO.some(g=>g.size===size))size='M';fitPick();cmp=null;swT=performance.now()+700;goGeo(size,true,true);updateGhost()}tblKey='';renderGeo()}/* v199：換車型立即套用（節點不再補間）並暫以像素比 1 繪製 700 ms */
+/* v199zzzzzz89：車款・尺寸膠囊內容。扭力巡檢分頁 3D 固定是 M 尺寸標準節點，故尺寸顯示 M 且不可點；其餘分頁顯示並可循環目前尺寸。 */
+function stTagSet(){const el=document.getElementById('stTag');if(!el)return;const has=!!GEOS[selM],tq=tab==='torque';el.innerHTML='<span data-k="m" role="button" tabindex="0">'+MNAME[selM]+'</span>'+(has?(tq?'・<span>M</span>':'・<span data-k="s" role="button" tabindex="0">'+size+'</span>'):'')}
+function setModel(m){selM=m;try{window.__bgmModel&&window.__bgmModel(m)}catch(e){}/* v199zzzzzz58：BGM 換主題 */if(typeof SER_DEF!=='undefined'&&m in SER_DEF&&!ADD_S.serUser){ADD_S.ser=SER_DEF[m];try{renderAddon()}catch(e){}}/* v199zzzzzz30：使用者自選過傳動系列就不再被車款預設蓋掉 */try{addonApply()}catch(e){}try{F.model=MNAME[m];const q=form.querySelector('[name=model]');if(q)q.value=F.model}catch(e){}syncSub();if(GEOS[m]){model=m;GEO=GEOS[m];if(!GEO.some(g=>g.size===size))size='M';fitPick();cmp=null;swT=performance.now()+700;goGeo(tab==='torque'?'M':size,true,true);updateGhost()}tblKey='';renderGeo();stTagSet()}/* v199：換車型立即套用（節點不再補間）並暫以像素比 1 繪製 700 ms */
 function markSel(){const ss=GEO.map(g=>g.size),si=ss.indexOf(size);
   geoTable.querySelectorAll('[data-s]').forEach(c=>{const i=ss.indexOf(c.dataset.s);c.style.transitionDelay=(Math.abs(i-si)*45)+'ms';c.classList.toggle('sel',c.dataset.s===size)})}
 geoTable.addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(!c||c.dataset.s===size)return;size=c.dataset.s;if(cmp===size)cmp=null;goGeo(size);updateGhost();renderGeo()});
 function renderGeo(){chips(document.getElementById('modelChips'),Object.values(MNAME),MNAME[selM],x=>setModel(Object.keys(MNAME).find(k=>MNAME[k]===x)));chips(document.getElementById('twChips'),twOpts(selM).map(String),String(TW_SEL[selM]||TW_DEF[selM]),x=>{TW_SEL[selM]=+x;if(GEOS[selM]){goGeo(size);updateGhost()}renderGeo()});/* v198：胎寬選項 */
   {const hc=document.getElementById('hsTypeChips');if(hc){chips(hc,['外露式','全隱藏式'],hsT()==='hid'?'全隱藏式':'外露式',x=>{HS_SEL[selM]=x==='全隱藏式'?'hid':'ex';try{if(N){tween=null;logoNow=true;applyNodes(N)}}catch(e){}wk(150);renderGeo()});const hn=document.getElementById('hsTypeNote');if(hn)hn.textContent=hsT()==='hid'?'全隱藏式：軸承藏在頭管內，只露上蓋 9.5 mm 與下冠座 1 mm（參照 NECO H02 圖面）；頭管下端貼近叉冠，龍頭隨之降低。顏色同「座管束・頭碗組顏色」。':'外露式：上碗 14 mm、下碗 16 mm 圓環造型，外緣貼 KING 字樣（參照 Chris King AeroSet）；頭管畫短 15 mm 以下碗補足。顏色同「座管束・頭碗組顏色」。'}}
   document.getElementById('modelH').textContent=({'64':'全公路車','325':'全公路車','audax':'長途耐力車','ili':'礫石車','ss':'礫石車','ex':'探險礫石車'}[selM]||'車')+'型';
-  const has=!!GEOS[selM];document.getElementById('sizeH').textContent=MNAME[selM]+(has?' 尺寸':'');document.getElementById('stTag').innerHTML='<span data-k="m" role="button" tabindex="0">'+MNAME[selM]+'</span>'+(has?'・<span data-k="s" role="button" tabindex="0">'+size+'</span>':'');
+  const has=!!GEOS[selM];document.getElementById('sizeH').textContent=MNAME[selM]+(has?' 尺寸':'');stTagSet();
   const gg=has?(GEO.find(x=>x.size===size)||GEO[0]):null;document.getElementById('geoScore').innerHTML=gg?`<span data-next="1" role="button" tabindex="0">尺寸 <b class="num">${gg.size}</b></span><span>前伸量 <b class="num">${gg.reach}</b><i class="u"> mm</i></span><span>堆疊高 <b class="num">${gg.stack}</b><i class="u"> mm</i></span>`:'';
   document.getElementById('m325note').textContent=({'64':'幾何與官網現行頁一致；管徑為 STEP 示意量測。','325':'幾何與規格依官網；上、下管異型截面取自 STEP（僅示意），其他尺寸兩端截面不變、沿程拉伸。','ss':'幾何與規格依官網；管件粗細尚無量測，為示意。','audax':'幾何依官網現行頁（M 尺寸官網數值自檢有 2–3 mm 差）；規格與管徑摘自官方舊頁，須核對現行頁面；管件形狀為示意。','ili':'幾何依官網現行頁；規格與管徑摘自官方舊頁，須核對現行頁面；管件形狀為示意。','ex':'幾何依官網現行頁；規格待擷取，管件粗細為示意。'}[selM]||'')+' 前叉為示意。';
   if(!has){chips(document.getElementById('sizeChips'),[],null,()=>{});chips(document.getElementById('cmpChips'),[],null,()=>{});geoTable.innerHTML='<p class="fine">尺寸對照待補。</p>';tblKey='';specBox();renderFit();return}
@@ -2359,8 +2729,9 @@ let ALPHA=.10;
 function partAlpha(on){const t=on&&ALPHA<1,seen=new Set();/* v90：材質可能是陣列（飛輪最大片、EX 兩件式勾爪）；原本把 transparent 設在陣列物件上沒作用，飛輪片因此不會半透明。陣列中只要有車架旗標材質，整個網格視為車架（EX 勾爪維持不透明）。 */
   bike.traverse(o=>{if(!o.isMesh||!o.material)return;const cur=o.userData.origMat||o.userData.origMatMP||o.material,ms=Array.isArray(cur)?cur:[cur];if(o.userData.keepOpaque||ms.some(m=>m&&m.userData&&m.userData.frame))return;ms.forEach(m=>{if(!m||seen.has(m))return;seen.add(m);if(m.userData&&m.userData.addonOn)return;m.transparent=t;m.opacity=t?ALPHA:1;m.depthWrite=!t;m.forceSinglePass=true;m.needsUpdate=true})});SPK.forEach(m=>{m.transparent=t;m.opacity=t?ALPHA:1;m.depthWrite=!t;m.needsUpdate=true});addonSyncAlpha();toonSync()}
 const alR=document.getElementById('alphaR');alR.oninput=()=>{ALPHA=alR.value/100;document.getElementById('alphaV').textContent=alR.value+'%';partAlpha(tab==='custom')};
-function setTab(t){tab=t;if(t==='custom')cSub='paint';partAlpha(t==='custom');document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  document.querySelectorAll('.panel').forEach(p=>p.hidden=p.dataset.panel!==t);closeCard();dimKey=null;updateDim();document.getElementById('stTag').hidden=t!=='geo'&&t!=='custom';/* v199zzzzi：客製服務也顯示車款・尺寸膠囊 */
+
+function setTab(t){tab=t;if(t!=='torque'&&G.exSet)G.exSet(false,true);if(t==='custom')cSub='paint';partAlpha(t==='custom');document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
+  document.querySelectorAll('.panel').forEach(p=>p.hidden=p.dataset.panel!==t);closeCard();dimKey=null;updateDim();stTagSet();document.getElementById('stTag').hidden=false;/* v199zzzzi：客製服務也顯示車款・尺寸膠囊；v199zzzzzz89：所有主分頁都顯示（扭力巡檢固定以 M 尺寸呈現，尺寸不可點） */
   bottom.hidden=t!=='custom';bottom.scrollTop=0;  if(t==='custom'){extras=addonExtras();recalc();if(CN)goNodes(custTarget())}
   else{extras=addonExtras();/* v199zzzt：加購跨分頁同步 */if(t==='geo'){fitPick();goGeo(size,true);renderGeo()}else goNodes(stockNodes(GEO.find(g=>g.size==='M')))}
   addonApply();syncSub();updateGhost();paintHS();resize();goHome();markRider()}
@@ -2497,14 +2868,38 @@ renderList();renderForm();applyNodes(stockNodes(GEO[2]));resize();setTab('geo');
    Base Route：全車環繞 SC_ORBIT ms（每圈 SC_REV ms）→ 依序特寫 SC_NODES（沿用扭力巡檢 focus 的構圖：距離 1.05、仰角 1.3、依左右側取方位）→ 回全車、接回原環繞進度 → 循環。
    自動啟動：開場旋轉完成後，非 slow（TIER≠'lo' 且 !SLOW）、未開減少動態、開場時未被觸碰。執行中 hi↔mid 不中斷；一進 slow（既有執行期偵測）即停並隱藏按鈕。
    任何觸控／滑鼠／滾輪／按鍵（展示鈕本身除外）立即中止，保留當下視角；不因閒置自動恢復，只能按展示鈕恢復。 */
-const SC_REV=90000,SC_ORBIT=30000,SC_HOLD=5000,SC_NODES=['stemFace','rd','caliper'];
+const SC_REV=45000,SC_ORBIT=30000,SC_HOLD=3500,SC_HREV=200000;/* v199zzzzzz93：特寫節點由 3 個變 8 個，每處停留 5000→3500 ms，一輪由 90 秒收到約 78 秒（使用者 2026-11-18） */
+/* v199zzzzzz96：環繞每圈 90→45 秒（使用者 2026-11-18：加快自旋，車架特寫開始才放慢）；特寫期間不再完全靜止，改以 SC_HREV（每圈 200 秒）低速續轉——3.5 秒停留約轉 6.3°，看得出still在動但不搶走特寫。
+   接續不打結：scNext 進出特寫都用 nearest(want.th, …) 取最近的等效角，低速漂移量會被吸收；回全車時 to.th 同樣用 nearest 對到 SC.thBase。 */
+/* v199zzzzzz93：特寫節點由立零件（stemFace／rd／caliper）改為車架本身（使用者 2026-11-18 第二輪指示第 4 項）。
+   SC_NODES 每一項可為：① 字串＝扭力巡檢熱點 id（沿用舊行為）；② 物件 {n:註記, p:取位函式→世界座標 V3 或 null, r/ph/th:構圖覆寫}。
+   取位優先用實際貼標網格（scLogo，位置與車款尺寸、放樣後的管面完全一致），貼標未建或未顯示（鈦原色不上標）時退回節點推算（scMix／scNp），特寫照樣成立。
+   取不到位置的節點由 scNext 自動跳過。
+   順序沿車身走一圈，前段走上緣、後段回下緣，方位與仰角的變化最小：頭管標→上碗組→上管標→中管標→座管束→下管標→BB→後勾爪。
+   「中管背後菜單」尚未列入：模型裡沒有這張規格貼紙（貼標只有 dt／tt／cl／hd／or 五個槽位，資料檔 decals.js 只有 LOGO_SRC／LOGO_HD／LOGO_MODELS 三張圖），
+   要列入須先建模與貼圖；位置應在 cl（中管標，已在中管後側）與座管束之間，屆時插在 SC_NODES 的第四、五項之間即可。
+   方位 th 的慣例：0＝驅動側（+z）、π/2＝車頭正前（+x）、−π/2＝車尾；仰角 ph：π/2＝水平，小＝俯視。 */
+function scNp(k){try{return(N&&N[k])?new V3(N[k].x/1000+bike.position.x,N[k].y/1000+bike.position.y,0):null}catch(e){return null}}
+function scMix(a,b,t){const p=scNp(a),q=scNp(b);return(p&&q)?p.lerp(q,t==null?.5:t):null}
+function scLogo(k){try{if(!logoGrp||!logoGrp.visible)return null;const m=logoGrp.children.find(c=>c.userData&&c.userData.key===k);if(!m||!m.geometry)return null;const g=m.geometry;if(!g.boundingBox)g.computeBoundingBox();const b=g.boundingBox;if(!b||!(b.max.x>=b.min.x))return null;return new V3((b.min.x+b.max.x)/2,(b.min.y+b.max.y)/2,(b.min.z+b.max.z)/2).add(m.position).add(logoGrp.position)}catch(e){return null}}
+const SC_NODES=[
+  {n:'頭管標',p:()=>scLogo('hd')||scMix('HTt','HTb',.5),r:.40,ph:1.40,th:1.45},
+  {n:'上碗組',p:()=>scNp('HTt'),r:.34,ph:1.62,th:.35},
+  {n:'上管標',p:()=>scLogo('tt')||scMix('TTht','TTst',.2),r:.34,ph:.90, th:.40},
+  {n:'中管標',p:()=>scLogo('cl')||scMix('SSst','BB',.12),r:.24,ph:1.42,th:-.30},
+  {n:'座管束',p:()=>scPosHS('seatClamp')||scNp('STtop'),r:.26,ph:1.20,th:-.45},
+  {n:'下管標',p:()=>scLogo('dt')||scMix('BB','DTht',.45),r:.72,ph:.95, th:-.40},
+  {n:'BB',p:()=>scNp('BB'),r:.34,ph:1.80,th:1.45},
+  {n:'後勾爪',p:()=>scNp('RA'),r:.45,ph:1.35,th:.90}
+];
 /* v199zzzzzz41：特寫進出改為補間，時長以大盤示意轉速為節拍：大盤轉 1/8 圈的時間（π/4 ÷ SPIN_W 0.36 rad/s ≈ 2.2 s），緩入緩出；環繞起步 1.5 s 漸加速。
    行動版（≤760px）：展示執行時下方卡片收起；任何觸碰（拉桿本身除外，交給拉桿自己的邏輯）即卡片升到預設高度並暫停。桌機不變。 */
 const SC_TR=Math.PI/4/SPIN_W*1000,SC_RAMP=1500,SC_MQ=matchMedia('(max-width:760px)'),SC_MAIN=document.querySelector('main');
-const SC={on:false,ph:'orbit',t:0,i:0,thBase:0,last:0,tw:null,folded:false,reHome:0,pre:false};
+const SC={on:false,ph:'orbit',t:0,i:0,thBase:0,last:0,tw:null,folded:false,reHome:0,pre:false,ov:null};
 window.__scFold=()=>{if(!SC_MQ.matches||!SC_MAIN||!scOK())return;if(SC_MAIN.dataset.sheet!=='closed'){scSheet('closed');SC.pre=true}};/* v199zzzzzz43：開場旋轉前先收卡片 */
 window.__scRz=()=>{if(!SC.on)return false;SC.reHome=performance.now();return true};/* 展示中舞台變動：交給展示重算全車（保留環繞中心） */
-function scPos(id){const h=HS.find(x=>x.p.id===id);return h?h.g.position.clone():null}
+function scPosHS(id){const h=HS.find(x=>x.p.id===id);return h?h.g.position.clone():null}
+function scPos(d){try{if(typeof d==='string')return scPosHS(d);if(d&&d.p){const v=d.p();return(v&&isFinite(v.x)&&isFinite(v.y)&&isFinite(v.z))?v:null}}catch(e){console.warn('scPos',d&&d.n,e)}return null}/* 字串＝熱點 id；物件＝自訂取位。取不到回 null，由 scNext 跳過 */
 function scFocus(pos,o){o=o||{};focus(pos);if(o.r)want.r=o.r;if(o.ph)want.ph=o.ph;if(o.th!=null)want.th=nearest(want.th,o.th)}/* 通用特寫：預設＝扭力巡檢 focus，可逐節點覆寫距離／仰角／方位 */
 function scCtr(){/* v199zzzzzz44：精簡版 three 沒有 Box3，改以 8 個角點自算 */try{const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9],v=new V3();bike.updateWorldMatrix(true,true);bike.traverseVisible(o=>{if(!o.isMesh||!o.geometry)return;const g=o.geometry;if(!g.boundingBox)g.computeBoundingBox();const bb=g.boundingBox;if(!bb||!(bb.max.x>=bb.min.x))return;for(let k=0;k<8;k++){v.set(k&1?bb.max.x:bb.min.x,k&2?bb.max.y:bb.min.y,k&4?bb.max.z:bb.min.z).applyMatrix4(o.matrixWorld);lo[0]=Math.min(lo[0],v.x);lo[1]=Math.min(lo[1],v.y);lo[2]=Math.min(lo[2],v.z);hi[0]=Math.max(hi[0],v.x);hi[1]=Math.max(hi[1],v.y);hi[2]=Math.max(hi[2],v.z)}});return hi[0]<lo[0]?null:new V3((lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2)}catch(e){console.warn('scCtr',e);return null}}
 function scHome(){const th=want.th;goHome();want.th=th;const c=scCtr();if(c){want.tgt.x=c.x;want.tgt.z=c.z}}/* v199zzzzzz42：以整車為中心環繞 */
@@ -2513,36 +2908,53 @@ const scSnap=()=>({tgt:want.tgt.clone(),r:want.r,th:want.th,ph:want.ph}),scSet=o
 function scTarget(fn){const a=scSnap();fn();const b=scSnap();scSet(a);return b}
 function scGo(to,next){SC.ph='tr';SC.tw={from:scSnap(),to,t:0,next}}
 function scToOrbit(){SC.ph='orbit';SC.t=0}
+function scBase(){/* v199zzzzzz93：環繞的基準視角。扭力分頁用按下播放時的視角（使用者：自旋路徑與其他分頁相同，只有起始鏡頭角度不同），不走 scHome——該分頁的 home 是 fitR()*TK() 的近距特寫視角，補間過去會變成「先退後再開始轉」。其餘分頁照舊回全車。 */if(tab==='torque'&&SC.ov)return{tgt:SC.ov.tgt.clone(),r:SC.ov.r,th:want.th,ph:SC.ov.ph};return scTarget(scHome)}
 function scNext(){let p=null;while(SC.i<SC_NODES.length&&!(p=scPos(SC_NODES[SC.i])))SC.i++;
-  if(p){SC.i++;scGo(scTarget(()=>scFocus(p)),()=>{SC.ph='hold';SC.t=0})}
-  else scGo(scTarget(()=>{scHome();want.th=nearest(want.th,SC.thBase)}),scToOrbit)}
+  if(p){const d=SC_NODES[SC.i],ix=SC.i;SC.i++;scGo(scTarget(()=>scFocus(p,(d&&typeof d==='object')?d:null)),()=>{SC.ph='hold';SC.t=0;scTagSet(ix)})}
+  else{scTagSet(null);const to=scBase();to.th=nearest(want.th,SC.thBase);scGo(to,scToOrbit)}}/* v199zzzzzz93：回全車改走 scBase（扭力分頁回按下播放時的視角，不回該分頁的近距 home） */
 function scSheet(st){if(!SC_MQ.matches||!SC_MAIN)return;SC_MAIN.dataset.sheet=st;wk(150)}
-function scStop(keep,raise){if(!SC.on)return;SC.on=false;SC.tw=null;if(keep){want.tgt.copy(cam.tgt);want.r=cam.r;want.th=cam.th;want.ph=cam.ph}
+function scStop(keep,raise){if(!SC.on)return;SC.on=false;SC.tw=null;scTagSet(null);if(keep){want.tgt.copy(cam.tgt);want.r=cam.r;want.th=cam.th;want.ph=cam.ph}
   if(raise&&SC.folded&&SC_MAIN&&SC_MAIN.dataset.sheet==='closed')scSheet('mid');SC.folded=false;scUI()}
 function scPlay(){try{scPlay0()}catch(e){console.warn('scPlay',e);SC.on=false;SC.tw=null;scUI()}}
-function scPlay0(){if(!scOK()){SC.why='慢機，未啟動';if(SC.pre){SC.pre=false;scSheet('mid')}return}if(sel)try{closeCard()}catch(_){}SC.pre=false;SC.on=true;SC.i=0;SC.last=performance.now();SC.folded=false;SC.reHome=0;
+function scPlay0(){if(!scOK()){SC.why='慢機，未啟動';if(SC.pre){SC.pre=false;scSheet('mid')}return}if(sel)try{closeCard()}catch(_){}
+  /* v199zzzzzz96：解除「爆炸圖與展示互斥」（使用者 2026-11-18）。攤開狀態下按播放照樣環繞與特寫：
+     環繞基準用按下播放時的視角（SC.ov，已含拆解的拉遠與抬高），特寫節點取位沿用車架節點（scNp 會加上 bike.position，故車架上移後仍對得上）。
+     不呼叫 G.exSet(false)，所以攤開狀態在展示期間維持不變。 */SC.pre=false;SC.on=true;SC.i=0;SC.last=performance.now();SC.folded=false;SC.reHome=0;
   if(SC_MQ.matches&&SC_MAIN&&SC_MAIN.dataset.sheet!=='closed'){scSheet('closed');SC.folded=true;SC.reHome=SC.last+450}else if(SC_MQ.matches)SC.folded=true;
-  scGo(scTarget(scHome),scToOrbit);scUI();wk(40);requestAnimationFrame(scTick)}
+  SC.ov=scSnap();/* v199zzzzzz93：記住起始視角，供扭力分頁的環繞與回全車使用 */
+  scTagSet(null);if(tab==='torque')scToOrbit();else scGo(scTarget(scHome),scToOrbit);
+  scUI();wk(40);requestAnimationFrame(scTick)}
 function scTick(now){try{scTick0(now)}catch(e){console.warn('scTick',e);SC.on=false;SC.tw=null;scUI()}}
 function scTick0(now){if(!SC.on)return;if(!scOK()){SC.why='慢機';scStop(true,true);return}const dt=Math.min(100,Math.max(0,now-SC.last));SC.last=now;SC.t+=dt;spinT=performance.now()+SPIN_HOLD;/* v199zzzzzz42：展示期間示意旋轉持續 */
-  if(SC.reHome&&now>=SC.reHome+150){if(SC.ph==='orbit'||SC.ph==='tr'&&SC.tw&&SC.tw.next===scToOrbit){SC.reHome=0;scGo(scTarget(scHome),scToOrbit)}}/* 卡片收起後舞台變高，重算全車距離 */
+  if(SC.reHome&&now>=SC.reHome+150){if(tab==='torque')SC.reHome=0;/* v199zzzzzz93：扭力分頁的環繞視角沿用起始視角，不隨卡片收起重算 */else if(SC.ph==='orbit'||SC.ph==='tr'&&SC.tw&&SC.tw.next===scToOrbit){SC.reHome=0;scGo(scTarget(scHome),scToOrbit)}}/* 卡片收起後舞台變高，重算全車距離 */
   if(SC.ph==='tr'&&SC.tw){const w=SC.tw;w.t+=dt;const k=Math.min(1,w.t/SC_TR),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
     want.tgt.lerpVectors(w.from.tgt,w.to.tgt,e);want.r=w.from.r+(w.to.r-w.from.r)*e;want.th=w.from.th+(w.to.th-w.from.th)*e;want.ph=w.from.ph+(w.to.ph-w.from.ph)*e;
     if(k>=1){SC.tw=null;w.next()}}
   else if(SC.ph==='orbit'){want.th+=2*Math.PI*dt/SC_REV*Math.min(1,SC.t/SC_RAMP);if(SC.t>=SC_ORBIT){SC.thBase=want.th;SC.i=0;scNext()}}
-  else if(SC.ph==='hold'&&SC.t>=SC_HOLD)scNext();
+  else if(SC.ph==='hold'){want.th+=2*Math.PI*dt/SC_HREV;/* v199zzzzzz96：特寫期間低速續轉 */if(SC.t>=SC_HOLD)scNext()}
   wk(40);requestAnimationFrame(scTick)}
+/* v199zzzzzz96：特寫節點名稱小卡（使用者 2026-11-18）。停留（hold）與進入該節點的補間（tr→hold）期間顯示，回全車或離開展示即隱藏。
+   取名：物件節點用 n；字串節點（扭力熱點 id）用該零件名稱。樣式比照 #tip 的卡片底色，另加毛玻璃，置於舞台下緣中央、不吃點擊。 */
+const scTag=document.createElement('div');scTag.id='scTag';scTag.setAttribute('aria-hidden','true');stage.appendChild(scTag);
+{const stl=document.createElement('style');stl.textContent='#scTag{position:absolute;left:50%;top:56px;transform:translate(-50%,-6px);pointer-events:none;z-index:6;display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--surface-card) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:var(--text-strong);border:1px solid var(--border-soft);border-radius:999px;padding:8px 18px;font-size:var(--fs-md);font-weight:600;letter-spacing:.04em;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.12);opacity:0;transition:opacity .35s ease,transform .35s ease}#scTag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}#scTag[data-on="1"]{opacity:1;transform:translate(-50%,0)}#scTag.rt{transform:translate(0,-6px)}#scTag.rt[data-on="1"]{transform:none}';document.head.appendChild(stl)}
+function scName(d){if(typeof d==='string'){const h=HS.find(x=>x.p.id===d);return h?h.p.name:''}return(d&&d.n)||''}
+function scTagSet(i){const t=i==null?'':scName(SC_NODES[i]);if(t&&scTag.textContent!==t)scTag.textContent=t;scTag.dataset.on=t?'1':'0'}
 const scBtn=document.createElement('button');scBtn.id='scBtn';scBtn.type='button';scBtn.className='btn';
 scBtn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="sc-pl" d="M8 5.5v13l10.5-6.5z" fill="currentColor"/><g class="sc-pa" fill="currentColor"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></g></svg>';
 stage.appendChild(scBtn);
-function scUI(){scBtn.hidden=!scOK();scBtn.dataset.on=SC.on?'1':'0';scBtn.setAttribute('aria-label',SC.on?'暫停展示':'播放展示');scBtn.title=SC.on?'暫停展示':'播放展示'}
+function scUI(){SPIN_SC=SC.on;/* v199zzzzzz93：示意旋轉用的展示旗標；play／stop 兩條路徑末端都會到這裡 */scBtn.hidden=!scOK();scBtn.dataset.on=SC.on?'1':'0';scBtn.setAttribute('aria-label',SC.on?'暫停展示':'播放展示');scBtn.title=SC.on?'暫停展示':'播放展示'}
 function scPlace(){const rb=document.getElementById('reset');if(!rb)return;const a=rb.getBoundingClientRect(),b=stage.getBoundingClientRect();if(!a.width){scBtn.style.visibility='hidden';return}
-  const cs=getComputedStyle(rb);scBtn.style.visibility='';const vt=innerWidth>760,st=a.height+8;/* v199zzzzzz71：桌機三顆圓鈕改垂直（回到全車在下、播放、音樂在最上），避免與主分頁膠囊干涉；行動版維持水平 */Object.assign(scBtn.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:st))+'px',top:(a.top-b.top-(vt?st:0))+'px',background:cs.backgroundColor,borderRadius:cs.borderRadius});/* 字色不跟回到全車鈕（它處理中會轉黃）；v199zzzzzz64：音樂鈕在播放鈕左側（播放鈕隱藏時貼回到全車鈕），樣式同兩顆圓鈕 */const mw=document.getElementById('bgmW');if(mw){const k=scBtn.hidden?1:2;Object.assign(mw.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:k*st))+'px',top:(a.top-b.top-(vt?k*st:0))+'px'});const mb=mw.querySelector('button');if(mb)Object.assign(mb.style,{background:cs.backgroundColor,borderRadius:cs.borderRadius})}}
+  const cs=getComputedStyle(rb);scBtn.style.visibility='';const vt=innerWidth>760,st=a.height+8;/* v199zzzzzz71：桌機三顆圓鈕改垂直（回到全車在下、播放、音樂在最上），避免與主分頁膠囊干涉；行動版維持水平 */Object.assign(scBtn.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:st))+'px',top:(a.top-b.top-(vt?st:0))+'px',background:cs.backgroundColor,borderRadius:cs.borderRadius});/* 字色不跟回到全車鈕（它處理中會轉黃）；v199zzzzzz64：音樂鈕在播放鈕左側（播放鈕隱藏時貼回到全車鈕），樣式同兩顆圓鈕 */const mw=document.getElementById('bgmW');if(mw){const k=scBtn.hidden?1:2;Object.assign(mw.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:k*st))+'px',top:(a.top-b.top-(vt?k*st:0))+'px'});const mb=mw.querySelector('button');if(mb)Object.assign(mb.style,{background:cs.backgroundColor,borderRadius:cs.borderRadius})}
+  /* v199zzzzzz97：特寫小卡改放在車款膠囊（#stTag）正下方（使用者 2026-11-18：v96 放舞台下緣，混在主分頁膠囊旁看不出來）。
+     桌機與膠囊同一條中線；行動版與膠囊左緣對齊。 */
+  {const t=document.getElementById('stTag'),q=t&&!t.hidden?t.getBoundingClientRect():null,y=q&&q.height?q.bottom-b.top+8:56;scTag.style.top=Math.round(y)+'px';
+   if(q&&q.width&&!vt){scTag.classList.add('rt');scTag.style.right='auto';scTag.style.left=Math.round(q.left-b.left)+'px'}
+   else{scTag.classList.remove('rt');scTag.style.right='auto';scTag.style.left=Math.round(q&&q.width?(q.left+q.right)/2-b.left:b.width/2)+'px'}}}
 new ResizeObserver(scPlace).observe(stage);window.addEventListener('resize',scPlace);setTimeout(scPlace,0);setInterval(()=>{if(scBtn.hidden!==!scOK())scUI();scPlace()},1000);
 scBtn.addEventListener('click',()=>{if(SC.on){SC.why='按鈕';scStop(true,true)}else{SC.why='按鈕';scPlay()}});
 ['pointerdown','wheel','keydown'].forEach(e=>window.addEventListener(e,ev=>{const t=ev.target&&ev.target.closest?ev.target:null;if(t&&t.closest('#scBtn,#bgmW'))return;const g=!!(t&&t.closest('.gb'));if(!SC.on&&SC.pre){SC.pre=false;if(!g)scSheet('mid')}if(SC.on)SC.why='操作 '+ev.type;scStop(true,!g)},{capture:true,passive:true}));
 window.__scAuto=()=>{const calm=false;SC.why=calm?'減少動態，未自動':'自動';if(!calm)scPlay()};
-window.__scWhy=w=>{SC.why=w};window.__LDs=()=>{try{const n=performance.getEntriesByType('navigation')[0]||{},r=x=>x?(x/1000).toFixed(1):'—',rs=performance.getEntriesByType('resource').filter(e=>/\.(js|css)(\?|$)/.test(e.name)),dl=Math.max(n.responseEnd||0,...rs.map(e=>e.responseEnd)),kb=Math.round(rs.reduce((s,e)=>s+(e.transferSize||0),(n.transferSize||0))/1024);return '載入 下載'+r(dl)+'（'+kb+' KB）／解析'+r(n.domInteractive)+'（app'+r(window.__tA1-window.__tA0)+'）／DCL'+r(n.domContentLoadedEventEnd)+'／load'+r(n.loadEventEnd)+'／毛玻璃'+r(window.__tRv)+' s｜就緒'+(()=>{const R=window.__RDY;if(!R)return '—';const L=(window.__LT||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600));const F=(window.__LF||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600)),q=b=>b[0]+'次'+(b[1]/1000).toFixed(1)+'s';return R.why+' '+R.n+'幀 卡頓'+R.hit+'（新程式'+q(R.hP)+'／新貼圖'+q(R.hT)+'／其他'+q(R.hO)+'）最長'+Math.round(R.max)+'ms 中位'+Math.round(R.med||0)+'ms｜程式'+R.p0+'→'+R.p1+' 貼圖'+R.t0x+'→'+R.t1x+'｜長任務'+L.length+'個'+Math.round(L.reduce((a,x)=>a+x[1],0))+'ms 長幀'+F.length+'個'+Math.round(F.reduce((a,x)=>a+x[1],0))+'ms（繪製'+Math.round(F.reduce((a,x)=>a+x[2],0))+'）'+'｜預建'+(window.__tPw?(window.__tPw/1000).toFixed(1)+'s':'未開始')})()+'｜program '+((renderer.info.programs||[]).length)}catch(e){return ''}};window.__SCs=()=>(SC.on?'執行':'停止')+(SC.why?'（'+SC.why+'）':'');
+window.__SCd={S:SC,stop:()=>scStop(true,false),play:scPlay,hs:id=>{const h=HS.find(x=>x.p.id===id);return h?[+(h.g.position.x*1000).toFixed(1),+(h.g.position.y*1000).toFixed(1),+(h.g.position.z*1000).toFixed(1)]:null},selId:()=>sel&&sel.id,pt:id=>{const h=HS.find(x=>x.p.id===id);if(!h)return null;const v=h.g.position.clone().project(camera),r=renderer.domElement.getBoundingClientRect();return[+(r.left+(v.x+1)/2*r.width).toFixed(1),+(r.top+(1-(v.y+1)/2)*r.height).toFixed(1)]},want:()=>[want.tgt.x,want.tgt.y,want.tgt.z,want.r,want.th,want.ph],spin:()=>spinA,sc:()=>SPIN_SC,nodes:SC_NODES,pos:scPos,focus:scFocus,next:scNext,cam:()=>[cam.tgt.x,cam.tgt.y,cam.tgt.z,cam.r,cam.th,cam.ph],go:i=>{const d=SC_NODES[i],v=scPos(d);if(v)scFocus(v,typeof d==='object'?d:null);return v?[+v.x.toFixed(4),+v.y.toFixed(4),+v.z.toFixed(4)]:null},w:a=>spinW(a)};/* v199zzzzzz93：除錯掛鉤——特寫節點取位與構圖（go(i) 直接跳到第 i 個特寫，用於逐節點調構圖） */window.__scWhy=w=>{SC.why=w};window.__LDs=()=>{try{const n=performance.getEntriesByType('navigation')[0]||{},r=x=>x?(x/1000).toFixed(1):'—',rs=performance.getEntriesByType('resource').filter(e=>/\.(js|css)(\?|$)/.test(e.name)),dl=Math.max(n.responseEnd||0,...rs.map(e=>e.responseEnd)),kb=Math.round(rs.reduce((s,e)=>s+(e.transferSize||0),(n.transferSize||0))/1024);return '載入 下載'+r(dl)+'（'+kb+' KB）／解析'+r(n.domInteractive)+'（app'+r(window.__tA1-window.__tA0)+'）／DCL'+r(n.domContentLoadedEventEnd)+'／load'+r(n.loadEventEnd)+'／毛玻璃'+r(window.__tRv)+' s｜就緒'+(()=>{const R=window.__RDY;if(!R)return '—';const L=(window.__LT||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600));const F=(window.__LF||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600)),q=b=>b[0]+'次'+(b[1]/1000).toFixed(1)+'s';return R.why+' '+R.n+'幀 卡頓'+R.hit+'（新程式'+q(R.hP)+'／新貼圖'+q(R.hT)+'／其他'+q(R.hO)+'）最長'+Math.round(R.max)+'ms 中位'+Math.round(R.med||0)+'ms｜程式'+R.p0+'→'+R.p1+' 貼圖'+R.t0x+'→'+R.t1x+'｜長任務'+L.length+'個'+Math.round(L.reduce((a,x)=>a+x[1],0))+'ms 長幀'+F.length+'個'+Math.round(F.reduce((a,x)=>a+x[1],0))+'ms（繪製'+Math.round(F.reduce((a,x)=>a+x[2],0))+'）'+'｜預建'+(window.__tPw?(window.__tPw/1000).toFixed(1)+'s':'未開始')})()+'｜program '+((renderer.info.programs||[]).length)}catch(e){return ''}};window.__SCs=()=>(SC.on?'執行':'停止')+(SC.why?'（'+SC.why+'）':'');
 scUI();
 setTimeout(()=>{try{keepPrograms()}catch(e){}},9000);
 /* ===== v109/v110：鈦原色表面（M.ti 及其 clone：車架、焊道、EX 勾爪）。噴砂＝世界座標 3D 雜訊微擾粗糙度與法線；拉絲＝沿管軸的條紋＋高光沿管周拉寬（管軸方向由法線的螢幕導數估出，條紋雜訊取世界法線）。

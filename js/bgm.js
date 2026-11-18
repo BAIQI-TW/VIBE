@@ -12,32 +12,32 @@
 const PERSONA={
  /* 人設名稱只在程式與文件，前台不顯示 */
 /* v199zzzzzz74：64／325 人設對調回 v65 之前（M325＝從容、M64＝俐落推進；使用者 2026-11-17 古典主題決定）；以下合成參數只在取樣載入失敗時使用 */
- '64':   {name:'俐落的推進',bpm:124,root:50,mode:'dorian',    prog:[0,6,3,4],cb:1,swing:0,  seed:6401,
+ '64':   {name:'Mars｜競賽意志',bpm:124,root:50,mode:'dorian',    prog:[0,6,3,4],cb:1,swing:0,  seed:6401,
           bass:{pat:'pulse8',wave:'sawtooth',det:[-6,6],cut:520,fe:2.2,q:3,a:.004,d:.16,s:.35,r:.08,vol:.32},
           harm:{pat:'arp16',wave:'square',det:[0],cut:1700,fe:1.2,q:1,a:.003,d:.09,s:.2,r:.06,vol:.075,oct:2},
           lead:{wave:'triangle',det:[0,7],cut:3600,fe:.6,q:.7,a:.01,d:.25,s:.6,r:.18,vol:.16,oct:2,dens:.55,legato:.35,range:7,leap:.12},
           hat:{pat:16,vol:.045},kick:{pat:'four',vol:.5},rv:.16},
- '325':  {name:'從容的速度',bpm:114,root:45,mode:'lydian',      prog:[0,4,5,3],cb:1,swing:0,  seed:3251,
+ '325':  {name:'Jupiter｜開闊從容',bpm:114,root:45,mode:'lydian',      prog:[0,4,5,3],cb:1,swing:0,  seed:3251,
           bass:{pat:'quarter',wave:'triangle',det:[0],cut:900,fe:.8,q:.8,a:.006,d:.3,s:.55,r:.12,vol:.42},
           harm:{pat:'pluck',wave:'sawtooth',det:[-5,5],cut:1500,fe:1.4,q:1.2,a:.004,d:.2,s:.15,r:.1,vol:.06,oct:1},
           lead:{wave:'sine',det:[0,4],cut:5000,fe:.3,q:.5,a:.02,d:.4,s:.7,r:.3,vol:.2,oct:2,dens:.42,legato:.6,range:6,leap:.15},
           hat:{pat:8,vol:.035},kick:{pat:'half',vol:.35},rv:.26},
- 'audax':{name:'長途的穩定步調',bpm:92,root:41,mode:'ionian',   prog:[0,3,0,4],cb:2,swing:0,  seed:3252,
+ 'audax':{name:'Saturn｜耐力與時間',bpm:92,root:41,mode:'ionian',   prog:[0,3,0,4],cb:2,swing:0,  seed:3252,
           bass:{pat:'quarter',wave:'sine',det:[0],cut:700,fe:.3,q:.5,a:.01,d:.4,s:.7,r:.15,vol:.5},
           harm:{pat:'pad',wave:'sawtooth',det:[-9,0,9],cut:950,fe:.4,q:.6,a:.9,d:1.2,s:.8,r:1.1,vol:.045,oct:1},
           lead:{wave:'triangle',det:[0],cut:3000,fe:.3,q:.5,a:.04,d:.6,s:.7,r:.4,vol:.19,oct:2,dens:.3,legato:.85,range:5,leap:.08},
           hat:null,kick:null,rv:.36},
- 'ili':  {name:'地形探索者',bpm:104,root:40,mode:'mixolydian',  prog:[0,6,3,0],cb:1,swing:.12,seed:3253,
+ 'ili':  {name:'Mercury｜輕快敏捷',bpm:104,root:40,mode:'mixolydian',  prog:[0,6,3,0],cb:1,swing:.12,seed:3253,
           bass:{pat:'synco',wave:'square',det:[0],cut:480,fe:1.5,q:2,a:.004,d:.18,s:.4,r:.08,vol:.28},
           harm:{pat:'arp8',wave:'triangle',det:[0],cut:2600,fe:.6,q:.7,a:.004,d:.18,s:.3,r:.12,vol:.12,oct:2},
           lead:{wave:'square',det:[0],cut:2400,fe:.9,q:1,a:.006,d:.2,s:.45,r:.12,vol:.07,oct:2,dens:.5,legato:.3,range:8,leap:.2},
           hat:{pat:8,vol:.04,ghost:.35},kick:{pat:'synco',vol:.42},rv:.22},
- 'ss':   {name:'鋼的手作溫度',bpm:86,root:43,mode:'aeolian',    prog:[0,5,3,4],cb:1,swing:.3, seed:2205,
+ 'ss':   {name:'Venus｜冷靜精準',bpm:86,root:43,mode:'aeolian',    prog:[0,5,3,4],cb:1,swing:.3, seed:2205,
           bass:{pat:'walk',wave:'triangle',det:[0],cut:800,fe:.6,q:.8,a:.006,d:.25,s:.5,r:.1,vol:.45},
           harm:{pat:'pluck',wave:'square',det:[0],cut:1100,fe:1,q:.8,a:.004,d:.22,s:.12,r:.12,vol:.05,oct:1},
           lead:{wave:'triangle',det:[0,5],cut:2600,fe:.4,q:.6,a:.015,d:.35,s:.55,r:.25,vol:.2,oct:2,dens:.4,legato:.5,range:6,leap:.1},
           hat:{pat:8,vol:.04},kick:{pat:'half',vol:.38},rv:.2},
- 'ex':   {name:'遠征的地平線',bpm:78,root:38,mode:'aeolian',    prog:[0,0,5,6],cb:2,swing:0,  seed:3254,
+ 'ex':   {name:'Uranus｜冒險與變化',bpm:78,root:38,mode:'aeolian',    prog:[0,0,5,6],cb:2,swing:0,  seed:3254,
           bass:{pat:'drone',wave:'sawtooth',det:[-7,7],cut:330,fe:.5,q:1.5,a:.5,d:1,s:.85,r:.8,vol:.26},
           harm:{pat:'pad5',wave:'sawtooth',det:[-8,8],cut:1200,fe:.3,q:.6,a:1.2,d:1.5,s:.8,r:1.4,vol:.045,oct:1},
           lead:{wave:'triangle',det:[0],cut:2800,fe:.4,q:.6,a:.03,d:.7,s:.65,r:.5,vol:.2,oct:2,dens:.28,legato:.8,range:10,leap:.3},
@@ -141,7 +141,7 @@ const SONGS={};function song(m){return SONGS[m]||(SONGS[m]=compose(PERSONA[m]||P
 /* ===== v199zzzzzz73：程序化流水聲（使用者 2026-11-17 選定先做；不需取樣、檔案零增加）=====
    兩層：①水流底噪＝兩路雜訊（左右各一、相位不同的慢速 LFO 推動帶通中心與音量）；②水泡＝短正弦、音高 40–90 ms 內上滑約 6 成、指數衰減、隨機左右，隨機間隔（偶爾成串）。
    跟著車款播放器一起淡入淡出；量依車款人設（WAT）。音量滑桿只控制整體，水聲比例固定。 */
-const WAT={'325':.45,'64':.3,'audax':.8,'ili':.5,'ss':.5,'ex':.9}/* v199zzzzzz74：隨人設對調；ili 改山魔王、SS 有鐵砧，略降 */;let wNoise=null;
+const WAT={'325':.5,'64':.5,'audax':.5,'ili':.5,'ss':.5,'ex':.5}/* v199zzzzzz97：《行星組曲》第一階段六款同量（決策稿：統一音量與混音標準；流水聲為獨立 Ambient Layer） */;let wNoise=null;
 function wBuf(){if(wNoise&&wNoise.sampleRate===ctx.sampleRate)return wNoise;const n=ctx.sampleRate*3,b=ctx.createBuffer(2,n,ctx.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c),r=rng(777+c);let lp=0;for(let i=0;i<n;i++){lp=lp*.6+(r()*2-1)*.4;d[i]=lp}
   const f=Math.floor(ctx.sampleRate*.05);for(let i=0;i<f;i++){const k=i/f;d[n-f+i]=d[n-f+i]*(1-k)+d[i]*k}}/* 頭尾交叉淡化，循環無接縫 */return wNoise=b}
 function water(pl,amt,t0){if(!amt)return;const wg=ctx.createGain();wg.gain.value=amt;wg.connect(pl.bus);const ws=ctx.createGain();ws.gain.value=.12;wg.connect(ws);ws.connect(verb);pl.wat={g:wg,next:t0,nb:t0+.6+Math.random()*1.5,amt,src:[]};
