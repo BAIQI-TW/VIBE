@@ -100,7 +100,7 @@ function customNodes(f){
 const root=document.documentElement,themeBtn=document.getElementById('themeBtn');
 function isDark(){const t=root.getAttribute('data-theme');if(t)return t==='dark';return matchMedia('(prefers-color-scheme: dark)').matches}
 function syncThemeBtn(){const l=!isDark();themeBtn.setAttribute('aria-checked',String(l));themeBtn.title=l?'切換為深色模式':'切換為淺色模式'}
-themeBtn.onclick=()=>{const t=isDark()?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('rkl-theme',t)}catch(e){}syncThemeBtn();paintHS()};
+themeBtn.onclick=()=>{const t=isDark()?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('rkl-theme',t)}catch(e){}syncThemeBtn();paintHS();STU.theme()/* v199zzzzzz112：攝影棚改讀另一組 token，補間 350 ms */};
 /* v199zzzzzz35：明亮模式為預設；按過切換才記住 */
 root.setAttribute('data-theme','light');try{if(localStorage.getItem('rkl-theme')==='dark')root.setAttribute('data-theme','dark')}catch(e){}
 syncThemeBtn();
@@ -121,6 +121,116 @@ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,0.05,50);
   panel(0,1.2,9.2,7,2.6,SK*1.5);panel(6.5,3,-6.5,1.3,7,SK*5.0,[.78,.9,1.15]);panel(-6.5,3,-6.5,1.1,6,SK*3.8,[1,.85,.65]);panel(0,-7,1,14,10,SK*0.95,[1,.84,.64]);panel(-7.5,1,-3,2.5,4,SK*1.4);panel(7.5,1,-3,2.5,4,SK*1.4);
   const pmg=new THREE.PMREMGenerator(renderer),mkEnv=()=>pmg.fromScene(env,0.03,0.1,100,{size:512}).texture;scene.environment=mkEnv();window.__envRebuild=()=>{const o=scene.environment;scene.environment=mkEnv();if(o&&o.dispose)o.dispose()}/* v199ze：WebGL context 還原後 PMREM 渲染目標內容會遺失，需重畫 */})();
 scene.add(new THREE.HemisphereLight(0xfff4e0,0x3a3426,0.45*Math.PI));const sun=new THREE.DirectionalLight(0xffffff,0.85*Math.PI);sun.position.set(2,4,3);scene.add(sun);const rim=new THREE.DirectionalLight(0xbfd8ff,1.0*Math.PI);rim.position.set(-3,2.5,-4);scene.add(rim);
+/* ===== 動態產品攝影棚（v199zzzzzz112）=====
+   背景由 CSS 漸層改為 3D：一個環形無縫攝影棚（LatheGeometry＋一個 ShaderMaterial，一次 draw call）。
+   · 轉台模型（D1）：攝影棚偏航每幀＝鏡頭偏航 cam.th（applyCam），亮區固定在物件 −z（車子正後方的牆），環繞時背景不動、車在轉。亮區不追蹤產品。
+   · 顏色單一來源＝CSS token --studio-*（vibe.css 兩個主題區塊）；數值參數＝STU_P。明暗共用一套幾何與 Shader，只換參數，主題切換補間 350 ms。
+   · 取景適應 STU.fit() 只在事件發生時跑（陰影重算完成、換分頁、resize 去抖、開場 4.2 s），拆解中不跑；補間 600 ms，不跳值。
+   · 與 PMREM 環境反射、燈光、曝光、材質完全分離（ShaderMaterial 不受光、toneMapped:false，顏色與 CSS token 一致）。#stage 的 CSS 漸層保留當備援。
+   · 每幀成本：rotation.y 一次賦值＋補間期間的 uniform 插值＋兩個比較（繪圖緩衝尺寸、ovPx）。 */
+const SR_KEYS=['hotK','kw','kh','poolK','frontK','vigR','vigK','grain'];/* v115：seam 移除（畫布鋪滿後接縫漸層停用） */const STU_P={dark:{hotK:.85,kw:1.25,kh:1.0,poolK:.25,frontK:.55,vigR:.42,vigK:.85,grain:.018},light:{hotK:.55,kw:1.6,kh:1.3,poolK:.15,frontK:.30,vigR:.55,vigK:.45,grain:.010}};STU_P.dark.seam=STU_P.light.seam=.24;/* v199zzzzzz113：行動版接縫漸層長度（舞台繪圖高度的比例；原寫死 .06，交界色階明顯） *//* 估值，待使用者以 #qp「攝影棚（試機用）」調過再定案 */
+const STU_P0={dark:Object.assign({},STU_P.dark),light:Object.assign({},STU_P.light)};const STU_VS=`varying vec3 vSP;varying vec3 vWP;
+void main(){vSP=position;vec4 wp=modelMatrix*vec4(position,1.0);vWP=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`;
+const STU_FS=`uniform vec3 uTop,uMid,uHot,uFloor,uEdge,uSeam;
+uniform float uHy,uHw,uHh,uHotK,uPoolR,uPoolK,uFrontK,uVigR,uVigK,uGrain,uSeamPx,uSeamW;
+uniform vec2 uRes,uVc;
+varying vec3 vSP;varying vec3 vWP;
+float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x),mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0)),f.x),f.y);}
+void main(){
+  float y=max(vWP.y,0.0),fr=length(vSP.xz);
+  // 1. 垂直漸層（牆）：產品高度附近＝uMid，往上漸深到 uTop
+  vec3 c=mix(uMid,uTop,smoothstep(0.5,7.0,y));
+  // 地面：車下＝uFloor，往外接到牆的 uMid（cove 連續）；鏡頭前方（物件 +z）漸暗
+  vec3 fc=mix(uFloor,uMid,smoothstep(1.5,11.0,fr));
+  fc=mix(fc,uEdge,uFrontK*smoothstep(0.5,9.0,vSP.z));
+  c=mix(fc,c,smoothstep(0.0,2.0,y));
+  // 2. 柔性亮區：車後牆面（物件 −z）；沿牆弧長 s 與高度差 dy 的高斯
+  float az=atan(vSP.x,-vSP.z),s=az*max(fr,1.0),dy=y-uHy;
+  float hot=exp(-(s*s)/(uHw*uHw)-(dy*dy)/(uHh*uHh));
+  c=mix(c,uHot,uHotK*hot);
+  // 車下地面的淡亮區
+  c=mix(c,uHot,uPoolK*exp(-fr*fr/(uPoolR*uPoolR))*(1.0-smoothstep(0.0,0.3,y)));
+  // 灰泥顆粒（D3）：地面取 xz、牆取（弧長, 高度）；遠處依 fwidth 淡出避免閃爍
+  if(uGrain>0.0){
+    float wl=smoothstep(0.0,0.6,y);
+    vec2 gp=mix(vSP.xz,vec2(s,y),wl);
+    float g=vn(gp*5.0)*0.65+vn(gp*17.0)*0.35;
+    float fw=length(fwidth(gp))*17.0;
+    c*=1.0+uGrain*(g-0.5)*2.0*(1.0-smoothstep(0.4,1.0,fw));
+  }
+  // 3. 周邊暗角（螢幕空間；只作用在攝影棚，不壓車身）
+  vec2 q=(gl_FragCoord.xy-uVc)/uRes.y; // v115：uRes＝#stage 繪圖尺寸、uVc＝#stage 中心（畫布已大於 #stage）
+  c=mix(c,uEdge,uVigK*smoothstep(uVigR,uVigR+0.65,length(q)));
+  // 行動版接縫：畫面最下方 uSeamPx 以內＝uSeam（--stage-bot），往上 uSeamW 漸變（max：uSeamW＝0 時 smoothstep 兩端相等屬未定義行為）
+  // v199zzzzzz113：改長距離、尾端零斜率的衰減（(1−t)^1.8），交界不再出現一條色帶
+  float st=clamp((gl_FragCoord.y-uSeamPx)/max(uSeamW,0.001),0.0,1.0);
+  c=mix(c,uSeam,pow(1.0-st,1.8)*step(0.5,uSeamPx+uSeamW));
+  gl_FragColor=vec4(c,1.0);
+  #include <colorspace_fragment>
+  gl_FragColor.rgb+=(h21(gl_FragCoord.xy+fract(vWP.xz))-0.5)/255.0; // 防色帶抖動（D3），在 sRGB 編碼之後
+}`;
+const STU=(function(){
+  const NK={hotK:'uHotK',hw:'uHw',hh:'uHh',hy:'uHy',poolK:'uPoolK',poolR:'uPoolR',frontK:'uFrontK',vigR:'uVigR',vigK:'uVigK',grain:'uGrain'},CKY={top:'uTop',mid:'uMid',hot:'uHot',floor:'uFloor',edge:'uEdge',seam:'uSeam'};
+  const u={uRes:{value:new THREE.Vector2(1,1)},uVc:{value:new THREE.Vector2(.5,.5)},uSeamPx:{value:0},uSeamW:{value:0}},goal={};
+  Object.keys(NK).forEach(k=>{u[NK[k]]={value:0};goal[k]=0});Object.keys(CKY).forEach(k=>{u[CKY[k]]={value:new THREE.Color()};goal[k]=new THREE.Color()});
+  /* 剖面（單位 m，地面 y＝0）：地面 → cove（圓心 (11,3) 半徑 3）→ 牆 → 穹頂（圓心 (0,9) 半徑 14）。拆解時鏡頭最遠 9 m、牆半徑 14 m，鏡頭永遠在棚內；camera.far＝50 夠用 */
+  const pts=[];[0,1,2.5,4.5,7,11].forEach(x=>pts.push(new THREE.Vector2(x,0)));
+  for(let i=1;i<=8;i++){const a=i/8*Math.PI/2;pts.push(new THREE.Vector2(11+3*Math.sin(a),3-3*Math.cos(a)))}
+  pts.push(new THREE.Vector2(14,9));
+  for(let i=1;i<=8;i++){const a=i/8*Math.PI/2;pts.push(new THREE.Vector2(14*Math.cos(a),9+14*Math.sin(a)))}
+  /* v199zzzzzz114：改用 ShaderMaterial 整段著色器（three 精簡版已補輸出 ShaderMaterial）。three 只補前綴（matrix uniform、GLSL3 轉換）並解析 #include <colorspace_fragment>；不受光、不吃色調映射 */
+  const mat=new THREE.ShaderMaterial({uniforms:u,vertexShader:STU_VS,fragmentShader:STU_FS,side:THREE.BackSide,toneMapped:false,depthWrite:true});
+  const mesh=new THREE.Mesh(new THREE.LatheGeometry(pts,64),mat);
+  mesh.renderOrder=1;/* 其他不透明件為 0：車身先畫，被遮住的攝影棚像素由深度測試提早剔除 */mesh.frustumCulled=false;mesh.name='studio';scene.add(mesh);
+  let box={bw:1.7,bh:1.0,cy:.5,rH:2.6},cur=STU_P.light,cOv={dark:{},light:{}},tw=null,from=null,live=false,ft=0,sw=0,sh=0,so=-1,sv=-1;
+  const dv=new THREE.Vector2(),V=new THREE.Vector3(),gOK=()=>TIER==='hi'&&!SLOW,kick=n=>{if(live)wk(n)};/* wk 與 wake 在後面才宣告；開場前不呼叫 */
+  setTimeout(()=>{live=true},0);
+  function geom(){const D=14+box.rH;goal.hw=cur.kw*(box.bw/2)*D/box.rH;goal.hh=cur.kh*(box.bh/2)*D/box.rH;goal.hy=box.cy;goal.poolR=.6*box.bw}
+  function fill(){goal.hotK=cur.hotK;goal.poolK=cur.poolK;goal.frontK=cur.frontK;goal.vigR=cur.vigR;goal.vigK=cur.vigK;goal.grain=gOK()?cur.grain:0}
+  function go(d){
+    if(!(d>0)){Object.keys(NK).forEach(k=>{u[NK[k]].value=goal[k]});Object.keys(CKY).forEach(k=>u[CKY[k]].value.copy(goal[k]));tw=null;kick(3);return}
+    from={};Object.keys(NK).forEach(k=>{from[k]=u[NK[k]].value});Object.keys(CKY).forEach(k=>{from[k]=u[CKY[k]].value.clone()});tw={t0:performance.now(),d};kick(3)}
+  function theme(first){
+    cur=STU_P[isDark()?'dark':'light'];
+    const cs=getComputedStyle(root),tk=n=>cs.getPropertyValue(n).trim()||cs.getPropertyValue('--stage-top').trim()||'#808080';
+    const ov=cOv[isDark()?'dark':'light'];['top','mid','hot','floor','edge'].forEach(n=>goal[n].setStyle(ov[n]||tk('--studio-'+n)));goal.seam.setStyle(tk('--stage-bot'));
+    fill();geom();go(first?0:350);if(!first)kick(30);if(api.ui)api.ui()}
+  function fit(){
+    if(G.exOn&&G.exOn())return;/* 拆解中維持現值 */
+    try{api.nFit++;
+      /* 包圍盒：可見網格的幾何包圍盒 8 角點轉世界座標（同 scCtr；只取 x、y） */
+      const lo=[1e9,1e9],hi=[-1e9,-1e9];bike.updateWorldMatrix(true,true);
+      bike.traverseVisible(o=>{if(!o.isMesh||!o.geometry)return;const g=o.geometry;if(!g.boundingBox)g.computeBoundingBox();const q=g.boundingBox;if(!q||!(q.max.x>=q.min.x))return;
+        for(let k=0;k<8;k++){V.set(k&1?q.max.x:q.min.x,k&2?q.max.y:q.min.y,k&4?q.max.z:q.min.z).applyMatrix4(o.matrixWorld);lo[0]=Math.min(lo[0],V.x);lo[1]=Math.min(lo[1],V.y);hi[0]=Math.max(hi[0],V.x);hi[1]=Math.max(hi[1],V.y)}});
+      if(hi[0]<lo[0])return;
+      const rH=tab==='torque'?fitR()*TK():fitSide();/* 首頁視角的鏡頭距離 */
+      box={bw:hi[0]-lo[0],bh:hi[1]-lo[1],cy:(lo[1]+hi[1])/2,rH};api.box=box;geom();go(600)
+    }catch(e){console.warn('studio fit',e)}}/* 攝影棚是裝飾，取景失敗不得拖垮主程式 */
+  function tick(){
+    if(tw){const k=Math.min(1,(performance.now()-tw.t0)/tw.d),e=1-Math.pow(1-k,3);
+      for(const n in NK)u[NK[n]].value=from[n]+(goal[n]-from[n])*e;
+      for(const n in CKY)u[CKY[n]].value.lerpColors(from[n],goal[n],e);
+      if(k>=1)tw=null;wk(3)}
+    else{const g=gOK()?cur.grain:0;if(goal.grain!==g){goal.grain=g;u.uGrain.value=g;wk(2)}}/* 顆粒：mid／lo 層與慢機強制 0（探測結果晚於開場） */
+    sync()}
+  /* 螢幕空間項（暗角、接縫）的尺寸：繪圖緩衝與 ovPx 變了才寫。drawFrame 也呼叫一次——setRes（互動時降像素比）發生在 tick 之後、同一幀繪製之前，只靠 tick 會有一幀用舊尺寸（暗角閃一下） */
+  function sync(){renderer.getDrawingBufferSize(dv);
+    const pr=renderer.getPixelRatio(),vw=stage.clientWidth*pr,vh=stage.clientHeight*pr;
+    if(dv.x!==sw||dv.y!==sh||vw!==so||vh!==sv){sw=dv.x;sh=dv.y;so=vw;sv=vh;u.uRes.value.set(Math.min(vw,sw)||sw,Math.min(vh,sh)||sh);u.uVc.value.set(u.uRes.value.x/2,sh-u.uRes.value.y/2);u.uSeamPx.value=0;u.uSeamW.value=0}}/* v115：畫布延伸到卡片底下，行動版接縫漸層不再需要（uSeam* 歸零＝關閉） */
+  const api={mesh,u,P:STU_P,goal,nFit:0,box,theme,fit,tick,sync,
+    fitSoon(){clearTimeout(ft);ft=setTimeout(fit,200)},
+    busy:()=>!!tw,/* 測試用：補間是否進行中（swiftshader 約 0.5 fps，不能用固定秒數等補間） */
+    setP(k,v){cur[k]=+v;if(k==='kw'||k==='kh')geom();if(k==='seam')so=-1;fill();go(0)},
+    /* v199zzzzzz113：試機用背景顏色（只改目前主題；覆蓋 CSS token，不寫回 CSS）。reset＝清掉覆蓋與數值回到 STU_P0 */
+    setC(n,hex){cOv[isDark()?'dark':'light'][n]=hex;goal[n].setStyle(hex);u[CKY[n]].value.copy(goal[n]);tw=null;kick(3)},
+    col(n){return '#'+goal[n].getHexString()},/* v116：讀目標色（goal）而非補間中的 uniform——切換明暗時 theme() 隨即呼叫 ui()，原本會讀到舊主題色，面板與 line() 輸出和實際對不起來（使用者 2026-11-19 回報） */
+    reset(){const d=isDark()?'dark':'light';cOv[d]={};Object.assign(cur,STU_P0[d]);so=-1;theme(true)},/* 試機滑桿：只改目前主題那一組，即時套用 */
+    line(){return (isDark()?'暗色':'明亮')+'：'+SR_KEYS.map(k=>k+' '+(+cur[k]).toFixed(k==='grain'?3:2)).join('｜')+'｜顏色 '+['top','mid','hot','floor','edge'].map(n=>n+' '+api.col(n)).join(' ')},
+    read(x,y){drawFrame();const gl=renderer.getContext(),o=new Uint8Array(4);gl.readPixels(x,gl.drawingBufferHeight-1-y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,o);return[o[0],o[1],o[2],o[3]]},/* 測試用：同一個工作內 drawFrame＋readPixels（y 由上往下） */
+    ui:null};
+  theme(true);window.STU=api;return api})();
 const mat=(c,m,r)=>{const x=new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r});x.color;return x};
 /* 材質（PBR：非金屬 m≈0、金屬 m≈1；粗糙度依件別）。碳纖維用 MeshPhysicalMaterial＋清漆層（clearcoat）。 */
 const matP=(c,m,r,o)=>new THREE.MeshPhysicalMaterial(Object.assign({color:c,metalness:m,roughness:r},o));
@@ -542,13 +652,13 @@ G.seat=grp();(function(){/* 座墊：由 STEP（Saddle_02.stp）實測；座墊�
   function commit(){
     const im=x.createImageData(TW,TH),D=im.data,fx=Math.round(TW*.06),fy=Math.round(TH*.06);let eg=0;
     for(let yy=0;yy<TH;yy++){const ey=Math.min(1,Math.min(yy,TH-1-yy)/fy);for(let xx=0;xx<TW;xx++){const ex=Math.min(1,Math.min(xx,TW-1-xx)/fx),f=ex*ey,i=yy*TW+xx,a=1-acc[i];if(f<1&&a>eg)eg=a;D[i*4+3]=Math.round(255*a*f*f*(3-2*f))}}/* 邊緣羽化，避免取景框邊界露出直線；eg＝羽化帶內原本的最大不透明度；v199zzzzzz88 陰影加深後實測 0.017–0.022（模糊尾端所致，非車身出框），門檻改為 0.03 */
-    x.putImageData(im,0,0);tex.needsUpdate=true;window.__SH.edge=eg}
+    x.putImageData(im,0,0);tex.needsUpdate=true;window.__SH.edge=eg;STU.fit()/* v199zzzzzz112：陰影重算完成＝車款／尺寸／零件停手後，攝影棚取景跟著同一個時機 */}
   function bake(){li=0;for(;li<LAY.length;li++)if(!step())return false;commit();li=0;dirty=false;return true}/* 一次做完（測試用） */
   G.shMark=(ms)=>{dirty=true;li=0;at=performance.now()+(ms||SH_WAIT)};
   G.shTick=()=>{if(G.exOn&&G.exOn())return;/* v199zzzzzz87：拆解中不重算陰影（零件散開的剪影無意義），復原後再補 */if(!dirty||performance.now()<at)return;if(!step()){at=performance.now()+2000;li=0;return}
     if(++li>=LAY.length){commit();li=0;dirty=false}else if(typeof wk==='function')wk(3)};
   window.__SH={bake,mark:G.shMark,cv,dirty:()=>dirty,edge:0};
-  setTimeout(()=>G.shMark(100),4000);/* 開場補一次（延後載入的零件） */
+  setTimeout(()=>G.shMark(100),4000);/* 開場補一次（延後載入的零件） */setTimeout(STU.fit,4200);/* v199zzzzzz112：開場第一次取景（在陰影開場補算之後） */
   ['click','change','input','keyup'].forEach(e=>window.addEventListener(e,()=>G.shMark(),{passive:true,capture:true}));
 })();
 
@@ -853,9 +963,9 @@ function mkDim(mt){return{line:rlMesh(RLG,mt),c1:rlMesh(RLC,mt),c2:rlMesh(RLC,mt
 const dimRowD=mkDim(RLMR),dimIn=mkDim(),dimArm=mkDim(),dimAll=d=>[d.line,d.c1,d.c2,d.t1,d.t2,d.p1,d.p2];
 const rlLab={i:document.getElementById('rl_i'),a:document.getElementById('rl_a')};
 /* 圓形標籤大小隨舞台高度縮放（高 700 px 以上＝原大小，最小 62%，字級不低於 10 px），不隨捏合縮放變動，字才一直讀得到；並限制在舞台內。 */
-function rlText(k,p,txt,off,cx){const q=p.clone().project(camera),el=rlLab[k],W=stage.clientWidth,H=stage.clientHeight,f=Math.max(.62,Math.min(1,H/700)),D=(k==='i'?71:64)*f,px=(q.x+1)/2*W;
+function rlText(k,p,txt,off,cx){const q=p.clone().project(camera),el=rlLab[k],W=stage.clientWidth,H=stage.clientHeight,f=Math.max(.62,Math.min(1,H/700)),D=(k==='i'?71:64)*f,px=(q.x+1)/2*(CVW||W);
   el.style.width=el.style.height=D+'px';el.style.fontSize=Math.max(10,12*f)+'px';
-  el.style.left=Math.max(D/2+4,Math.min(W-D/2-4,cx!=null?cx:px))+'px';el.style.top=Math.max(D/2+4,(1-q.y)/2*H-off*f)+'px';el.textContent=txt;el.style.display='flex';return px}
+  el.style.left=Math.max(D/2+4,Math.min(W-D/2-4,cx!=null?cx:px))+'px';el.style.top=Math.max(D/2+4,(1-q.y)/2*(CVH||H)-off*f)+'px';el.textContent=txt;el.style.display='flex';return px}
 function rlSeg2(m,a,b,r){const d=b.clone().sub(a),L=d.length();if(L<1e-4){m.visible=false;return}m.position.copy(a).addScaledVector(d,.5);m.scale.set(r,L,r);m.quaternion.setFromUnitVectors(new V3(0,1,0),d.normalize());m.visible=true}
 function rlCone(m,tip,dir,k){k=k||1;m.position.copy(tip).addScaledVector(dir,-RAL*k/2);m.scale.set(RAR*k,RAL*k,RAR*k);m.quaternion.setFromUnitVectors(new V3(0,1,0),dir);m.visible=true}
 /* 兩種標註樣式。arrow＝true：雙向箭頭＋長端線（尺寸對照，點列時出現）；false：實線＋短端線（騎士跨高、手臂長）。w＝線半徑。短量測自動縮小箭頭，避免箭頭互相重疊。 */
@@ -893,12 +1003,12 @@ function updateDim(){scoreDimSync();if(!N||!dimKey){dimLine.visible=false;dimRow
 function placeTags(){ADDONS.forEach(a=>{const el=document.getElementById('tag_'+a.id),on=false;/* v199zzzzi：加購零件品名膠囊一律不顯示 */
   if(!on){el.style.display='none';return}const o=bike.position.x,w=stage.clientWidth,h=stage.clientHeight,
     p=(a.id==='blktec'?new V3(N.bar.x/1000+o+.02,N.bar.y/1000+.03,0):new V3(N.saddle.x/1000+o-.03,N.saddle.y/1000-.02,0)).project(camera);
-  let x=(p.x+1)/2*w+(a.id==='blktec'?84:-112),y=(1-p.y)/2*h-(a.id==='blktec'?46:34);
+  let x=(p.x+1)/2*(CVW||w)+(a.id==='blktec'?84:-112),y=(1-p.y)/2*(CVH||h)-(a.id==='blktec'?46:34);
   x=Math.max(100,Math.min(w-100,x));y=Math.max(26,Math.min(h-26,y));el.style.left=x+'px';el.style.top=y+'px';el.style.display='flex'})}
 function projectLabel(){if(!dimLine.visible){dimLabel.style.display='none';return}
   /* 標籤不壓在線上：沿螢幕空間中垂直於尺寸線的方向（取朝上、近乎垂直線時取右側）移開，距離＝標籤半寬高在該方向的投影＋間隙 */
   const a=dimGeo.attributes.position.array,W=stage.clientWidth,H=stage.clientHeight,
-    sp=(x,y,z)=>{const q=new V3(x,y,z).project(camera);return[(q.x+1)/2*W,(1-q.y)/2*H]},
+    sp=(x,y,z)=>{const q=new V3(x,y,z).project(camera);return[(q.x+1)/2*(CVW||W),(1-q.y)/2*(CVH||H)]},
     p0=sp(a[0],a[1],.16),p1=sp(a[3],a[4],.16),mx=(p0[0]+p1[0])/2,my=(p0[1]+p1[1])/2;
   dimLabel.textContent=dimText;dimLabel.style.display='block';
   let dx=p1[0]-p0[0],dy=p1[1]-p0[1];const dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;
@@ -934,12 +1044,15 @@ const TQ_MINR=2.7;/* 扭力分頁放大倍率（取景距離乘數） */
 function fitR(){const a=stage.clientWidth/Math.max(1,stage.clientHeight);return a<1?3.8:a<1.4?3.5:a<1.7?3.0:2.55}
 function fitSide(){const cov=stage.clientWidth<=480?.74:.88,asp=Math.max(.3,stage.clientWidth/Math.max(1,stage.clientHeight-ovPx)),t=Math.tan(15*Math.PI/180),T=riderTop(),hv=T?Math.max(.5,T/2+.03):.5;return Math.max(2.1,Math.max(.86/(cov*t*asp),hv/(.82*t)))}
 function goHome(){want.tgt.copy(homeTgt(tab==='torque',homeFlip));want.r=tab==='torque'?fitR()*TK():fitSide();if(tab==='torque'){want.ph=1.36;want.th=nearest(want.th,homeTh(true,homeFlip))}else{want.ph=Math.PI/2;want.th=nearest(want.th,homeTh(false,homeFlip))}}
-function applyCam(){cam.tgt.lerp(want.tgt,.12);cam.r+=(want.r-cam.r)*.12;cam.th+=(want.th-cam.th)*.12;cam.ph+=(want.ph-cam.ph)*.12;
+/* v199zzzzzz112（D2）：鏡頭最低高度 STU_YMIN＝0.04 m（不得低於攝影棚地面）。目標點 y≥0；極角上限由 y＝tgt.y＋r·cosφ ≥ YMIN 反解。對 want 與 cam 各夾一次：想去的位置與補間途中的位置都不會穿地（只夾 want 時，r 與 φ 同時補間會在途中穿地）。拖曳、縮放、捏合、特寫補間、展示環繞都經過這裡，不需逐處修改。 */
+const STU_YMIN=.04;function stuLimit(o){if(o.tgt.y<0)o.tgt.y=0;const k=(STU_YMIN-o.tgt.y)/Math.max(.05,o.r);if(k>-1){const m=Math.acos(Math.min(1,k));if(o.ph>m)o.ph=m}}
+function applyCam(){stuLimit(want);cam.tgt.lerp(want.tgt,.12);cam.r+=(want.r-cam.r)*.12;cam.th+=(want.th-cam.th)*.12;cam.ph+=(want.ph-cam.ph)*.12;stuLimit(cam);
   const sp=Math.sin(cam.ph);camera.position.set(cam.tgt.x+cam.r*sp*Math.sin(cam.th),cam.tgt.y+cam.r*Math.cos(cam.ph),cam.tgt.z+cam.r*sp*Math.cos(cam.th));camera.lookAt(cam.tgt);
+  STU.mesh.rotation.y=cam.th;/* v199zzzzzz112（D1）轉台：攝影棚偏航＝鏡頭偏航；鏡頭在棚內物件空間永遠位於 +z，亮區放 −z（車後牆）。俯仰與縮放照世界座標 */
   const w=stage.clientWidth,h=stage.clientHeight,goal=(sel&&!wrap.hidden)?h*.24:(ovPx>0?ovPx/2:(window.innerWidth<=760?h*.14:h*.07));offY+=(goal-offY)*.12;if(Math.abs(goal-offY)<.02)offY=goal;
   if(cam.tgt.distanceToSquared(want.tgt)<1e-10&&Math.abs(want.r-cam.r)<1e-5&&Math.abs(want.th-cam.th)<1e-5&&Math.abs(want.ph-cam.ph)<1e-5){cam.tgt.copy(want.tgt);cam.r=want.r;cam.th=want.th;cam.ph=want.ph}/* 接近目標即吸附，鏡頭簽章不再變動 */
  
-  if(Math.abs(offY)>.5)camera.setViewOffset(w,h,0,offY,w,h);else camera.clearViewOffset()}
+  if(Math.abs(offY)>.5||(CVW&&(CVW!==w||CVH!==h)))camera.setViewOffset(w,h,0,offY,CVW||w,CVH||h);else camera.clearViewOffset()}/* v115：畫布大於 #stage 時一律走 viewOffset */
 function focus(pos){want.tgt.copy(pos);want.r=1.05;want.ph=1.3;if(pos.z<-.03)want.th=nearest(want.th,Math.PI-.55);else if(pos.z>.03)want.th=nearest(want.th,.55)}
 const ptrs=new Map();let dragMoved=0,pinch0=null,multi=false,lastTap=null;
 stage.addEventListener('pointerdown',e=>{if(e.target!==renderer.domElement)return;renderer.domElement.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,pan:e.button===1});if(e.button===1)e.preventDefault();dragMoved=0;
@@ -970,14 +1083,22 @@ function hover(e){const p=tab==='torque'?pick(e):null;if(p){const r=stage.getBou
 document.getElementById('reset').onclick=()=>{const tq=tab==='torque',hP=tq?1.36:Math.PI/2,hR=tq?fitR()*TK():fitSide(),hy=homeTgt(tq,homeFlip),ht=homeTh(tq,homeFlip),d=Math.abs(want.th-nearest(want.th,ht)),atHome=!sel&&Math.abs(want.ph-hP)<.03&&d<.03&&Math.abs(want.r-hR)<.03*hR&&want.tgt.distanceTo(hy)<.01;
   closeCard();if(atHome){homeFlip^=1;let t=homeTh(tq,homeFlip);while(t<want.th+1)t+=2*Math.PI;want.th=t;want.tgt.copy(homeTgt(tq,homeFlip));wk()}else{/* v199zzzzzz31：旋轉過時第一下回到離目前視角最近的正側面（左或右），第二下才切到另一側 */const dS=f=>Math.abs(want.th-nearest(want.th,homeTh(tq,f))),d0=dS(0),d1=dS(1);homeFlip=d1<d0-1e-6?1:(d0<d1-1e-6?0:homeFlip);goHome()}};
 var ovPx=0;function ovCalc(){const a=document.querySelector('aside'),s=stage.getBoundingClientRect(),r=a.getBoundingClientRect();ovPx=(matchMedia('(max-width:760px)').matches&&r.top<s.bottom)?s.bottom-r.top:0}
-function resize(){ovCalc();wk();const w=stage.clientWidth,h=stage.clientHeight;renderer.setPixelRatio(PRC());renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();if(!sel&&!(window.__scRz&&window.__scRz())){want.r=tab==='torque'?fitR()*TK():fitSide();want.tgt.copy(homeTgt(tab==='torque',homeFlip))}}/* v87：全車距離與 goHome 一致（原為 fitR，造成載入後第一次按「回到全車」先拉近） */
+/* v199zzzzzz115：3D 畫布鋪滿整頁（使用者 2026-11-19）。#stage 仍是「看得到的 3D 區」（取景、浮層座標、拖曳換算都以它為準）；
+   畫布本身從 #stage 左上角延伸到 main 右下角，壓在右側欄（桌機）／底部卡片（行動版）底下，卡片改半透明浮在 3D 上。
+   投影用 setViewOffset：虛擬畫面＝#stage（w×h），實際繪製＝整張畫布（CVW×CVH），所以 NDC 對應整張畫布，浮層換算像素時用 CVW／CVH。
+   好處：拖曳側欄或底部卡片只改 #stage 大小（鏡頭長寬比），畫布繪圖緩衝不重配；只有視窗尺寸或像素比變了才 setSize。 */
+var CVW=0,CVH=0,CVPR=0;function sizeCanvas(force){const m=stage.closest('main')||document.body,s=stage.getBoundingClientRect(),r=m.getBoundingClientRect(),
+  w=Math.max(1,Math.round(Math.max(r.right,s.right)-s.left)),h=Math.max(1,Math.round(Math.max(r.bottom,s.bottom)-s.top)),pr=PRC();
+  if(!force&&w===CVW&&h===CVH&&pr===CVPR)return;CVW=w;CVH=h;CVPR=pr;const el=renderer.domElement;el.style.width=w+'px';el.style.height=h+'px';renderer.setPixelRatio(pr);renderer.setSize(w,h,false);wk()}
+new ResizeObserver(()=>{sizeCanvas();wk()}).observe(document.querySelector('main')||document.body);
+function resize(){ovCalc();wk();const w=stage.clientWidth,h=stage.clientHeight;sizeCanvas();camera.aspect=w/h;camera.updateProjectionMatrix();if(!sel&&!(window.__scRz&&window.__scRz())){want.r=tab==='torque'?fitR()*TK():fitSide();want.tgt.copy(homeTgt(tab==='torque',homeFlip))}STU.fitSoon()/* v199zzzzzz112：舞台長寬比改變 → 取景（去抖 200 ms） */}/* v87：全車距離與 goHome 一致（原為 fitR，造成載入後第一次按「回到全車」先拉近） */
 new ResizeObserver(resize).observe(stage);
 /* 有動作才重繪：使用者操作、視窗變動、主題切換後續畫約 2.5 秒；鏡頭、轉場還在動或有選取零件（光圈脈動）時持續畫，其餘靜止不重繪。 */
 let wake=240,lastSig=0,lastPulse=0;function wk(n){wake=Math.max(wake,Math.min(n==null?40:n,40))}/* 喚醒 40 幀；滑鼠移動不喚醒（鏡頭移動由簽章偵測） */
 ['pointerdown','pointerup','wheel','keydown','input','change','click','touchstart'].forEach(e=>window.addEventListener(e,()=>wk(),{passive:true,capture:true}));
 /* 操作中（按住拖曳或滾輪）且鏡頭在動時，暫時以像素比 1 繪製；停手後補一幀完整解析 */
 let inter=0,wheelT=0,swT=0;window.addEventListener('pointerdown',()=>{inter=1},{capture:true,passive:true});['pointerup','pointercancel'].forEach(e=>window.addEventListener(e,()=>{inter=0},{capture:true,passive:true}));window.addEventListener('wheel',()=>{wheelT=performance.now()+250},{capture:true,passive:true});
-function setRes(low){lowRes=low;renderer.setPixelRatio(PRC());renderer.setSize(stage.clientWidth,stage.clientHeight,false)}
+function setRes(low){lowRes=low;sizeCanvas()}
 window.addEventListener('resize',()=>wk());document.addEventListener('visibilitychange',()=>wk());
 /* v199ze（審查 F-08）：WebGL context lost／restored。three 本身會 preventDefault 並在還原後重建 GL 狀態，幾何、貼圖、批次資料表會在下次繪製時重新上傳；但 PMREM 環境光是渲染目標、內容不會自動回來，需重畫。這裡補：中斷時暫停繪製並顯示提示；還原後重畫環境光、全部材質重編、重設像素比與尺寸；6 秒仍未還原則提供重新載入。 */
 window.__ctxLost=false;
@@ -985,7 +1106,7 @@ window.__ctxLost=false;
   const show=(msg,btn)=>{if(!box){box=document.createElement('div');box.setAttribute('role','status');box.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:14px 18px;border-radius:12px;background:rgba(20,20,20,.78);color:#fff;font:500 14px/1.5 system-ui,sans-serif;text-align:center;z-index:20;max-width:80%';stage.appendChild(box)}
     box.textContent=msg;if(btn){const b=document.createElement('button');b.textContent='重新載入';b.style.cssText='display:block;margin:10px auto 0;padding:6px 14px;border-radius:8px;border:0;font:inherit;cursor:pointer';b.onclick=()=>location.reload();box.appendChild(b)}box.hidden=false};
   cv.addEventListener('webglcontextlost',e=>{e.preventDefault();window.__ctxLost=true;show('3D 暫時中斷，正在恢復…');clearTimeout(tm);tm=setTimeout(()=>{if(window.__ctxLost)show('3D 無法自動恢復，請重新載入頁面。',true)},6000)},false);
-  cv.addEventListener('webglcontextrestored',()=>{clearTimeout(tm);try{if(window.__envRebuild)window.__envRebuild();scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];ms.forEach(m=>{if(m)m.needsUpdate=true})});renderer.setPixelRatio(PRC());renderer.setSize(stage.clientWidth,stage.clientHeight,false)}catch(err){console.warn('WebGL context 還原時重建失敗',err)}window.__ctxLost=false;if(box)box.hidden=true;wk()},false)})();
+  cv.addEventListener('webglcontextrestored',()=>{clearTimeout(tm);try{if(window.__envRebuild)window.__envRebuild();scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];ms.forEach(m=>{if(m)m.needsUpdate=true})});sizeCanvas(true)}catch(err){console.warn('WebGL context 還原時重建失敗',err)}window.__ctxLost=false;if(box)box.hidden=true;wk()},false)})();
 (function(){const q=matchMedia('(prefers-color-scheme: dark)');if(q.addEventListener)q.addEventListener('change',()=>wk())})();
 /* ===== 顯示風格（v89）：風格註冊表＋技術插畫 =====
    技術插畫＝第二遍繪製：只標記要加輪廓的網格（layer 1），用「反向外殼」著色器（背面、純色、裁切空間沿法線外推固定像素）再畫一遍；
@@ -999,8 +1120,27 @@ function probeTier(){if(IPH||DESK){TIER='hi';return}/* v199zzzzzz45：桌機強�
   a.sort((x,y)=>x-y);probeMs=(a[3]+a[4])/2;TIER=probeMs<=6?'hi':'mid';wk()}catch(e){TIER='mid'}}/* v199zzzzzz48：探測含 readPixels 同步等待（iplay40H 實測 121 ms，實際每張繪製約 6 ms），只用來分 hi／mid，不再判慢機 */
 setTimeout(probeTier,4500);/* v199g：慢機層。取樣顯示為畫面張數 <33（單幀 >30 ms）持續約 60 幀後設為 SLOW（只升不降，載入 5 秒內不判）；SLOW 時鏡頭、補間、示意旋轉進行中不畫描邊兩遍，停動後的下一幀補回。實測 iplay40H：插畫 14 fps、標準 38 fps */
 /* 兩種外殼：一般網格畫背面、法線朝外；「內外翻轉」的網格（放樣上下管、EX 後叉、曲柄片：頂點順序與法線都朝內）改畫正面、法線取反 */
-const mkOut=(side,sgn)=>{const m=new THREE.MeshBasicMaterial({color:0x000000,side,toneMapped:false});m.onBeforeCompile=sh=>{sh.uniforms.uPx=outU.uPx;sh.uniforms.uRes=outU.uRes;
-  sh.vertexShader='uniform float uPx;uniform vec2 uRes;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n  {vec3 nI=normal;\n#ifdef USE_INSTANCING\nnI=mat3(instanceMatrix)*normal;\n#endif\n#ifdef USE_BATCHING\nnI=mat3(batchingMatrix)*nI;\n#endif\nvec3 nv=normalize(normalMatrix*nI)*'+sgn+';vec2 nc=(projectionMatrix*vec4(nv,0.0)).xy;float l=length(nc);if(l>1e-5)gl_Position.xy+=nc/l*(2.0*uPx/uRes)*gl_Position.w;}')};return m};
+/* v199zzzzzz114：描邊改用 ShaderMaterial 整段著色器（原為 MeshBasicMaterial＋onBeforeCompile 注入）。instancing／batching 由 three 前綴的 define 與 chunk 處理，與原本相同；顏色 uInk 經 colorspace_fragment 輸出（同 MeshBasicMaterial 的 color）。m.color 指向 uInk，外部 .color.setHex 用法不變 */
+const OUT_VS=`uniform float uPx;uniform vec2 uRes;uniform float uSg;
+#include <common>
+#include <batching_pars_vertex>
+void main(){
+#include <batching_vertex>
+#include <begin_vertex>
+#include <project_vertex>
+  vec3 nI=normal;
+#ifdef USE_INSTANCING
+  nI=mat3(instanceMatrix)*normal;
+#endif
+#ifdef USE_BATCHING
+  nI=mat3(batchingMatrix)*nI;
+#endif
+  vec3 nv=normalize(normalMatrix*nI)*uSg;vec2 nc=(projectionMatrix*vec4(nv,0.0)).xy;float l=length(nc);if(l>1e-5)gl_Position.xy+=nc/l*(2.0*uPx/uRes)*gl_Position.w;
+}`,OUT_FS=`uniform vec3 uInk;
+void main(){gl_FragColor=vec4(uInk,1.0);
+#include <colorspace_fragment>
+}`;
+const mkOut=(side,sgn)=>{const m=new THREE.ShaderMaterial({uniforms:{uPx:outU.uPx,uRes:outU.uRes,uSg:{value:+sgn},uInk:{value:new THREE.Color(0)}},vertexShader:OUT_VS,fragmentShader:OUT_FS,side,toneMapped:false});m.color=m.uniforms.uInk.value;return m};
 const outMat=mkOut(THREE.BackSide,'1.0'),outMatInv=mkOut(THREE.FrontSide,'-1.0');
 const invMemo=new WeakMap();/* 幾何 → 是否翻轉（有號體積，以頂點重心為原點，取樣至多約 4000 面；全零（放樣管剛建立）視為未定，下一幀再判） */
 function isInverted(g){let v=invMemo.get(g);if(v!==undefined)return v;const p=g.attributes.position,ix=g.index;if(!p)return false;let cx=0,cy=0,cz=0;for(let i=0;i<p.count;i++){cx+=p.getX(i);cy+=p.getY(i);cz+=p.getZ(i)}cx/=p.count;cy/=p.count;cz/=p.count;
@@ -1371,8 +1511,10 @@ const LOGO_SRC=VIBE_D.LOGO_SRC,LOGO_DEF={dt:{L:360,H:67.8,off:140,R:21},tt:{L:42
 const LOGO_HD=VIBE_D.LOGO_HD;
 const LOGO_MODELS=VIBE_D.LOGO_MODELS;/* v149：非 64Ti 車款的 logo 槽位。尺寸 mm 為暫估（位置圖推算／同 64Ti 比例）；上管標、頭管標、座管標中心位置同 MASTER 64Ti（LOGO_DEF）。dt：自五通沿下管；or：自五通沿座管。 */
 Object.values(LOGO_MODELS).forEach(q=>{q.svg.hd=LOGO_HD});
+/* v199zzzzzz113：SVG 點陣化前補上明確 width／height（＝畫布像素）。設計稿多數只有 viewBox、沒有 width／height：桌機 Chrome 依 viewBox 比例縮放，但行動版瀏覽器（Firefox、Safari／WebKit 等）以預設 300×150 繪製再拉伸到畫布，頭管標、前叉標、中管標因此變形。有寫死 width／height 的下管標、上管標不受影響 */
+function svgWH(svg,W,H){if(!W||!H){const m=svg.match(/viewBox="([\d.\s-]+)"/);if(!m)return svg;const v=m[1].trim().split(/\s+/).map(Number);W=v[2];H=v[3]}return svg.replace(/<svg\b[^>]*>/,tag=>tag.replace(/\s(width|height)="[^"]*"/g,'').replace(/^<svg/,'<svg width="'+W+'" height="'+H+'" preserveAspectRatio="none"'))}
 const SVGT=new Map();function svgTex(svg,PX){const ck=(PX||2048)+'|'+svg;let t=SVGT.get(ck);if(!t){t=svgTex0(svg,PX);SVGT.set(ck,t)}return t}/* v199：依內容去重（頭管標各車款共用同一 SVG），並可指定長邊像素 */
-function svgTex0(svg,PX){const vb=svg.match(/viewBox="([\d.\s-]+)"/)[1].trim().split(/\s+/).map(Number),W=vb[2],H=vb[3],sc=Math.min(2048,PX||2048)/Math.max(W,H),c=document.createElement('canvas');c.width=Math.max(16,Math.round(W*sc));c.height=Math.max(16,Math.round(H*sc));const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;t.userData.pend=1;/* v199zzzzzz64：SVG 尚未畫進畫布 */const im=new Image();im.onerror=()=>{delete t.userData.pend};im.onload=()=>{delete t.userData.pend;c.getContext('2d').drawImage(im,0,0,c.width,c.height);t.needsUpdate=true;try{if(renderer.initTexture)renderer.initTexture(t)}catch(e){}wk()};im.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg)));return t}
+function svgTex0(svg,PX){const vb=svg.match(/viewBox="([\d.\s-]+)"/)[1].trim().split(/\s+/).map(Number),W=vb[2],H=vb[3],sc=Math.min(2048,PX||2048)/Math.max(W,H),c=document.createElement('canvas');c.width=Math.max(16,Math.round(W*sc));c.height=Math.max(16,Math.round(H*sc));const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;t.userData.pend=1;/* v199zzzzzz64：SVG 尚未畫進畫布 */const im=new Image();im.onerror=()=>{delete t.userData.pend};im.onload=()=>{delete t.userData.pend;c.getContext('2d').drawImage(im,0,0,c.width,c.height);t.needsUpdate=true;try{if(renderer.initTexture)renderer.initTexture(t)}catch(e){}wk()};im.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svgWH(svg,c.width,c.height))));return t}
 
 var logoOn=true,logoGrp=null,logoKey='',logoBuilt='',logoT=0;const logoTexC={};
 function logoOk(){return(paintOk()||brushOnly())&&(selM==='64'||!!LOGO_MODELS[selM])}
@@ -1412,7 +1554,7 @@ function logoBuildM(){const D=LOGO_MODELS[selM],D6=LOGO_DEF,P=k=>new V3(N[k].x/1
    [[1,0],[-1,1]].forEach(([sg,li])=>{const o=n.clone().multiplyScalar(Math.cos(b)).addScaledVector(z,sg*Math.sin(b)),u=(D.dt.two||!li)?u0.clone():u0.clone().negate(),up=o.clone().cross(u);if(D.dt.rot){const th=D.dt.rot*Math.PI/180*(u0.x>=0?1:-1);o.applyAxisAngle(z,th);u.applyAxisAngle(z,th);up.applyAxisAngle(z,th)}/* v155：rot＝側視內繞 logo 中心旋轉，正＝上端（頭管端）往車尾轉 */jobs.push(['dt',DM,C.clone(),u,up,o,D.dt.L,(li&&D.dt.Hl)||D.dt.H,0,D.dt.X,(li&&D.dt.two)?'dtL':null,u0.clone()])})}
   /* 上管標、頭管標、座管標（cl）：位置、尺寸、方向全部同 MASTER 64Ti（使用者 2026-11-02 指示） */
   {const u=P('TTht').sub(P('TTst')).normalize(),o=new V3(-u.y,u.x,0),up=o.clone().cross(u);jobs.push(['tt',(typeof LOFTON!=='undefined'&&LOFTON?loft.TT:T.TT),P('TTht').addScaledVector(u,-mm((selM==='ex'&&BOLT_TB.ex.tt)?(BOLT_TB.ex.tt[0]+BOLT_TB.ex.tt[1])/2:(D6.tt.htR+D6.tt.gap+D6.tt.L/2))),u,up,o,D.tt.L,D.tt.H,0])}
-  {const BB=P('BB'),a=P('STtop').sub(BB).normalize(),o=new V3(-a.y,a.x,0);if(o.x>0)o.negate();const u=a.clone().cross(o),Jp=BB.clone().addScaledVector(a,P('SSst').sub(BB).dot(a)),stb=(BOLT_TB[selM]||{}).st,Cc=(selM==='325'&&stb)?BB.clone().addScaledVector(a,mm((stb[0]+stb[1])/2)):Jp.addScaledVector(a,-mm(D6.cl.gap+D6.cl.H/2+(D.cl.drop||0)));jobs.push(['cl',T.ST,Cc,u,a,o,D.cl.L,D.cl.H,0])}/* v199zzzzc：EX 上管標中心＝上管兩個水壺鎖孔（BOLT_TB.ex.tt）中點，自頭管端（TTht）沿上管 146.5 mm（原 htR+gap+L/2＝97 mm；使用者 2026-11-11），其餘車款不變 */
+  {const BB=P('BB'),a=P('STtop').sub(BB).normalize(),o=new V3(-a.y,a.x,0);if(o.x>0)o.negate();const u=a.clone().cross(o),Jp=BB.clone().addScaledVector(a,P('SSst').sub(BB).dot(a)),stb=(BOLT_TB[selM]||{}).st,Cc=(selM==='325'&&stb)?BB.clone().addScaledVector(a,mm((stb[0]+stb[1])/2)):Jp.addScaledVector(a,-mm(D6.cl.gap+D6.cl.H/2+(D.cl.drop||0)));const fr=selM==='325'&&!!stb;/* v199zzzzzz113：M325 中管標以水壺鎖孔中點定位，鎖孔在座管前緣，標也要貼前緣（原沿用 64Ti 爪痕的後緣投影，被後輪擋住，看起來像「跑掉」） */jobs.push(['cl',T.ST,Cc,fr?u.clone().negate():u,a,fr?o.clone().negate():o,D.cl.L,D.cl.H,0])}/* v199zzzzc：EX 上管標中心＝上管兩個水壺鎖孔（BOLT_TB.ex.tt）中點，自頭管端（TTht）沿上管 146.5 mm（原 htR+gap+L/2＝97 mm；使用者 2026-11-11），其餘車款不變 */
   /* v199zzzt：M325 中管貼圖中心＝中管水壺鎖孔中點（BB 起 181.6 mm；使用者 2026-11-11），其餘車款不變 */
   {const a=P('HTt').sub(P('HTb')).normalize(),o=new V3(a.y,-a.x,0);if(o.x<0)o.negate();const u=a.clone().cross(o);jobs.push(['hd',T.HT,P('HTt').add(P('HTb')).multiplyScalar(.5),u,a,o,D.hd.L,D.hd.H,0])}
   if(D.or){const S=D.side||1,o=new V3(0,0,S),BB=P('BB'),a=P('STtop').sub(BB).normalize(),u=a.clone(),up=o.clone().cross(u);if(up.dot(new V3(-a.y,a.x,0))<0){u.negate();up.negate()}jobs.push(['or',T.ST,BB.clone().addScaledVector(a,mm(D.or.at)),u,up,o,D.or.L,D.or.H,0,undefined,null,a.clone()])}
@@ -1491,8 +1633,8 @@ document.querySelectorAll('#cSub button').forEach(b=>b.addEventListener('click',
 const STYLES={std:{outline:false},line:{outline:true},toon:{outline:true,toon:true}};let curStyle='line';/* v199s：顯示風格鈕已取消，輪廓線（line）固定 *//* v100：風格鈕只剩標準／插畫；toon 保留但無按鈕；matcap 改由「客製服務→塗裝客製」控制，與風格無關 *//* v97：預設為插畫 */
 function setStyle(k){if(!STYLES[k])return;const was=!!STYLES[curStyle].toon,now=!!STYLES[k].toon;if(was&&!now)toonLeave();if(!was&&now)toonEnter();curStyle=k;if(!STYLES[k].outline)tagOutline(false);document.querySelectorAll('#styleSeg button').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.style===k)));wk()}
 document.querySelectorAll('#styleSeg button').forEach(b=>b.addEventListener('click',()=>setStyle(b.dataset.style)));
-function drawFrame(){if(window.__ctxLost)return;if(G.exTick)G.exTick();/* v199zzzzzz87：爆炸位移要在實例化／批次同步之前 */if(G.instSync)G.instSync();if(G.btSync)G.btSync();if(G.shTick)G.shTick();/* v199zzzzzz85：陰影重算要在主畫面繪製之前（借用主畫布左下角取景，隨後整張重畫） */if(STYLES[curStyle].toon){toonPass(true);toonSync()}mcSync();renderer.render(scene,camera);if(!STYLES[curStyle].outline||OLskip)return;
-  tagOutline(true);renderer.getDrawingBufferSize(outV);outU.uRes.value.copy(outV);const mobK=(()=>{const cw=renderer.domElement.clientWidth;return cw>window.innerWidth*.85?OUT_STK*Math.max(.7,Math.min(1.1,Math.pow(cw/OUT_STK_W,.5)))/OUT_PX:Math.max(OUT_MOB_MIN,Math.min(1,Math.pow(cw/OUT_MOB_W,.8)))})();/* v106：上下堆疊版面（舞台寬≈視窗寬，手機與折疊機）改以 OUT_STK（CSS px，全車視角）為基準，並隨舞台寬度（基準 OUT_STK_W）微調；並排版面（桌面）維持原算法 *//* v92：行動版（舞台寬度小於 OUT_MOB_W）線寬依寬度縮小；下限 OUT_FLOOR CSS px */
+function drawFrame(){if(window.__ctxLost)return;if(G.exTick)G.exTick();/* v199zzzzzz87：爆炸位移要在實例化／批次同步之前 */if(G.instSync)G.instSync();if(G.btSync)G.btSync();if(G.shTick)G.shTick();/* v199zzzzzz85：陰影重算要在主畫面繪製之前（借用主畫布左下角取景，隨後整張重畫） */if(STYLES[curStyle].toon){toonPass(true);toonSync()}mcSync();STU.sync();/* v199zzzzzz112 */renderer.render(scene,camera);if(!STYLES[curStyle].outline||OLskip)return;
+  tagOutline(true);renderer.getDrawingBufferSize(outV);outU.uRes.value.copy(outV);const mobK=(()=>{const cw=stage.clientWidth;/* v115：畫布已鋪滿整頁，版面判斷改看 #stage */return cw>window.innerWidth*.85?OUT_STK*Math.max(.7,Math.min(1.1,Math.pow(cw/OUT_STK_W,.5)))/OUT_PX:Math.max(OUT_MOB_MIN,Math.min(1,Math.pow(cw/OUT_MOB_W,.8)))})();/* v106：上下堆疊版面（舞台寬≈視窗寬，手機與折疊機）改以 OUT_STK（CSS px，全車視角）為基準，並隨舞台寬度（基準 OUT_STK_W）微調；並排版面（桌面）維持原算法 *//* v92：行動版（舞台寬度小於 OUT_MOB_W）線寬依寬度縮小；下限 OUT_FLOOR CSS px */
   outU.uPx.value=Math.max(OUT_FLOOR,OUT_PX*Math.max(OUT_MIN,Math.min(OUT_MAX,Math.pow(OUT_R0/Math.max(.2,cam.r),OUT_ZG)))*mobK)*renderer.getPixelRatio();
   const ink=isDark()?OUT_INK.dark:OUT_INK.light;outMat.color.setHex(ink);outMatInv.color.setHex(ink);
   const ac=renderer.autoClear;renderer.autoClear=false;
@@ -1516,7 +1658,7 @@ const clock=new THREE.Timer();
   if(tween){const k=Math.min(1,(performance.now()-tween.t0)/tween.d),e=1-Math.pow(1-k,3);applyNodes(lerpN(tween.from,tween.to,e));if(k>=1){applyNodes(tween.to);tween=null}}
   if(vTween){const k=Math.min(1,(performance.now()-vTween.t0)/vTween.d),e=1-Math.pow(1-k,3);
     if(k>=1){liveV=Object.assign({},vTween.to);vTween=null}else VK.forEach(q=>{liveV[q]=vTween.from[q]+(vTween.to[q]-vTween.from[q])*e});updLive()}
-  refreshDimText();applyCam();setRS();if(Math.abs(RS-RSdone)>.04){RSdone=RS;updateGhost();updateDim()}HS.forEach(h=>{h.halo.lookAt(camera.position);const s=1+.35*Math.sin(t*3+h.phase);h.halo.scale.setScalar(st[h.p.id].done?1.3:s);h.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(sel===h.p?3:2):1))});
+  refreshDimText();applyCam();STU.tick();/* v199zzzzzz112 */setRS();if(Math.abs(RS-RSdone)>.04){RSdone=RS;updateGhost();updateDim()}HS.forEach(h=>{h.halo.lookAt(camera.position);const s=1+.35*Math.sin(t*3+h.phase);h.halo.scale.setScalar(st[h.p.id].done?1.3:s);h.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(sel===h.p?3:2):1))});
   if(G.exBusy&&G.exBusy())wk(5);/* v199zzzzzz87：拆解動畫進行中保持繪製 */
   const sg=cam.tgt.x+cam.tgt.y*3+cam.tgt.z*7+cam.r*11+cam.th*13+cam.ph*17+offY*19+RS*23,mv=Math.abs(sg-lastSig)>1e-7;lastSig=sg;if(wake>0)wake--;
   {const _n=performance.now(),_dt=Math.min(.05,(_n-spinL)/1000);spinL=_n;if(tab==='torque'&&!SPIN_SC){if(spinA!==0){spinA=0;applySpin();wake=Math.max(wake,2)}}/* v199zzzzzz93：離開展示即歸零回預設曲柄角（同 v179）。曾試過補完整圈再停，但一圈在 60 fps 要 17 秒、停不下來反而像沒停；熱點在展示期間已改為跟著曲柄角走（placeHS），所以不需要靠歸零來對位 */else{if(mv)spinT=_n+SPIN_HOLD;if(_n<spinT&&SPIN_ON){spinA+=_dt*spinW(spinA);applySpin();wake=Math.max(wake,2)}}}/* v199zzzzzz93：扭力分頁在展示執行中（SPIN_SC）照常示意旋轉——曲柄與鏈條連動，自旋路徑與其他分頁相同；展示期間 scTick0 每幀續約 spinT。 *//* v179：示意旋轉 */
@@ -1613,6 +1755,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
 (function(){const b=document.getElementById('qpBody');if(!b)return;
   /* v199p：面板依使用者 2026-11-05 指定順序重排：效能／風格／超取樣／陽極材質／自動降畫質／外胎輪框／已調整材質預設值／示意零件材質／輸出設定。
      「已調整材質預設值」＝v169 起已定案預設的九項（film、ao、br、gr、mt、ex、bs、sat、es）；「風格」＝拉絲高光、對比、雜訊三項（預設中性）。 */
+  const SR_STU=[['hotK','亮區強度',0,1.2,.01],['kw','亮區寬（倍率）',.5,3,.05],['kh','亮區高（倍率）',.5,3,.05],['poolK','車下亮區',0,1,.01],['frontK','前景地面壓暗',0,1,.01],['vigR','暗角半徑',.1,1,.01],['vigK','暗角強度',0,1,.01],['grain','灰泥顆粒',0,.06,.002]],SR_COL=[['top','上方牆面'],['mid','產品高度牆面'],['hot','亮區'],['floor','車下地面'],['edge','暗角／前景']];/* v199zzzzzz113：補齊攝影棚全部參數＋五個顏色（使用者 2026-11-19） */
   const RS=r=>`<div class="qr"><label for="qp_${r[0]}">${r[1]}</label><input id="qp_${r[0]}" type="range" data-k="${r[0]}" min="${r[2]}" max="${r[3]}" step="${r[4]}"><output></output></div>`,qH=(t,x)=>`<div class="qm"><h4>${t}</h4>${x}</div>`;
   const R_BL_TI=[['tr','噴砂粗糙度',.4,1,.01],['gr','噴砂顆粒',0,2,.05],['mt','噴砂霧面（混合量）',0,2,.05]],R_BL_PBR=[['pr','噴砂粗糙度',.2,1,.01],['pcc','噴砂清漆',0,1,.05],['pgr','噴砂顆粒',0,2,.05]],R_BL_MC=[['mmt','噴砂霧面',0,2,.05],['mgl','噴砂補高光',0,1,.05],['mgr','噴砂顆粒',0,2,.05]],R_STYLE=[['br','拉絲條紋',0,2,.05],['bs','拉絲比例（條紋粗細，小＝細）',.1,1.5,.05],['bc','拉絲對比',0,8,.1],['bn','拉絲雜訊',0,8,.1],['ta','拉絲高光',0,3,.05]],R_CC=[['cc','清漆層強度',0,1,.05],['ccr','清漆層粗糙度',0,.6,.02]],R_TUNED=[['film','薄膜干涉',0,1,.05],['ao','管件 AO',0,1.2,.05],['ex','鈦件曝光',.2,1.4,.02],['sat','陽極飽和',0,1.6,.05],['es','陽極反光',0,2,.05]];
   b.innerHTML=qH('效能',`<div class="qk"><label><input type="checkbox" id="qpParts"> 分材質 matcap</label></div><p class="qo" id="qpOut"></p>`)
@@ -1625,6 +1768,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
   +mtHTMLa()
   +qH('陽極色與曝光',R_TUNED.map(RS).join(''))
   +mtHTMLb()
+  +qH('攝影棚（試機用）',SR_STU.map(r=>`<div class="qr"><label for="qs_${r[0]}">${r[1]}</label><input id="qs_${r[0]}" type="range" data-stu="${r[0]}" min="${r[2]}" max="${r[3]}" step="${r[4]}"><output></output></div>`).join('')+SR_COL.map(r=>`<div class="qr"><label for="qc_${r[0]}">${r[1]}</label><input id="qc_${r[0]}" type="color" data-stc="${r[0]}"><output></output></div>`).join('')+'<div class="qk"><button type="button" id="qpStuDef">攝影棚預設</button></div><p class="qo" id="qpStu"></p>')/* v199zzzzzz112：只改目前主題那一組，即時套用；下方一行是目前主題的四個數值，抄回給 Claude 定案。面板去留跟著 E1 */
   +qH('輸出設定',`<div class="qk"><button type="button" id="qpMdDl">下載 .md</button><button type="button" id="qpMdCp">複製 .md</button><button type="button" id="qpDef">全部預設</button></div><textarea id="qpMd" readonly rows="6" aria-label="設定匯出內容" placeholder="按「下載」或「複製」後內容會顯示在這裡；下載被擋時可全選複製貼給 Claude。"></textarea>`);
   b.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.k){const k=t.dataset.k;if(k in QV){QV[k]=+t.value;if(k==='ex')renderer.toneMappingExposure=QV.ex;if(k==='cc'||k==='ccr')ccApply()}else QB[k]=+t.value;t.nextElementSibling.textContent=(+t.value).toFixed(2);qpApply(false)}else if(t.id==='qpParts'){QB.parts=t.checked;qpApply(false)}});
   b.addEventListener('change',e=>{if(e.target.id==='qpMC'){QP.mc=e.target.checked?'mat':'pbrf';wk()}});
@@ -1635,6 +1779,8 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
     try{const dl=window.claude&&claude.use?await claude.use('downloads'):null;if(dl){await dl.save({filename:fn,data:t});ok=true}}catch(e){if(e&&e.code==='declined')ok=true}
     if(!ok){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/markdown;charset=utf-8'}));a.download=fn;document.body.appendChild(a);a.click();a.remove()}catch(_){}}};
   mtWire(b);mtUI();qpUI();
+  STU.ui=()=>{const P=STU.P[isDark()?'dark':'light'];SR_STU.forEach(r=>{const i=b.querySelector('[data-stu="'+r[0]+'"]');if(i){i.value=P[r[0]];i.nextElementSibling.textContent=(+P[r[0]]).toFixed(r[0]==='grain'?3:2)}});SR_COL.forEach(r=>{const i=b.querySelector('[data-stc="'+r[0]+'"]');if(i&&document.activeElement!==i){const h=STU.col(r[0]);i.value=h;i.nextElementSibling.textContent=h}});const o=b.querySelector('#qpStu');if(o)o.textContent=STU.line()};STU.ui();/* v199zzzzzz112 */
+  b.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.stu){STU.setP(t.dataset.stu,t.value);STU.ui()}else if(t.dataset&&t.dataset.stc){STU.setC(t.dataset.stc,t.value);t.nextElementSibling.textContent=t.value;STU.ui()}});b.querySelector('#qpStuDef').onclick=()=>{STU.reset();STU.ui()};
   let last=performance.now();(function f(now){requestAnimationFrame(f);const dt=now-last;last=now;
     if(wake>0&&!document.hidden&&dt>4&&dt<120&&RMS>0){QP.ms=QP.n?QP.ms*.92+RMS*.08:RMS;QP.n++;if(!SLOW&&!IPH&&!DESK&&QP.n>=60&&QP.ms>30&&performance.now()>RT0){SLOW=true;TIER='lo';wk()}wdN=QP.ms>20?wdN+1:0;if(TIER==='hi'&&!DESK&&!IPH&&wdN>=45&&now>8000)TIER='mid';}})(last);
   setInterval(()=>{const d=document.getElementById('qp');if(!d||!d.open)return;const o=document.getElementById('qpOut');if(o&&!/^\{/.test(o.textContent))o.textContent='單幀約 '+(QP.ms?QP.ms.toFixed(1):'—')+' ms'+(SLOW?'｜慢機：動中不畫描邊':'')+(window.__SCs?'｜展示 '+window.__SCs():'')+(window.__LDs?'｜'+window.__LDs():'')+(window.__bgmS?'｜BGM '+window.__bgmS():'')+'｜層級 '+TIER+(probeMs?'（探測 '+probeMs.toFixed(1)+' ms）':'')+'｜陽極 '+(mcCur==='P'?'PBR':'Matcap')},600)})();
@@ -1799,9 +1945,9 @@ function rcShot(CW,CH,S){
   const t=Math.tan(15*Math.PI/180),asp=CW/CH,r=Math.max(2.1,.86/(.88*t*asp),.5/(.82*t)),th=homeTh(false,homeFlip),tg=new V3(0,.5,0);
   renderer.setPixelRatio(S);renderer.setSize(CW,CH,false);camera.aspect=asp;camera.clearViewOffset();camera.updateProjectionMatrix();
   camera.position.set(tg.x+r*Math.sin(th),tg.y,tg.z+r*Math.cos(th));camera.lookAt(tg);camera.updateMatrixWorld(true);
-  const hid=[];scene.children.forEach(o=>{if(o.visible&&((o.renderOrder>=19&&o.renderOrder<=22)||(typeof HS!=='undefined'&&HS.some(h=>h.g===o))||(typeof gradGrp!=='undefined'&&o===gradGrp))){hid.push(o);o.visible=false}});/* 尺寸線、疊圖比較、扭力熱點、漸層軸線不進圖卡 */
+  const hid=[];scene.children.forEach(o=>{if(o.visible&&((o.renderOrder>=19&&o.renderOrder<=22)||(typeof HS!=='undefined'&&HS.some(h=>h.g===o))||(typeof gradGrp!=='undefined'&&o===gradGrp)||o===STU.mesh)){hid.push(o);o.visible=false}});/* 尺寸線、疊圖比較、扭力熱點、漸層軸線不進圖卡；v199zzzzzz112：攝影棚也不進（圖卡維持 CSS 漸層底） */
   OLskip=false;let c=null;try{drawFrame();c=document.createElement('canvas');c.width=CW;c.height=CH;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(renderer.domElement,0,0,CW*S,CH*S,0,0,CW,CH)}catch(e){console.warn('card shot',e)}
-  hid.forEach(o=>{o.visible=true});OLskip=o0;renderer.setPixelRatio(PRC());renderer.setSize(w0,h0,false);camera.aspect=a0;camera.updateProjectionMatrix();camera.position.copy(p0);wk();return c}
+  hid.forEach(o=>{o.visible=true});OLskip=o0;sizeCanvas(true);camera.aspect=a0;camera.updateProjectionMatrix();camera.position.copy(p0);wk();return c}
 async function rcCard(){
   const CW=1080,CH=1350,IH=600,IY=206,css=getComputedStyle(document.documentElement),cv=n=>css.getPropertyValue(n).trim(),sf=(f,d)=>{try{return f()}catch(e){return d}};
   const code=rcEncode(),J=cfgGather(),shot=rcShot(CW,IH,2);if(!shot)return null;
@@ -2100,7 +2246,7 @@ const hintBtn=null;
     wf.frame=Lv;/* 鎖在車架上、沒有自己位移的熱點（中軸碗） */
     HS.forEach(h=>{const k=HM[h.p.id];put(h.g,k&&wf[k]?wf[k]:tmp.set(0,0,0))});
     if(G.chainI){if(chain0===null)chain0=G.chainI.visible;G.chainI.visible=t<.02?chain0:false}}/* 鏈條橫跨大盤與飛輪，拆解時隱藏 */
-  const EXZ=()=>innerWidth<=760?1.5:.55,kOf=()=>1+EXZ()*EZ(t);/* 行動版原本就為了車高而犧牲寬度（TQ_MINR），拆解後攤得更開，故另給較大的拉遠倍率 */let lastK=1,lastY=0;/* 拆解時取景拉遠並隨車架上移抬高，依 t 連續變化，使用者自己的縮放與平移保留 */
+  const EXZ=()=>innerWidth<=760?1.1:.2,/* v199zzzzzz113：拆解取景拉遠倍率 行動 2.5→2.1、桌機 1.55→1.2（使用者 2026-11-19：拉太遠）。桌機 1.2 倍時攤開件水平約佔 ±0.93（NDC）；行動版維持高度入鏡、左右輪略出框，同組裝狀態 */kOf=()=>1+EXZ()*EZ(t);/* 行動版原本就為了車高而犧牲寬度（TQ_MINR），拆解後攤得更開，故另給較大的拉遠倍率 */let lastK=1,lastY=0;/* 拆解時取景拉遠並隨車架上移抬高，依 t 連續變化，使用者自己的縮放與平移保留 */
   G.exK=kOf;G.exOn=()=>t>0.001;G.exBusy=()=>anim;/* 主迴圈據此保持繪製，不倚賴 wake 計數 */
   G.exY=()=>liftM()*seg(PH_UP)*.5;/* 鏡頭目標抬高量：輪組留在原地，整體重心只升一半（homeTgt 也用這個值，兩邊才一致） */
   const camAdj=()=>{const zk=kOf();if(Math.abs(zk-lastK)>1e-6){want.r=Math.min(9,Math.max(.6,want.r*zk/lastK))/* 上限 9（原 4.2）：行動版拆解的取景距離會到 6.7，被夾住的話復原時除不回原值 */;lastK=zk}
@@ -2197,7 +2343,7 @@ function renderGeo(){chips(document.getElementById('modelChips'),Object.values(M
   {const hc=document.getElementById('hsTypeChips');if(hc){chips(hc,['外露式','全隱藏式'],hsT()==='hid'?'全隱藏式':'外露式',x=>{HS_SEL[selM]=x==='全隱藏式'?'hid':'ex';try{if(N){tween=null;logoNow=true;applyNodes(N)}}catch(e){}wk();renderGeo()});const hn=document.getElementById('hsTypeNote');if(hn)hn.textContent=hsT()==='hid'?'全隱藏式：軸承藏在頭管內，只露上蓋 9.5 mm 與下冠座 1 mm（參照 NECO H02 圖面）；頭管下端貼近叉冠，龍頭隨之降低。顏色同「座管束・頭碗組顏色」。':'外露式：上碗 14 mm、下碗 16 mm 圓環造型，外緣貼 KING 字樣（參照 Chris King AeroSet）；頭管畫短 15 mm 以下碗補足。顏色同「座管束・頭碗組顏色」。'}}
   document.getElementById('modelH').textContent=({'64':'全公路車','325':'全公路車','audax':'長途耐力車','ili':'礫石車','ss':'礫石車','ex':'探險礫石車'}[selM]||'車')+'型';
   const has=!!GEOS[selM];document.getElementById('sizeH').textContent=MNAME[selM]+(has?' 尺寸':'');stTagSet();
-  const gg=has?(GEO.find(x=>x.size===size)||GEO[0]):null;document.getElementById('geoScore').innerHTML=gg?`<span data-next="1" role="button" tabindex="0">尺寸 <b class="num">${gg.size}</b></span><span data-dim="reach" role="button" tabindex="0" aria-pressed="${dimKey==='reach'}" class="${dimKey==='reach'?'on':''}">前伸量 <b class="num">${gg.reach}</b><i class="u"> mm</i></span><span data-dim="stack" role="button" tabindex="0" aria-pressed="${dimKey==='stack'}" class="${dimKey==='stack'?'on':''}">堆疊高 <b class="num">${gg.stack}</b><i class="u"> mm</i></span>`:'';/* v199zzzzzz100：前伸量／堆疊高可點，同下方尺寸對照表的列（點一次在 3D 標出尺寸線、再點一次關閉） */
+  const gg=has?(GEO.find(x=>x.size===size)||GEO[0]):null;heroSet(document.getElementById('geoScore'),gg?`<div class="hm">${MNAME[selM]}</div><span class="hk" data-next="1" role="button" tabindex="0"><i class="lb">尺寸</i><span class="v"><b class="num" data-v="size">${gg.size}</b></span></span><span data-dim="reach" role="button" tabindex="0" aria-pressed="${dimKey==='reach'}" class="hk ${dimKey==='reach'?'on':''}"><i class="lb">前伸量</i><span class="v"><b class="num" data-v="reach">${gg.reach}</b><i class="u">mm</i></span></span><span data-dim="stack" role="button" tabindex="0" aria-pressed="${dimKey==='stack'}" class="hk ${dimKey==='stack'?'on':''}"><i class="lb">堆疊高</i><span class="v"><b class="num" data-v="stack">${gg.stack}</b><i class="u">mm</i></span></span>`:'');/* v119：卡片頂端主視覺（車型＋尺寸＋前伸量＋堆疊高），數字換值時滾動 */ /* v199zzzzzz100：前伸量／堆疊高可點，同下方尺寸對照表的列（點一次在 3D 標出尺寸線、再點一次關閉） */
   document.getElementById('m325note').textContent=({'64':'幾何與官網現行頁一致；管徑為 STEP 示意量測。','325':'幾何與規格依官網；上、下管異型截面取自 STEP（僅示意），其他尺寸兩端截面不變、沿程拉伸。','ss':'幾何與規格依官網；管件粗細尚無量測，為示意。','audax':'幾何依官網現行頁（M 尺寸官網數值自檢有 2–3 mm 差）；規格與管徑摘自官方舊頁，須核對現行頁面；管件形狀為示意。','ili':'幾何依官網現行頁；規格與管徑摘自官方舊頁，須核對現行頁面；管件形狀為示意。','ex':'幾何依官網現行頁；規格待擷取，管件粗細為示意。'}[selM]||'')+' 前叉為示意。';
   if(!has){chips(document.getElementById('sizeChips'),[],null,()=>{});chips(document.getElementById('cmpChips'),[],null,()=>{});geoTable.innerHTML='<p class="fine">尺寸對照待補。</p>';tblKey='';specBox();renderFit();return}
   chips(document.getElementById('sizeChips'),GEOV().map(g=>g.size),size,s=>{size=s;if(cmp===s)cmp=null;goGeo(s);updateGhost();renderGeo()});
@@ -2376,7 +2522,7 @@ function fkDecInit(){if(FKD)return;
   /* v199zzzzzz32：外側字樣再上移 15 mm；貼面頂點改投影到叉腿實際網格表面（見 fkProj）。2026-11-13 目視後調整：外側字樣上移 7 mm、放大 125%（以中心放大）；內側圖樣往車尾移 4 mm 弧長、放大 125% */
   /* v199zzzzzz34：右叉腿外側加上與左外側相同的 RIKULAU 字樣，UV 旋轉 180° */
   FKD={out:mk(END-40-23-7-15,57.5,10.375,'L','logo',0),out2:mk(END-40-23-7-15,57.5,10.375,'RO','logo',0),inn:mk(END-70-107.5,268.75,33.5,'R','pat',-4)};
-  const ld=(k,svg)=>{const im=new Image();im.onload=()=>{FKIMG[k]=im;fkDecApply(true)};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)};ld('pat',FK_PAT_SVG);ld('logo',FK_LOGO_SVG);
+  const ld=(k,svg)=>{const im=new Image();im.onload=()=>{FKIMG[k]=im;fkDecApply(true)};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgWH(svg))};ld('pat',FK_PAT_SVG);ld('logo',FK_LOGO_SVG);
   FKM=new Image();FKM.onload=()=>{const c=document.createElement('canvas');c.width=c.height=768;const g=c.getContext('2d');g.drawImage(FKM,0,0,768,768);const d=g.getImageData(0,0,768,768).data,a=new Uint8Array(768*768);for(let i=0;i<a.length;i++)a[i]=d[i*4];FKM.lum=a;fkDecApply(true)};FKM.src=SPL_MASK}
 function fkPatSpec(){if(!(ADD_S.ti.fork>0))return{c:FK_KING};const v=fkPat;if(v[0]==='m'&&ANO_MONO[+v.slice(1)])return{c:'#'+ANO_MONO[+v.slice(1)][2]};if(v[0]==='g'&&ANO_GRAD[+v.slice(1)]){const q=ANO_GRAD[+v.slice(1)];return{g:{t:q[1],c:q[2]}}}if(v[0]==='s'&&SPL[+v.slice(1)]){const q=SPL[+v.slice(1)];return{s:{a:q[1],b:q[2],sz:splSz}}}return{c:FK_KING}}
 function fkPaint(slot,spec){const im=FKIMG[slot.kind];if(!im)return;const cv=slot.cv,W=cv.width,H=cv.height,g=cv.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,W,H);g.drawImage(im,0,0,W,H);g.globalCompositeOperation='source-in';
@@ -2763,7 +2909,7 @@ function setTab(t){tab=t;if(t!=='torque'&&scInfoNode!=null){scInfoNode=null;cons
   asideSync();closeCard();dimKey=null;updateDim();stTagSet();document.getElementById('stTag').hidden=false;/* v199zzzzi：客製服務也顯示車款・尺寸膠囊；v199zzzzzz89：所有主分頁都顯示（扭力巡檢固定以 M 尺寸呈現，尺寸不可點） */
   bottom.hidden=t!=='custom';bottom.scrollTop=0;  if(t==='custom'){extras=addonExtras();recalc();if(CN)goNodes(custTarget())}
   else{extras=addonExtras();/* v199zzzt：加購跨分頁同步 */if(t==='geo'){fitPick();goGeo(size,true);renderGeo()}else goNodes(stockNodes(GEO.find(g=>g.size==='M')))}
-  addonApply();syncSub();updateGhost();paintHS();resize();goHome();markRider()}
+  addonApply();syncSub();updateGhost();paintHS();resize();goHome();STU.fit();/* v199zzzzzz112：首頁取景距離隨分頁改變 */markRider()}
 /* v134：客製服務的 3D 車架——「幾何客製」用客製節點 CN；「塗裝客製」「加購套件」沿用尺寸幾何分頁所選尺寸（size）的標準節點。 */
 function effSub(){return(cSub==='paint'&&finOk())?'paint':(cSub==='addon'?'addon':'geo')}
 function custTarget(){return(effSub()==='geo'||!CN)?CN:stockNodes(GEO.find(g=>g.size===size)||GEO.find(g=>g.size==='M'))}
@@ -2777,24 +2923,39 @@ function custTarget(){return(effSub()==='geo'||!CN)?CN:stockNodes(GEO.find(g=>g.
 /* v135：行動直幅時把主分頁移進面板頂端（#sheetTabs），其餘情況放回 3D 底部（#stBar） */
 (function(){const mq=matchMedia('(max-width:760px)'),bar=document.getElementById('stBar'),tabs=bar.querySelector('.tabs'),aside=document.querySelector('aside'),sh=document.createElement('div');sh.id='sheetTabs';aside.insertBefore(sh,aside.firstChild);
   const main=document.querySelector('main'),ST=['closed','mid','full'],gb=document.createElement('button');main.dataset.sheet='mid';
-  gb.type='button';gb.className='gb';gb.setAttribute('aria-label','卡片高度：點一下切換，上下滑動收合或伸展');
-  const cur=()=>ST.indexOf(main.dataset.sheet),set=s=>{main.dataset.sheet=ST[Math.max(0,Math.min(2,s))];wk()};let y0=null;
+  gb.type='button';gb.className='gb';gb.setAttribute('aria-label','卡片高度：上下拖曳任意調整，點一下收起或展開');
+  const cur=()=>ST.indexOf(main.dataset.sheet),set=s=>{main.dataset.sheet=ST[Math.max(0,Math.min(2,s))];wk()};let y0=null,hOpen=0;/* v199zzzzzz113：無段式——放開停在哪就是哪（hOpen＝最後的展開高度 px；0＝CSS 預設 48dvh＋頁首） */
+  const hd=()=>{const h=document.querySelector('main>.left>header');return h?h.offsetHeight:0};
   /* v199zzzzzz73：拖曳時卡片即時跟手（改 3D 區高度 --stH），放開依位置＋速度吸附到最近的三段之一（使用者 2026-11-17 選定） */
   const lf=document.querySelector('main>.left')||document.querySelector('.left');let h0=0,mv=false,tr=[];
-  const lim=()=>{const H=innerHeight,M=main.clientHeight;return{full:.30*H,mid:.48*H,closed:Math.max(.48*H,M-((sh.offsetHeight||48)+8))}};
-  const end=()=>{main.style.removeProperty('--stH');delete main.dataset.drag};
+  const lim=()=>{const H=innerHeight,M=main.clientHeight,k=hd();return{full:.22*H+k,mid:.48*H+k,closed:Math.max(.48*H+k,M-((sh.offsetHeight||48)+8))}};
+  const end=()=>{delete main.dataset.drag};
+  const openAt=h=>{const L=lim();h=Math.max(L.full,Math.min(L.closed,h));if(h>=L.closed-28){main.style.setProperty('--stH',(hOpen||L.mid)+'px');set(0);return}hOpen=h;main.style.setProperty('--stH',h+'px');set(1)};
+  addEventListener('resize',()=>{if(hOpen){const L=lim();hOpen=Math.max(L.full,Math.min(L.closed-30,hOpen));main.style.setProperty('--stH',hOpen+'px')}});
   gb.addEventListener('pointerdown',e=>{y0=e.clientY;mv=false;tr=[[e.clientY,performance.now()]];h0=lf?lf.getBoundingClientRect().height:0;try{gb.setPointerCapture(e.pointerId)}catch(_){}});
   gb.addEventListener('pointermove',e=>{if(y0===null||!lf)return;const dy=e.clientY-y0;if(!mv&&Math.abs(dy)<6)return;
     if(!mv){mv=true;main.dataset.drag='1';if(main.dataset.sheet==='closed')main.dataset.sheet='mid'}
     const L=lim(),h=Math.max(L.full,Math.min(L.closed,h0+dy));main.style.setProperty('--stH',h+'px');tr.push([e.clientY,performance.now()]);if(tr.length>6)tr.shift();wk()});
   gb.addEventListener('pointerup',e=>{if(y0===null)return;const dy=e.clientY-y0;y0=null;
-    if(!mv){end();set(cur()===1?2:1);return}/* 點一下：收合→預設、預設→伸展、伸展→預設 */
-    const a=tr[0],b=[e.clientY,performance.now()],v=(b[0]-a[0])/Math.max(16,b[1]-a[1]),L=lim(),h=Math.max(L.full,Math.min(L.closed,h0+dy))+v*180;
-    const pts=[[L.closed,0],[L.mid,1],[L.full,2]];let best=pts[0];pts.forEach(p=>{if(Math.abs(p[0]-h)<Math.abs(best[0]-h))best=p});end();set(best[1])});
+    if(!mv){end();if(cur()===0)set(1);else set(0);return}/* 點一下：收起↔展開（回到上次高度） */
+    end();openAt(h0+dy)});
   gb.addEventListener('pointercancel',()=>{y0=null;end()});
-  gb.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){set(cur()+(e.key==='ArrowUp'?1:-1));e.preventDefault()}});
+  gb.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){const L=lim(),h=cur()===0?L.closed:(lf?lf.getBoundingClientRect().height:L.mid);openAt(h+(e.key==='ArrowUp'?-1:1)*.06*innerHeight);e.preventDefault()}});
   sh.insertBefore(gb,sh.firstChild);tabs.addEventListener('click',()=>{if(main.dataset.sheet==='closed')set(1)},true);/* 收合時點分頁＝先展開 */
-  const fit=()=>{(mq.matches?sh:bar).appendChild(tabs)};if(mq.addEventListener)mq.addEventListener('change',fit);else mq.addListener(fit);fit()})();
+  const fit=()=>{(mq.matches?sh:bar).appendChild(tabs)};if(mq.addEventListener)mq.addEventListener('change',fit);else mq.addListener(fit);fit();
+  /* v199zzzzzz113：頁首高度（--hdH）——頁首浮在 3D 區上方，車款膠囊與行動版卡片高度都以它避讓 */
+  {const H=document.querySelector('main>.left>header');if(H){const up=()=>document.documentElement.style.setProperty('--hdH',H.offsetHeight+'px');new ResizeObserver(up).observe(H);up()}}
+  /* v199zzzzzz113：桌機右側欄無段式收折（使用者 2026-11-19）：把手在 3D 欄右緣；左右拖曳即時改寬，放開停在哪就是哪；窄於 140 px 視為收起；點一下收起↔展開（回到上次寬度）；左右方向鍵每次 5% 視窗寬 */
+  {const lf2=document.querySelector('main>.left'),ag=document.createElement('button');ag.id='asGb';ag.type='button';ag.setAttribute('aria-label','右側卡片：點一下或左右拖曳，全開／全收');lf2.appendChild(ag);
+   let x0=null,w0=0,moved=false,wOpen=0;/* v116：卡片內容寬固定（--asCW），拖曳只改露出寬（--asW）＝行動版卡片轉 90 度；W＝露出寬、mx＝內容寬 */const W=()=>Math.max(0,main.getBoundingClientRect().right-aside.getBoundingClientRect().left),mx=()=>parseFloat(getComputedStyle(aside).width)||450;
+   const apply=w=>{/* v117：兩段——全開／全收（使用者 2026-11-19）。拖曳時跟手，放開以內容寬一半為界吸附 */if(w<mx()/2){main.dataset.aside='closed'}else{delete main.dataset.aside}main.style.removeProperty('--asW');wk()};
+   ag.addEventListener('pointerdown',e=>{x0=e.clientX;moved=false;w0=W();try{ag.setPointerCapture(e.pointerId)}catch(_){}});
+   ag.addEventListener('pointermove',e=>{if(x0===null)return;const dx=x0-e.clientX;if(!moved&&Math.abs(dx)<5)return;if(!moved){moved=true;main.dataset.drag='1';if(main.dataset.aside==='closed'){delete main.dataset.aside;main.style.setProperty('--asW',w0+'px')}}main.style.setProperty('--asW',Math.max(0,Math.min(mx(),w0+dx))+'px');wk()});
+   const tog=()=>{if(main.dataset.aside==='closed'){delete main.dataset.aside;if(wOpen)main.style.setProperty('--asW',wOpen+'px');else main.style.removeProperty('--asW')}else main.dataset.aside='closed';wk()};let skip=false;
+   const up=e=>{if(x0===null)return;const dx=x0-e.clientX;x0=null;delete main.dataset.drag;if(!moved)return;skip=true;setTimeout(()=>{skip=false},0);apply(w0+dx)};
+   ag.addEventListener('pointerup',up);addEventListener('pointerup',up);/* v118：指標滑出把手後放開也要吸附（原本只聽把手，慢幀時會停在半開）；skip 只擋緊接著的那次 click */ag.addEventListener('click',()=>{if(skip){skip=false;return}tog()});/* 點一下（含鍵盤 Enter／空白鍵）＝收起↔展開；拖曳後的 click 略過 */ag.addEventListener('pointercancel',()=>{x0=null;delete main.dataset.drag});
+   ag.addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;apply(e.key==='ArrowLeft'?mx():0);e.preventDefault()});/* v117：← 全開、→ 全收 */
+   addEventListener('resize',()=>{if(wOpen&&main.dataset.aside!=='closed'){const w=Math.min(mx(),wOpen);main.style.setProperty('--asW',w+'px')}})}})();
 /* v139：3D 畫面上的「車款・尺寸」膠囊——點車款＝下一車款、點尺寸＝下一尺寸，皆循環。 */
 (function(){const t=document.getElementById('stTag'),act=e=>{const s=e.target.closest&&e.target.closest('[data-k]');if(!s)return;const K=Object.keys(MNAME);
     if(s.dataset.k==='m'){setModel(K[(K.indexOf(selM)+1)%K.length])}
@@ -3047,7 +3208,7 @@ new ResizeObserver(scPlace).observe(stage);window.addEventListener('resize',scPl
 scBtn.addEventListener('click',()=>{if(SC.on){SC.why='按鈕';scStop(true,true)}else{SC.why='按鈕';scPlay()}});
 ['pointerdown','wheel','keydown'].forEach(e=>window.addEventListener(e,ev=>{const t=ev.target&&ev.target.closest?ev.target:null;if(t&&t.closest('#scBtn,#bgmW'))return;const g=!!(t&&t.closest('.gb'));if(!SC.on&&SC.pre){SC.pre=false;if(!g)scSheet('mid')}/* v199zzzzzz101：這裡不再停展示（使用者 2026-11-18）；暫停改由 3D 內真的拖曳／縮放觸發（scUser），單點、右側區塊、鍵盤皆不算 */void g},{capture:true,passive:true}));
 window.__scAuto=()=>{const calm=false;SC.why=calm?'減少動態，未自動':'自動';if(!calm)scPlay()};
-window.__SCd={info:scInfoSet,S:SC,stop:()=>scStop(true,false),play:scPlay,hs:id=>{const h=HS.find(x=>x.p.id===id);return h?[+(h.g.position.x*1000).toFixed(1),+(h.g.position.y*1000).toFixed(1),+(h.g.position.z*1000).toFixed(1)]:null},selId:()=>sel&&sel.id,pt:id=>{const h=HS.find(x=>x.p.id===id);if(!h)return null;const v=h.g.position.clone().project(camera),r=renderer.domElement.getBoundingClientRect();return[+(r.left+(v.x+1)/2*r.width).toFixed(1),+(r.top+(1-(v.y+1)/2)*r.height).toFixed(1)]},want:()=>[want.tgt.x,want.tgt.y,want.tgt.z,want.r,want.th,want.ph],spin:()=>spinA,sc:()=>SPIN_SC,nodes:SC_NODES,pos:scPos,focus:scFocus,next:scNext,cam:()=>[cam.tgt.x,cam.tgt.y,cam.tgt.z,cam.r,cam.th,cam.ph],want:()=>[want.tgt.x,want.tgt.y,want.tgt.z,want.r,want.th,want.ph],go:i=>{const d=SC_NODES[i],v=scPos(d);if(v)scFocus(v,typeof d==='object'?d:null);return v?[+v.x.toFixed(4),+v.y.toFixed(4),+v.z.toFixed(4)]:null},w:a=>spinW(a)};/* v199zzzzzz93：除錯掛鉤——特寫節點取位與構圖（go(i) 直接跳到第 i 個特寫，用於逐節點調構圖） */window.__scWhy=w=>{SC.why=w};window.__LDs=()=>{try{const n=performance.getEntriesByType('navigation')[0]||{},r=x=>x?(x/1000).toFixed(1):'—',rs=performance.getEntriesByType('resource').filter(e=>/\.(js|css)(\?|$)/.test(e.name)),dl=Math.max(n.responseEnd||0,...rs.map(e=>e.responseEnd)),kb=Math.round(rs.reduce((s,e)=>s+(e.transferSize||0),(n.transferSize||0))/1024);return '載入 下載'+r(dl)+'（'+kb+' KB）／解析'+r(n.domInteractive)+'（app'+r(window.__tA1-window.__tA0)+'）／DCL'+r(n.domContentLoadedEventEnd)+'／load'+r(n.loadEventEnd)+'／毛玻璃'+r(window.__tRv)+' s｜就緒'+(()=>{const R=window.__RDY;if(!R)return '—';const L=(window.__LT||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600));const F=(window.__LF||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600)),q=b=>b[0]+'次'+(b[1]/1000).toFixed(1)+'s';return R.why+' '+R.n+'幀 卡頓'+R.hit+'（新程式'+q(R.hP)+'／新貼圖'+q(R.hT)+'／其他'+q(R.hO)+'）最長'+Math.round(R.max)+'ms 中位'+Math.round(R.med||0)+'ms｜程式'+R.p0+'→'+R.p1+' 貼圖'+R.t0x+'→'+R.t1x+'｜長任務'+L.length+'個'+Math.round(L.reduce((a,x)=>a+x[1],0))+'ms 長幀'+F.length+'個'+Math.round(F.reduce((a,x)=>a+x[1],0))+'ms（繪製'+Math.round(F.reduce((a,x)=>a+x[2],0))+'）'+'｜預建'+(window.__tPw?(window.__tPw/1000).toFixed(1)+'s':'未開始')})()+'｜program '+((renderer.info.programs||[]).length)}catch(e){return ''}};window.__SCs=()=>(SC.on?'執行':'停止')+(SC.why?'（'+SC.why+'）':'');
+window.__STUd={cam,want,camera,renderer,scene,drawFrame,rcShot,rcCard};/* v199zzzzzz112：測試探針（app.js 為封閉範圍）。tools/tests_session/t_v112_studio.py 以 Object.assign(window,__STUd) 取用 */window.__SCd={info:scInfoSet,S:SC,stop:()=>scStop(true,false),play:scPlay,hs:id=>{const h=HS.find(x=>x.p.id===id);return h?[+(h.g.position.x*1000).toFixed(1),+(h.g.position.y*1000).toFixed(1),+(h.g.position.z*1000).toFixed(1)]:null},selId:()=>sel&&sel.id,pt:id=>{const h=HS.find(x=>x.p.id===id);if(!h)return null;const v=h.g.position.clone().project(camera),r=renderer.domElement.getBoundingClientRect();return[+(r.left+(v.x+1)/2*r.width).toFixed(1),+(r.top+(1-(v.y+1)/2)*r.height).toFixed(1)]},want:()=>[want.tgt.x,want.tgt.y,want.tgt.z,want.r,want.th,want.ph],spin:()=>spinA,sc:()=>SPIN_SC,nodes:SC_NODES,pos:scPos,focus:scFocus,next:scNext,cam:()=>[cam.tgt.x,cam.tgt.y,cam.tgt.z,cam.r,cam.th,cam.ph],want:()=>[want.tgt.x,want.tgt.y,want.tgt.z,want.r,want.th,want.ph],go:i=>{const d=SC_NODES[i],v=scPos(d);if(v)scFocus(v,typeof d==='object'?d:null);return v?[+v.x.toFixed(4),+v.y.toFixed(4),+v.z.toFixed(4)]:null},w:a=>spinW(a)};/* v199zzzzzz93：除錯掛鉤——特寫節點取位與構圖（go(i) 直接跳到第 i 個特寫，用於逐節點調構圖） */window.__scWhy=w=>{SC.why=w};window.__LDs=()=>{try{const n=performance.getEntriesByType('navigation')[0]||{},r=x=>x?(x/1000).toFixed(1):'—',rs=performance.getEntriesByType('resource').filter(e=>/\.(js|css)(\?|$)/.test(e.name)),dl=Math.max(n.responseEnd||0,...rs.map(e=>e.responseEnd)),kb=Math.round(rs.reduce((s,e)=>s+(e.transferSize||0),(n.transferSize||0))/1024);return '載入 下載'+r(dl)+'（'+kb+' KB）／解析'+r(n.domInteractive)+'（app'+r(window.__tA1-window.__tA0)+'）／DCL'+r(n.domContentLoadedEventEnd)+'／load'+r(n.loadEventEnd)+'／毛玻璃'+r(window.__tRv)+' s｜就緒'+(()=>{const R=window.__RDY;if(!R)return '—';const L=(window.__LT||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600));const F=(window.__LF||[]).filter(x=>x[0]+x[1]>R.t0&&x[0]<(R.t1||R.t0+2600)),q=b=>b[0]+'次'+(b[1]/1000).toFixed(1)+'s';return R.why+' '+R.n+'幀 卡頓'+R.hit+'（新程式'+q(R.hP)+'／新貼圖'+q(R.hT)+'／其他'+q(R.hO)+'）最長'+Math.round(R.max)+'ms 中位'+Math.round(R.med||0)+'ms｜程式'+R.p0+'→'+R.p1+' 貼圖'+R.t0x+'→'+R.t1x+'｜長任務'+L.length+'個'+Math.round(L.reduce((a,x)=>a+x[1],0))+'ms 長幀'+F.length+'個'+Math.round(F.reduce((a,x)=>a+x[1],0))+'ms（繪製'+Math.round(F.reduce((a,x)=>a+x[2],0))+'）'+'｜預建'+(window.__tPw?(window.__tPw/1000).toFixed(1)+'s':'未開始')})()+'｜program '+((renderer.info.programs||[]).length)}catch(e){return ''}};window.__SCs=()=>(SC.on?'執行':'停止')+(SC.why?'（'+SC.why+'）':'');
 scUI();
 setTimeout(()=>{try{keepPrograms()}catch(e){}},9000);
 /* ===== v109/v110：鈦原色表面（M.ti 及其 clone：車架、焊道、EX 勾爪）。噴砂＝世界座標 3D 雜訊微擾粗糙度與法線；拉絲＝沿管軸的條紋＋高光沿管周拉寬（管軸方向由法線的螢幕導數估出，條紋雜訊取世界法線）。
@@ -3091,4 +3252,32 @@ const TI_BLAST=.5;
   if(F&&M)setInterval(()=>{const now=performance.now(),dt=(now-tk)/1000;tk=now;const f=n/dt;n=0;F.textContent=f>0?f.toFixed(0):'0';M.textContent=f>0?ms.toFixed(1):'—'},500)}})();
 /* v199zzzzzz58：給 cloud.js（雲端保存）與 bgm.js（背景音樂）的對外介面 */window.VIBE_API={gather:()=>cfgGather(),apply:J=>cfgApply(J),model:()=>selM,size:()=>size,ver:()=>CFG_VER};
 try{setModel('325')}catch(e){console.warn('default model',e)}window.__tA1=performance.now();/* v199zzzzzz54：記錄 app.js 執行時間（診斷列 app） *//* v199zzzzzz51：預設車款 MASTER 325Ti（使用者 2026-11-16） */
+})();
+
+/* v199zzzzzz119：卡片設計精緻化（使用者 2026-11-19「一到五全做」）。
+   1 主視覺：#geoScore 為黏頂主視覺，捲動後才出底色與細線（.stuck）。
+   2 模組化：分段改用間距＋小標，不再每段一條線（CSS）。
+   3 材質：卡片頂光、由上而下明暗、顆粒、投影（CSS）。
+   4 控制：尺寸／疊圖改分段選擇器（滑動指示，--sx/--sw）；尺寸條上以藍色虛線標出疊圖對象；車型改小卡（佔位圖 .mc-img，日後換橫幅車款標誌：MC_IMG）。
+   5 動態：數字滾動、面板內容依序淡入、指示滑動；prefers-reduced-motion 全部關閉。 */
+var MC_IMG={};/* 車型橫幅標誌：{'MASTER 64Ti':'img/…webp'}；未設＝佔位圖 */
+function RMOm(){return matchMedia('(prefers-reduced-motion: reduce)').matches}/* 函式宣告會提升；renderGeo 在檔尾之前就會呼叫 heroSet */
+function heroSet(el,html){if(!el)return;const old={};el.querySelectorAll('[data-v]').forEach(b=>old[b.dataset.v]=b.textContent);el.innerHTML=html;el.hidden=!html;
+  if(RMOm())return;el.querySelectorAll('[data-v]').forEach(b=>{const k=b.dataset.v,o=old[k],n=b.textContent;if(o===undefined||o===n)return;
+    const a=+o,z=+n;if(isFinite(a)&&isFinite(z)&&o!==''&&n!==''){const t0=performance.now(),D=340,st=t=>{const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,3);b.textContent=String(Math.round(a+(z-a)*e));if(p<1)requestAnimationFrame(st);else b.textContent=n};b.textContent=o;requestAnimationFrame(st)}
+    else{b.classList.remove('flip');void b.offsetWidth;b.classList.add('flip')}})}
+(function(){const aside=document.querySelector('aside');if(!aside)return;
+  const seg=el=>{if(!el)return;el.classList.add('seg');const place=()=>{const b=el.querySelector('.chip[aria-pressed="true"]');if(!b){el.style.setProperty('--sw','0px');return}el.style.setProperty('--sx',b.offsetLeft+'px');el.style.setProperty('--sw',b.offsetWidth+'px')};
+    new MutationObserver(()=>{place();if(el.id==='sizeChips')mark()}).observe(el,{childList:true});new ResizeObserver(place).observe(el);place()};
+  const mark=()=>{const sc=document.getElementById('sizeChips'),cc=document.querySelector('#cmpChips .chip[aria-pressed="true"]'),cv=cc?cc.textContent:'';if(!sc)return;sc.querySelectorAll('.chip').forEach(b=>{const on=!!cv&&b.textContent===cv;/* cmp 在別的區塊作用域內，改讀疊圖條的選中鈕 */b.classList.toggle('cmpd',on);if(on)b.setAttribute('aria-describedby','cmpH');else b.removeAttribute('aria-describedby')})};
+  seg(document.getElementById('sizeChips'));seg(document.getElementById('cmpChips'));
+  {const ch=document.getElementById('cmpChips');if(ch){new MutationObserver(mark).observe(ch,{childList:true});const h=ch.previousElementSibling;if(h&&h.tagName==='H2'&&!h.id)h.id='cmpH'}}
+  const mc=document.getElementById('modelChips');if(mc){mc.classList.add('mcards');const deco=()=>{mc.querySelectorAll('.chip').forEach(b=>{if(b.querySelector('.mc-img'))return;const n=b.textContent;b.textContent='';const im=document.createElement('span');im.className='mc-img';im.setAttribute('aria-hidden','true');if(MC_IMG[n]){im.style.backgroundImage='url("'+MC_IMG[n]+'")';im.classList.add('has')}const t=document.createElement('span');t.className='mc-n';t.textContent=n;b.append(im,t)});
+      const sel=mc.querySelector('.chip[aria-pressed="true"]');if(sel&&mc.scrollWidth>mc.clientWidth+2){const L=sel.offsetLeft-mc.offsetLeft,R=L+sel.offsetWidth;if(L<mc.scrollLeft||R>mc.scrollLeft+mc.clientWidth)mc.scrollTo({left:Math.max(0,L-16),behavior:RMOm()?'auto':'smooth'})}};
+    new MutationObserver(deco).observe(mc,{childList:true});deco()}
+  /* 黏頂主視覺：行動版要讓出頂端分頁列；捲動後才出底色 */
+  const tabs=document.getElementById('sheetTabs');const th=()=>aside.style.setProperty('--tabsH',(tabs&&tabs.offsetParent?tabs.offsetHeight:0)+'px');if(tabs)new ResizeObserver(th).observe(tabs);th();addEventListener('resize',th);
+  const hero=document.getElementById('geoScore');const stuck=()=>{if(hero)hero.classList.toggle('stuck',aside.scrollTop>6)};aside.addEventListener('scroll',stuck,{passive:true});stuck();
+  /* 面板內容依序淡入（切分頁時） */
+  document.querySelectorAll('aside .panel').forEach(p=>new MutationObserver(()=>{if(p.hidden||RMOm())return;p.classList.remove('v-enter');void p.offsetWidth;p.classList.add('v-enter');clearTimeout(p._ve);p._ve=setTimeout(()=>p.classList.remove('v-enter'),900)}).observe(p,{attributes:true,attributeFilter:['hidden']}));
 })();

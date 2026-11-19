@@ -8,7 +8,7 @@
   --surface-page:var(--c-line-100);--surface-card:var(--c-surface-025);--text-primary:var(--c-ink-900);--text-strong:var(--c-brand-900);
   --text-muted:var(--c-neutral-500);--accent:var(--c-accent-700);--accent-solid:var(--c-accent-700);--border-soft:var(--c-line-300);
   --hairline:var(--c-line-300);--state-ok:#4A7A3A;--state-warn:#B85A28;--state-filled-bg:#FFF6F1;--track:#EFEDE0;--hl:rgba(226,112,58,.14);
-  --overlay:rgba(49,47,34,.35);--elevation-card:0 12px 40px rgba(49,47,34,.22);--stage-top:#EDE6D2;--stage-bot:#CFC4A8;
+  --overlay:rgba(49,47,34,.35);--elevation-card:0 12px 40px rgba(49,47,34,.22);--stage-top:#EDE6D2;--stage-bot:#CFC4A8;/* v199zzzzzz112：攝影棚 3D 背景色（單一來源；JS 以 getComputedStyle 讀取）。#stage 的 CSS 漸層保留當備援（3D 未繪製、context 遺失時可見） */--studio-top:#D8CFB7;--studio-mid:#EAE3CF;--studio-hot:#F7F2E6;--studio-floor:#DDD4BC;--studio-edge:#C2B699;
   --r-sm:5px;--r-pill:999px;--ghost:#2F6384;--below-top:var(--stage-bot);--below-end:var(--surface-page);color-scheme:light;box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -16,12 +16,12 @@
   --surface-page:var(--c-line-700);--surface-card:var(--c-ink-900);--text-primary:var(--c-surface-050);--text-strong:var(--c-surface-025);
   --text-muted:var(--c-line-300);--accent:var(--c-accent-500);--border-soft:var(--c-muted-500);--hairline:var(--c-muted-500);
   --state-ok:#8DBF78;--state-warn:#E2703A;--state-filled-bg:#3A2A1E;--track:#3A3828;--hl:rgba(226,112,58,.18);
-  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}}
+  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--studio-top:#1B1912;--studio-mid:#3B382A;--studio-hot:#5C5843;--studio-floor:#2E2B20;--studio-edge:#100F0A;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}}
 :root[data-theme="dark"]{
   --surface-page:var(--c-line-700);--surface-card:var(--c-ink-900);--text-primary:var(--c-surface-050);--text-strong:var(--c-surface-025);
   --text-muted:var(--c-line-300);--accent:var(--c-accent-500);--border-soft:var(--c-muted-500);--hairline:var(--c-muted-500);
   --state-ok:#8DBF78;--state-warn:#E2703A;--state-filled-bg:#3A2A1E;--track:#3A3828;--hl:rgba(226,112,58,.18);
-  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}
+  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--studio-top:#1B1912;--studio-mid:#3B382A;--studio-hot:#5C5843;--studio-floor:#2E2B20;--studio-edge:#100F0A;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;height:100%;background:var(--surface-page);color:var(--text-primary);
@@ -62,7 +62,7 @@ main{flex:1;display:flex;min-height:0}
 .left{flex:1;min-width:0;display:flex;flex-direction:column}
 #stage{position:relative;flex:1;min-height:0;background:linear-gradient(var(--stage-top),var(--stage-bot));touch-action:none;cursor:grab}
 #stage.dragging{cursor:grabbing}
-#stage canvas{display:block;width:100%;height:100%}
+#stage>canvas{display:block;position:absolute;left:0;top:0;width:100%;height:100%}
 #tip{position:absolute;pointer-events:none;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:4px 10px;font-size:var(--fs-sm);transform:translate(-50%,-140%);white-space:nowrap;display:none;z-index:5}
 #dimLabel{position:absolute;pointer-events:none;background:var(--accent-solid);color:#fff;border-radius:var(--r-sm);padding:2px 8px;font-size:var(--fs-sm);transform:translate(-50%,-50%);white-space:nowrap;display:none;z-index:4}
 #reset{position:absolute;left:50%;right:auto;bottom:12px;transform:translateX(-50%);font-size:var(--fs-xs);line-height:1;padding:5px 12px;min-height:26px;background:var(--surface-page)}
@@ -396,3 +396,118 @@ aside .scinfo h2#scTitle{font-size:var(--fs-xl);color:var(--text-strong);font-we
 .feat-b figure img{display:block;width:100%;height:100%;object-fit:cover}
 .feat-b figcaption{position:absolute;left:10px;bottom:8px;font-size:var(--fs-sm);color:var(--text-muted);background:color-mix(in srgb,var(--surface-card) 80%,transparent);padding:2px 8px;border-radius:999px}
 .feat-x{margin-top:var(--sp-2,8px)}.feat-x p{margin:0 0 var(--sp-2,8px);line-height:1.7;color:var(--text-primary)}
+
+/* v199zzzzzz113：頁面只分兩大區塊——3D（含頁首元素）與圖文（桌機右側、行動版底部）。頁首改為 3D 區內的透明浮層：
+   不另佔一條底色；空白處不攔指標（3D 拖曳照常），只有按鈕可點。--hdH＝頁首實際高度（JS 量），供 3D 內上方元件避讓。 */
+.left{position:relative}
+main>.left>header{position:absolute;left:0;right:0;top:0;z-index:7;background:transparent;border:0;pointer-events:none}
+header button{pointer-events:auto}
+#stTag{top:calc(var(--hdH,46px) + 4px)}
+@media (min-width:761px){
+  #stTag{left:50%}
+  #stBar .tabs{left:min(50%,calc(100% - 176px))}
+  aside{width:var(--asW,min(450px,40vw));transition:width .28s ease}
+  main[data-aside="closed"] aside{width:0;padding-left:0;padding-right:0;overflow:hidden}
+  main[data-drag="1"] aside{transition:none}
+}
+@media (max-width:760px){
+  #stTag{top:calc(var(--hdH,40px) + 2px)}
+  main{--stH:calc(48dvh + var(--hdH,40px))}
+  main[data-sheet="full"]{--stH:calc(30dvh + var(--hdH,40px))}
+}
+/* 桌機右側欄收折把手（無段式：左右拖曳停在哪就是哪；點一下收起／展開；方向鍵微調）。放在 3D 欄右緣＝右側欄左緣，收起後留在畫面右緣 */
+#asGb{display:none}
+@media (min-width:761px){
+  #asGb{display:block;position:absolute;right:0;top:50%;z-index:8;width:18px;height:96px;margin-top:-48px;padding:0;border:0;background:none;cursor:pointer;touch-action:none}/* v118：只開合不調寬，游標由雙向箭頭改手指 */
+  #asGb::after{content:"";position:absolute;top:50%;left:50%;width:4px;height:64px;margin:-32px 0 0 -2px;border-radius:2px;background:color-mix(in srgb,var(--text-muted) 55%,transparent);transition:background-color .2s}
+  #asGb:hover::after,#asGb:focus-visible::after{background:var(--accent)}
+  #asGb:focus-visible{outline:none}
+}
+/* 試機面板：顏色欄 */
+#qp .qr input[type=color]{width:100%;min-width:0;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:var(--r-sm);background:none}
+
+/* v199zzzzzz115：3D 畫布鋪滿整頁（使用者 2026-11-19）。畫布由 JS 量 main 尺寸後延伸到右側欄／底部卡片底下；
+   卡片維持一般網頁元素，改半透明浮在 3D 上（不用 backdrop-filter：動態 3D 上每幀重算模糊，行動版吃效能）。 */
+/* v199zzzzzz116：桌機卡片＝行動版卡片轉 90 度（使用者 2026-11-19）：貼齊右緣、上下留 12 px、左側圓角 20、左緣細線、底色同行動版 90%。
+   內容寬固定（--asCW），拖曳／收折只改露出寬（--asW）：aside 寬＝內容寬，用負的右外距把多出的部分推出畫面（main 裁切），內容不重新排列。
+   收起＝露出 28 px（只剩把手），同行動版收起時只剩頂端。 */
+@media (min-width:761px){
+  main{--asCW:min(450px,40vw);overflow:hidden}
+  aside,main[data-aside="closed"] aside{position:relative;z-index:2;flex:none;width:var(--asCW);margin:12px calc(max(var(--asW,var(--asCW)),28px) - var(--asCW)) 12px 0;
+    padding:14px 16px 24px 30px;border-radius:20px 0 0 20px;transition:margin-right .28s ease;
+    }
+  main[data-aside="closed"] aside{margin-right:calc(28px - var(--asCW));overflow:hidden}
+  #asGb{right:-30px;width:30px}
+}
+
+/* v199zzzzzz117–119：卡片框線（整圈）、底色、材質。v119 改用 token，並以 aside:not(#_) 提高權重，一次蓋過各版散落的主題規則。
+   :not(#_) 只是借 id 的權重，#_ 不存在。 */
+:root{--cardRing:color-mix(in srgb,var(--border-soft) 75%,transparent);--cardHl:rgba(255,255,255,.07);--cardDrop:rgba(0,0,0,.38);--cardGrainA:.09;--cmpBlue:#8CBBD8;--cmpOn:#13202a}
+html[data-theme="light"]{--cardRing:color-mix(in srgb,var(--text-muted) 62%,transparent);--cardHl:rgba(255,255,255,.62);--cardDrop:rgba(70,56,24,.20);--cardGrainA:.06;--cmpBlue:#2F6384;--cmpOn:#fff}
+@media (prefers-color-scheme:light){html:not([data-theme="dark"]){--cardRing:color-mix(in srgb,var(--text-muted) 62%,transparent);--cardHl:rgba(255,255,255,.62);--cardDrop:rgba(70,56,24,.20);--cardGrainA:.06;--cmpBlue:#2F6384;--cmpOn:#fff}}
+/* 3 材質：顆粒（SVG 雜訊，一次點陣化）＋由上而下明暗（頂端稍亮＝棚頂光）＋1 px 內側頂光＋整圈細線＋落在 3D 上的大範圍柔和投影 */
+aside:not(#_){--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  background:var(--grain),linear-gradient(180deg,color-mix(in srgb,var(--stage-top) 93%,transparent) 0,color-mix(in srgb,var(--stage-bot) 90%,transparent) var(--cardGradL,340px));
+  background-size:180px 180px,auto;background-blend-mode:overlay,normal;
+  box-shadow:0 0 0 1px var(--cardRing),inset 0 1px 0 var(--cardHl),0 28px 64px -18px var(--cardDrop)}
+@media (max-width:760px){aside:not(#_){--cardGradL:260px}}
+
+/* 1 主視覺 */
+#geoScore{position:sticky;z-index:6;display:grid;grid-template-columns:auto auto 1fr;column-gap:30px;row-gap:2px;align-items:end;color:var(--text-muted);
+  transition:background-color .25s,box-shadow .25s}
+#geoScore[hidden]{display:none}
+#geoScore .hm{grid-column:1/-1;font-size:12px;letter-spacing:.16em;font-weight:600;color:var(--text-muted);margin-bottom:8px}
+#geoScore .hk{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+#geoScore .lb{font-style:normal;font-size:12px;letter-spacing:.1em;color:var(--text-muted)}
+#geoScore .v{display:flex;align-items:baseline;gap:3px;white-space:nowrap}
+#geoScore b{font-size:36px;line-height:1;font-weight:600;color:var(--text-strong);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+#geoScore .u{font-style:normal;font-size:12px;color:var(--text-muted)}
+#geoScore [data-dim]{margin:-6px -8px;padding:6px 8px;border-radius:10px}
+#geoScore.stuck{background:var(--stage-top);box-shadow:0 1px 0 color-mix(in srgb,var(--cardRing) 70%,transparent),0 10px 18px -14px var(--cardDrop)}
+@media (min-width:761px){#geoScore{top:-14px;margin:-14px -16px 6px -30px;padding:18px 16px 14px 30px}}
+@media (max-width:760px){#geoScore{top:var(--tabsH,0px);margin:0 -16px 4px;padding:10px 16px 10px;column-gap:22px}
+  #geoScore .hm{margin-bottom:4px;font-size:11px}#geoScore b{font-size:28px}
+  #sheetTabs{background:var(--stage-top)}/* v119：頂端分頁列與卡片頂色一致（卡片改由頂端亮色漸層） */}
+#geoScore b.flip{animation:vIn .3s cubic-bezier(.2,.7,.2,1) both}
+
+/* 2 模組化：段與段之間用間距＋小標，不再每段一條線；小標前加橘色 ■（21 文件系「節標題」語彙） */
+aside .panel[data-panel=geo] h2:not(#modelH),aside .panel[data-panel=custom] h2,.panel[data-panel=geo] h2:not(#modelH),.panel[data-panel=custom] h2{border-top:0;padding-top:0}
+aside .panel>h2{font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--text-muted);display:flex;align-items:center;gap:8px}
+aside .panel>h2::before{content:"";flex:none;width:5px;height:5px;background:var(--accent);border-radius:1px}
+@media (min-width:761px){aside .panel[data-panel=geo] h2:not(#modelH),aside .panel[data-panel=custom] h2{margin-top:34px}aside .panel>h2{margin-bottom:12px}}
+@media (max-width:760px){aside .panel[data-panel=geo] h2:not(#modelH),aside .panel[data-panel=custom] h2{margin-top:26px}}
+
+/* 4a 分段選擇器（尺寸、疊圖）：一條軌道，選中者以滑動指示標出 */
+.chips.seg{position:relative;display:flex;flex-wrap:nowrap;gap:0;padding:3px;border-radius:999px;background:color-mix(in srgb,var(--text-muted) 11%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--text-muted) 16%,transparent)}
+.chips.seg::before{content:"";position:absolute;top:3px;bottom:3px;left:var(--sx,3px);width:var(--sw,0px);border-radius:999px;background:var(--accent-solid);box-shadow:0 1px 3px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.18);transition:left .34s cubic-bezier(.3,.8,.2,1),width .34s cubic-bezier(.3,.8,.2,1)}
+.chips.seg .chip{position:relative;z-index:1;flex:1 1 0;min-width:0;min-height:36px;padding:0 4px;border:0;background:none!important;color:var(--text-primary);font-variant-numeric:tabular-nums;transition:color .25s}
+.chips.seg .chip[aria-pressed="true"]{color:#fff}
+#cmpChips.seg{background:color-mix(in srgb,var(--text-muted) 6%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cmpBlue) 30%,transparent)}
+#cmpChips.seg::before{background:var(--cmpBlue)}
+#cmpChips.seg .chip{min-height:32px}
+#cmpChips.seg .chip[aria-pressed="true"]{color:var(--cmpOn)}
+#sizeChips .chip.cmpd::after{content:"";position:absolute;left:50%;bottom:5px;width:16px;height:2px;margin-left:-8px;background:repeating-linear-gradient(90deg,var(--cmpBlue) 0 4px,transparent 4px 6px)}
+@media (max-width:760px){#sizeChips.seg .chip{min-height:44px}#cmpChips.seg .chip{min-height:40px}}
+
+/* 4b 車型小卡：桌機 3 欄格、行動版橫向滑動；圖為佔位（日後換橫幅車款標誌，比例 3:1） */
+#modelChips.mcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#modelChips.mcards .chip{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0;min-height:0;padding:8px 8px 10px;border-radius:12px;text-align:left;font-size:13px;line-height:1.25;
+  background:color-mix(in srgb,var(--text-muted) 6%,transparent);border:1px solid color-mix(in srgb,var(--text-muted) 22%,transparent);color:var(--text-primary);
+  transition:transform .22s cubic-bezier(.3,.8,.2,1),border-color .2s,background-color .2s,box-shadow .2s}
+#modelChips.mcards .chip:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--text-muted) 45%,transparent)}
+#modelChips.mcards .chip[aria-pressed="true"]{background:color-mix(in srgb,var(--text-strong) 7%,transparent);border-color:var(--text-strong);color:var(--text-strong);box-shadow:inset 0 0 0 .5px var(--text-strong),0 6px 16px -10px var(--cardDrop)}
+#modelChips.mcards .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mc-img{display:block;aspect-ratio:3/1;border-radius:6px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--text-muted) 14%,transparent) 0 5px,transparent 5px 10px);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--text-muted) 18%,transparent);opacity:.75}
+.mc-img.has{background:center/contain no-repeat;box-shadow:none;opacity:1}
+#modelChips.mcards .chip[aria-pressed="true"] .mc-img{opacity:1}
+.mc-n{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+@media (max-width:760px){#modelChips.mcards{display:flex;flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -16px;padding:2px 16px 8px;scroll-padding:0 16px;scrollbar-width:none;overscroll-behavior-x:contain}
+  #modelChips.mcards::-webkit-scrollbar{display:none}
+  #modelChips.mcards .chip{flex:0 0 40%;scroll-snap-align:start;min-height:44px}
+  #modelChips.mcards .chip:hover{transform:none}}
+
+/* 5 動態 */
+@keyframes vIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.panel.v-enter>*:not(#geoScore){animation:vIn .4s cubic-bezier(.2,.7,.2,1) both}
+.panel.v-enter>*:nth-child(2){animation-delay:.03s}.panel.v-enter>*:nth-child(3){animation-delay:.06s}.panel.v-enter>*:nth-child(4){animation-delay:.09s}.panel.v-enter>*:nth-child(5){animation-delay:.12s}.panel.v-enter>*:nth-child(6){animation-delay:.15s}.panel.v-enter>*:nth-child(7){animation-delay:.18s}.panel.v-enter>*:nth-child(8){animation-delay:.21s}.panel.v-enter>*:nth-child(n+9){animation-delay:.24s}
+@media (prefers-reduced-motion:reduce){.panel.v-enter>*,#geoScore b.flip{animation:none}.chips.seg::before{transition:none}#modelChips.mcards .chip{transition:none}#modelChips.mcards .chip:hover{transform:none}}
