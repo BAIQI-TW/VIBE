@@ -39,8 +39,15 @@
  },
  "tt": {
   "name": "上管標",
-  "img": "img/feat/tt.webp",
-  "ph": true,
+  "img": {
+   "64": "img/feat/tt_64.webp",
+   "325": "img/feat/tt_325.webp",
+   "audax": "img/feat/tt_audax.webp",
+   "ili": "img/feat/tt_ili.webp",
+   "ss": "img/feat/tt_ss.webp",
+   "ex": "img/feat/tt_ex.webp",
+   "*": "img/feat/tt.webp"
+  },
   "sub": {
    "tw": "上管・標示",
    "en": "Top tube · Marking"
@@ -78,7 +85,6 @@
  "clamp": {
   "name": "座管束",
   "img": "img/feat/clamp.webp",
-  "ph": true,
   "sub": {
    "tw": "座管束環",
    "en": "Seat clamp ring"
@@ -96,8 +102,14 @@
  },
  "dt": {
   "name": "下管標",
-  "img": "img/feat/dt.webp",
-  "ph": true,
+  "img": {
+   "64": "img/feat/dt_64.webp",
+   "325": "img/feat/dt_325.webp",
+   "ili": "img/feat/dt_ili.webp",
+   "ss": "img/feat/dt_ss.webp",
+   "ex": "img/feat/dt_ex.webp",
+   "*": "img/feat/dt.webp"
+  },
   "sub": {
    "tw": "下管・標示",
    "en": "Down tube · Marking"
