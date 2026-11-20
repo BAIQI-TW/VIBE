@@ -1705,7 +1705,7 @@ function renderPaint(){try{setTimeout(gelSync,0)}catch(_){}paintFix();hsUI();smU
   dtr.innerHTML='';lgr.innerHTML='';dtr.style.display=lg&&dG?'':'none';lgr.style.display=lg&&lG?'':'none';
   {let lfH=document.getElementById('logoFinH'),lfC=document.getElementById('logoFinChips');if(!lfC){lfH=document.createElement('h2');lfH.id='logoFinH';lfH.dataset.sub='paint';lfH.textContent='下管標表面處理（與車架表面處理連動）';lfC=document.createElement('div');lfC.id='logoFinChips';lfC.className='chips';lfC.dataset.sub='paint';dtr.after(lfH,lfC);[lfH,lfC].forEach(e=>e.classList.toggle('subhide',cSub!=='paint'))}lfH.style.display=lfC.style.display=lg?'':'none';if(lg)chips(lfC,logoFinOpts().map(o=>o[1]),logoFinLabel(),x=>{logoFinSel=logoFinOpts().find(o=>o[1]===x)[0];renderPaint();wk()})}
   if(lg){logoColSelect(lcc);dtColSelect(dtc);const rb=(box,get,set)=>{const b=document.createElement('button');b.className='chip';b.textContent='反向';b.setAttribute('aria-pressed',get());b.onclick=()=>{set(!get());renderPaint();wk()};box.appendChild(b)};if(dG)rb(dtr,()=>dtRev,v=>{dtRev=v});if(lG)rb(lgr,()=>lgRev,v=>{lgRev=v})}
-  document.getElementById('paintNote').textContent=MNAME[selM]+'｜'+(paintSel==='grad'?(is64?'漸層陽極：'+ANO_GRAD[anoG][0]+'，漸變帶由 A 到 B（拖曳 3D 上的綠點調整位置，或按「反向」）。中間色依薄膜干涉的色序計算（膜厚由 A 端漸增到 B 端），不是 RGB 直接混色；兩端為色樣實色。':'顏色沿車架由頭管的藍紫，漸變到五通與後叉的古銅。'):paintSel==='spl'?'碎花陽極：'+SPL[splI][0]+'，遮罩依 2026-11-03 提供的碎花遮罩，三向投影貼在車架；平鋪尺寸為暫估（可選細／中／粗）。'+(splI?'此組底色暫用單色色號，待底色票。':''):paintSel==='mono'?'單色陽極：'+ANO_MONO[anoM][0]+'（'+ANO_MONO[anoM][1]+'），全車同色。':'維持鈦合金原色'+(is64&&finEff()==='brush'?'（拉絲表面不能做陽極，請改選「標準」或「噴砂」）':'')+'。')+(an?'為示意色，實際以陽極製程為準。前叉不在此範圍。':'')+'表面處理：'+finLabel()+'。'+(finEff()==='brush'?'拉絲方向沿各管長邊。':'')+(logoShown()?'下管標表面處理：'+logoFinLabel()+'（'+(finEff()==='blast'?'車架噴砂，標不加工以拉開對比':'與車架表面處理拉開對比')+'；標面積小，不做拉絲）。':'')+(logoShown()?'Logo 顏色：'+logoColLabel()+(lcEff()==='ti'&&paintSel==='ti'?'（鈦架配鈦色 logo 實際無色差，3D 以深鈦灰示意位置）':'')+'；位置依該車款位置圖，尺寸為暫估。':'');gradUI()}
+  document.getElementById('paintNote').textContent=MNAME[selM]+'｜'+(paintSel==='grad'?(is64?'漸層陽極：'+ANO_GRAD[anoG][0]+'，漸變帶由 A 到 B（拖曳 3D 上的綠點調整位置，或按「反向」）。中間色依薄膜干涉的色序計算（膜厚由 A 端漸增到 B 端），不是 RGB 直接混色；兩端為色樣實色。':'顏色沿車架由頭管的藍紫，漸變到五通與後叉的古銅。'):paintSel==='spl'?'碎花陽極：'+SPL[splI][0]+'，遮罩依 2026-11-03 提供的碎花遮罩，三向投影貼在車架；平鋪尺寸為暫估（可選細／中／粗）。'+(splI?'此組底色暫用單色色號，待底色票。':''):paintSel==='mono'?'單色陽極：'+ANO_MONO[anoM][0]+'（'+ANO_MONO[anoM][1]+'），全車同色。':'維持鈦合金原色'+(is64&&finEff()==='brush'?'（拉絲表面不能做陽極，請改選「標準」或「噴砂」）':'')+'。')+(an?'為示意色，實際以陽極製程為準。前叉不在此範圍。':'')+'表面處理：'+finLabel()+'。'+(finEff()==='brush'?'拉絲方向沿各管長邊。':'')+(logoShown()?'下管標表面處理：'+logoFinLabel()+'（'+(finEff()==='blast'?'車架噴砂，標不加工以拉開對比':'與車架表面處理拉開對比')+'；標面積小，不做拉絲）。':'')/* v199zzzzzz125：其他 Logo 顏色的說明刪除（使用者 2026-11-20） */;gradUI()}
 function syncSub(){const pn=document.querySelector('.panel[data-panel=custom]'),bar=document.getElementById('cSub');if(!pn||!bar)return;
   const ok=finOk(),sub=(cSub==='paint'&&ok)?'paint':(cSub==='addon'?'addon':'geo');bar.hidden=false;/* v131：子分頁列一律顯示（幾何客製／塗裝客製／加購套件）；不承接塗裝的車款隱藏「塗裝客製」鈕 */
   bar.querySelectorAll('button').forEach(b=>{b.setAttribute('aria-selected',String(b.dataset.sub===sub));if(b.dataset.sub==='paint')b.hidden=!ok});
@@ -1782,7 +1782,7 @@ function qpMD(){
   const mats=MT_G.map(g=>{const s=MTS[g[0]];return{id:g[0],name:g[1],材質:MT_P[s.p][0],顏色:s.c||'原色',明度:s.b}});
   const J={版次:'v199zzzl',時間:ts,效能:{分材質matcap:QB.parts},清漆層:{cc:QV.cc,ccr:QV.ccr},風格:{an:QB.an,bc:QV.bc,bn:QV.bn},陽極材質:mc,外胎:{胎面紋路:TRD.s},已調整材質預設值:{film:QB.film,ao:QB.ao,br:QV.br,gr:QV.gr,mt:QV.mt,tr:QV.tr,pr:QV.pr,pcc:QV.pcc,mgl:QV.mgl,mmt:QV.mmt,pgr:QV.pgr,mgr:QV.mgr,ex:QV.ex,bs:QV.bs,sat:QV.sat,es:QV.es},示意零件材質:mats};
   const env='- 裝置像素比 '+(window.devicePixelRatio||1)+'｜視窗 '+innerWidth+'×'+innerHeight+'｜層級 '+(typeof TIER!=='undefined'?TIER:'—')+'｜慢機旗標 '+(typeof SLOW!=='undefined'?SLOW:'—')+'｜單幀約 '+(QP.ms?QP.ms.toFixed(1):'—')+' ms\n- '+navigator.userAgent;
-  return '---\nname: VIBE Geometry 臨時畫質設定匯出\nversion: v199zzzl\nexported: '+ts+'\n---\n\n# 臨時畫質設定匯出｜'+ts+'\n\n> 「改過」欄 ✱＝與預設值不同。貼回對話即可匯入；JSON 區塊為機器可讀版。\n\n## 環境\n'+env
+  return '---\nname: VIBE Geometry 進階彩現設定匯出\nversion: v199zzzzzz125\nexported: '+ts+'\n---\n\n# 進階彩現設定匯出｜'+ts+'\n\n> 「改過」欄 ✱＝與預設值不同；JSON 區塊為機器可讀版。\n\n## 環境\n'+env
   +'\n\n## 1 效能\n'+head+row('分材質 matcap','parts',QB.parts,QB0.parts)
   +'\n\n## 1a 噴砂\n'+head+sl(L_BL)+'\n\n## 2 拉絲\n'+head+L_ST.map(r=>row(r[1],r[0],val(r[0]),def(r[0]))).join('\n')
   +'\n\n## 2a 清漆層\n'+head+sl(L_CC)
@@ -1821,7 +1821,7 @@ function trdBuild0(){const{W,H,ht,kn,yA,ss}=trdD,cn=M.tire.normalMap&&M.tire.nor
 trdBuild();
 
 TRD0=TRD.s;mtScan();MT_OK=1;
-/* ===== v148：臨時畫質面板（使用者 2026-11-02 指示；定案後整段移除，把值寫死到 MC_ADV） =====
+/* ===== v148：臨時畫質面板（使用者 2026-11-02 指示）；v199zzzzzz125 起改名「進階彩現設定」，為正式介面（使用者 2026-11-20），規格見 35 =====
    QB＝使用者設的基準值；自動降級只覆寫 MC_ADV 的有效值與像素比，不改 QB。
    降級階梯：L1 超取樣關閉 → L2 再關分材質與薄膜 → L3 再關 AO 與拉絲。只降不升（垂直同步會把幀時間頂在 16.7 ms，量不出餘裕）；「恢復」按鈕回 L0。
    取樣只在持續重繪（wake>0）時計入；>120 ms 的幀視為編譯卡頓不計。 */
@@ -1838,26 +1838,25 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
   /* v199p：面板依使用者 2026-11-05 指定順序重排：效能／風格／超取樣／陽極材質／自動降畫質／外胎輪框／已調整材質預設值／示意零件材質／輸出設定。
      「已調整材質預設值」＝v169 起已定案預設的九項（film、ao、br、gr、mt、ex、bs、sat、es）；「風格」＝拉絲高光、對比、雜訊三項（預設中性）。 */
   const SR_STU=[['hotK','亮區強度',0,1.2,.01],['kw','亮區寬（倍率）',.5,3,.05],['kh','亮區高（倍率）',.5,3,.05],['poolK','車下亮區',0,1,.01],['frontK','前景地面壓暗',0,1,.01],['vigR','暗角半徑',.1,1,.01],['vigK','暗角強度',0,1,.01],['grain','灰泥顆粒',0,.06,.002],['barK','頂燈燈條',0,1.5,.01],['barH','燈條高度（倍率）',.5,2,.05],['topL','頂光強度',0,2.5,.05],['envK','環境反射',0,1.5,.05],['hemL','補光（半球光）',0,1.5,.05],['sunL','主燈（原位）',0,2,.05],['rimL','輪廓燈',0,2,.05]],SR_COL=[['top','上方牆面'],['mid','產品高度牆面'],['hot','亮區'],['floor','車下地面'],['edge','暗角／前景']];/* v199zzzzzz113：補齊攝影棚全部參數＋五個顏色（使用者 2026-11-19） */
-  const RS=r=>`<div class="qr"><label for="qp_${r[0]}">${r[1]}</label><input id="qp_${r[0]}" type="range" data-k="${r[0]}" min="${r[2]}" max="${r[3]}" step="${r[4]}"><output></output></div>`,qH=(t,x)=>`<div class="qm"><h4>${t}</h4>${x}</div>`;
+  const RS=r=>`<div class="qr"><label for="qp_${r[0]}">${r[1]}</label><input id="qp_${r[0]}" type="range" data-k="${r[0]}" min="${r[2]}" max="${r[3]}" step="${r[4]}"><output></output></div>`,qH=(t,x)=>`<details class="qm"><summary>${t}</summary><div class="qmb">${x}</div></details>`;
   const R_BL_TI=[['tr','噴砂粗糙度',.4,1,.01],['gr','噴砂顆粒',0,2,.05],['mt','噴砂霧面（混合量）',0,2,.05]],R_BL_PBR=[['pr','噴砂粗糙度',.2,1,.01],['pcc','噴砂清漆',0,1,.05],['pgr','噴砂顆粒',0,2,.05]],R_BL_MC=[['mmt','噴砂霧面',0,2,.05],['mgl','噴砂補高光',0,1,.05],['mgr','噴砂顆粒',0,2,.05]],R_STYLE=[['br','拉絲條紋',0,2,.05],['bs','拉絲比例（條紋粗細，小＝細）',.1,1.5,.05],['bc','拉絲對比',0,8,.1],['bn','拉絲雜訊',0,8,.1],['ta','拉絲高光',0,3,.05]],R_CC=[['cc','清漆層強度',0,1,.05],['ccr','清漆層粗糙度',0,.6,.02]],R_TUNED=[['film','薄膜干涉',0,1,.05],['ao','管件 AO',0,1.2,.05],['ex','鈦件曝光',.2,1.4,.02],['sat','陽極飽和',0,1.6,.05],['es','陽極反光',0,2,.05]];
-  b.innerHTML=qH('效能',`<div class="qk"><label><input type="checkbox" id="qpParts"> 分材質 matcap</label></div><p class="qo" id="qpOut"></p>`)
-  +qH('噴砂・鈦原色',R_BL_TI.map(RS).join(''))
-  +qH('噴砂・陽極 PBR',R_BL_PBR.map(RS).join(''))
-  +qH('噴砂・陽極 Matcap',R_BL_MC.map(RS).join(''))
-  +qH('拉絲・鈦原色',R_STYLE.map(RS).join(''))
-  +qH('清漆層（碳纖前叉、座管、把手、卡鉗）',R_CC.map(RS).join(''))
-  +qH('陽極材質',`<div class="qk"><label><input type="checkbox" id="qpMC"> Matcap 繪製（關＝PBR）</label></div>`)
-  +mtHTMLa()
-  +qH('陽極色與曝光',R_TUNED.map(RS).join(''))
-  +mtHTMLb()
-  +qH('攝影棚（試機用）',SR_STU.map(r=>`<div class="qr"><label for="qs_${r[0]}">${r[1]}</label><input id="qs_${r[0]}" type="range" data-stu="${r[0]}" min="${r[2]}" max="${r[3]}" step="${r[4]}"><output></output></div>`).join('')+SR_COL.map(r=>`<div class="qr"><label for="qc_${r[0]}">${r[1]}</label><input id="qc_${r[0]}" type="color" data-stc="${r[0]}"><output></output></div>`).join('')+'<div class="qk"><label><input type="checkbox" id="qpSunTop"> 主燈取代頂光（燈數 −1）</label></div><div class="qk"><button type="button" id="qpStuDef">攝影棚預設</button></div><p class="qo" id="qpStu"></p>')/* v199zzzzzz112：只改目前主題那一組，即時套用；下方一行是目前主題的四個數值，抄回給 Claude 定案。面板去留跟著 E1 */
-  +qH('輸出設定',`<div class="qk"><button type="button" id="qpMdDl">下載 .md</button><button type="button" id="qpMdCp">複製 .md</button><button type="button" id="qpDef">全部預設</button></div><textarea id="qpMd" readonly rows="6" aria-label="設定匯出內容" placeholder="按「下載」或「複製」後內容會顯示在這裡；下載被擋時可全選複製貼給 Claude。"></textarea>`);
+  /* v199zzzzzz125：進階彩現設定重排為九組、各組預設收折（使用者 2026-11-20）：效能監控／攝影棚／曝光／噴砂／陽極／拉絲／清漆／示意零件／輸出設定 */
+  const sub=(t,x)=>`<div class="qsub"><h5>${t}</h5>${x}</div>`,EXK=['ex','ao'],R_EXP=R_TUNED.filter(r=>EXK.includes(r[0])),R_ANO=R_TUNED.filter(r=>!EXK.includes(r[0])),mtx=mtHTML().replace(/<div class="qm"><h4>([^<]*)<\/h4>/g,'<div class="qsub"><h5>$1</h5>');
+  b.innerHTML=qH('效能監控',`<p class="qo" id="qpOut"></p><div class="qk"><label><input type="checkbox" id="qpParts"> 分材質 matcap</label></div>`)
+  +qH('攝影棚',SR_STU.map(r=>`<div class="qr"><label for="qs_${r[0]}">${r[1]}</label><input id="qs_${r[0]}" type="range" data-stu="${r[0]}" min="${r[2]}" max="${r[3]}" step="${r[4]}"><output></output></div>`).join('')+SR_COL.map(r=>`<div class="qr"><label for="qc_${r[0]}">${r[1]}</label><input id="qc_${r[0]}" type="color" data-stc="${r[0]}"><output></output></div>`).join('')+'<div class="qk"><label><input type="checkbox" id="qpSunTop"> 主燈取代頂光（燈數 −1）</label></div><div class="qk"><button type="button" id="qpStuDef">攝影棚預設</button></div><p class="qo" id="qpStu"></p>')
+  +qH('曝光',R_EXP.map(RS).join(''))
+  +qH('噴砂',sub('鈦原色',R_BL_TI.map(RS).join(''))+sub('陽極 PBR',R_BL_PBR.map(RS).join(''))+sub('陽極 Matcap',R_BL_MC.map(RS).join('')))
+  +qH('陽極',`<div class="qk"><label><input type="checkbox" id="qpMC"> Matcap 繪製（關＝PBR）</label></div>`+R_ANO.map(RS).join(''))
+  +qH('拉絲',R_STYLE.map(RS).join(''))
+  +qH('清漆',R_CC.map(RS).join(''))
+  +qH('示意零件',mtx)
+  +qH('輸出設定',`<div class="qk"><button type="button" id="qpMdDl">下載 .md</button><button type="button" id="qpMdCp">複製 .md</button><button type="button" id="qpDef">全部預設</button></div><textarea id="qpMd" readonly rows="2" aria-label="設定匯出內容" placeholder="按「下載」或「複製」後內容會顯示在這裡；下載被擋時可全選複製。"></textarea>`);
   b.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.k){const k=t.dataset.k;if(k in QV){QV[k]=+t.value;if(k==='ex')renderer.toneMappingExposure=QV.ex;if(k==='cc'||k==='ccr')ccApply()}else QB[k]=+t.value;t.nextElementSibling.textContent=(+t.value).toFixed(2);qpApply(false)}else if(t.id==='qpParts'){QB.parts=t.checked;qpApply(false)}});
   b.addEventListener('change',e=>{if(e.target.id==='qpMC'){QP.mc=e.target.checked?'mat':'pbrf';wk()}});
   b.querySelector('#qpDef').onclick=()=>{mtReset();Object.assign(QB,QB0);Object.assign(QV,QV0);ccApply();renderer.toneMappingExposure=QV.ex;qpApply(true)};
   const mdOut=()=>{const t=qpMD(),ta=b.querySelector('#qpMd');ta.value=t;return t};
   b.querySelector('#qpMdCp').onclick=()=>{const t=mdOut();try{navigator.clipboard.writeText(t).then(()=>{},()=>{ta2()})}catch(_){ta2()}function ta2(){const x=b.querySelector('#qpMd');x.focus();x.select()}};
-  b.querySelector('#qpMdDl').onclick=async()=>{const t=mdOut(),fn='VIBE畫質設定_'+qpStamp()+'.md';let ok=false;
+  b.querySelector('#qpMdDl').onclick=async()=>{const t=mdOut(),fn='VIBE進階彩現設定_'+qpStamp()+'.md';let ok=false;
     try{const dl=window.claude&&claude.use?await claude.use('downloads'):null;if(dl){await dl.save({filename:fn,data:t});ok=true}}catch(e){if(e&&e.code==='declined')ok=true}
     if(!ok){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/markdown;charset=utf-8'}));a.download=fn;document.body.appendChild(a);a.click();a.remove()}catch(_){}}};
   mtWire(b);mtUI();qpUI();
@@ -1865,7 +1864,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
   b.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.stu){STU.setP(t.dataset.stu,t.value);STU.ui()}else if(t.dataset&&t.dataset.stc){STU.setC(t.dataset.stc,t.value);t.nextElementSibling.textContent=t.value;STU.ui()}});b.querySelector('#qpStuDef').onclick=()=>{STU.reset();STU.ui()};b.querySelector('#qpSunTop').addEventListener('change',e=>{STU.setP('sunTop',e.target.checked?1:0);STU.ui()});/* v120i：寫入目前主題 */
   let last=performance.now();(function f(now){requestAnimationFrame(f);const dt=now-last;last=now;
     if(wake>0&&!document.hidden&&dt>4&&dt<120&&RMS>0){QP.ms=QP.n?QP.ms*.92+RMS*.08:RMS;QP.n++;if(!SLOW&&!IPH&&!DESK&&QP.n>=60&&QP.ms>30&&performance.now()>RT0){SLOW=true;TIER='lo';wk()}wdN=QP.ms>20?wdN+1:0;if(TIER==='hi'&&!DESK&&!IPH&&wdN>=45&&now>8000)TIER='mid';}})(last);
-  setInterval(()=>{const d=document.getElementById('qp');if(!d||!d.open)return;const o=document.getElementById('qpOut');if(o&&!/^\{/.test(o.textContent))o.textContent='單幀約 '+(QP.ms?QP.ms.toFixed(1):'—')+' ms'+(SLOW?'｜慢機：動中不畫描邊':'')+(window.__SCs?'｜展示 '+window.__SCs():'')+(window.__LDs?'｜'+window.__LDs():'')+(window.__bgmS?'｜BGM '+window.__bgmS():'')+'｜層級 '+TIER+(probeMs?'（探測 '+probeMs.toFixed(1)+' ms）':'')+'｜陽極 '+(mcCur==='P'?'PBR':'Matcap')},600)})();
+  setInterval(()=>{const d=document.getElementById('qp');if(!d||!d.open)return;const o=document.getElementById('qpOut');if(o&&!/^\{/.test(o.textContent))o.textContent='單幀 '+(QP.ms?QP.ms.toFixed(1):'—')+' ms｜層級 '+TIER+(SLOW?'（慢機）':'')+'｜陽極 '+(mcCur==='P'?'PBR':'Matcap')/* v199zzzzzz125：評估內容簡化 */},600)})();
 
 /* ===== v199zf：3D 設定檔（客製服務主分頁下方；使用者 2026-11-05 指示，為「預設個人化」做準備）=====
    「下載」「複製」把目前 3D 的全部設定輸出成 .md：車款（車型、尺寸、各車型胎寬與頭碗型式）、塗裝與顏色（表面處理、車架顏色、漸層端點、下管標、Logo、座管束・頭碗組、鈦螺絲）、
@@ -2412,7 +2411,7 @@ let tblKey='';
 function specBox(){const el=document.getElementById('specBox');if(!el)return;const S=SPEC[selM];
   let h='';if(S){h+=`<details class="spec"><summary>${MNAME[selM]}｜規格與保固${SPECSRC[selM]?'（'+SPECSRC[selM]+'）':''}</summary><table class="gt">`+S.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')+'</table></details>'}
   else h+=`<p class="fine">${MNAME[selM]}：${NOSPEC[selM]||'規格待補'}。</p>`;
-  h+=`<details class="spec"><summary>加購升級（全車系共通）</summary><ul class="addl">`+ADDON_ALL.map(x=>`<li>${x}</li>`).join('')+`</ul><p class="fine">相容性仍須逐款確認前叉、頭碗組、走線、座管、Q-Factor 與胎寬。</p>${pill()}</details>`;el.innerHTML=h}
+  h+=`<details class="spec"><summary>加購升級（全車系共通）</summary><ul class="addl">`+ADDON_ALL.map(x=>`<li>${x}</li>`).join('')+`</ul>${pill()}</details>`;el.innerHTML=h}
 function GEOV(){return GEO}
 var SER_DEF={'64':3,'325':1,'audax':0,'ili':2,'ss':0,'ex':0};/* v199zzzg：各車款預設傳動／煞車系列（0 現行、1 Shimano 105、2 SRAM Force、3 Dura-Ace）；SS-2205、EX 維持現行 */ /* v199zzzl：AUDAX 325 與 ili-ili 325 的傳動／煞車套件互換——AUDAX 改為現行（含 AUDAX 曲柄組）、ili-ili 325 改為 SRAM Force（曲柄組隨系列，不再是 M64 曲柄組）（使用者 2026-11-10） */
 /* v199zzzzzz89：車款・尺寸膠囊內容。扭力巡檢分頁 3D 固定是 M 尺寸標準節點，故尺寸顯示 M 且不可點；其餘分頁顯示並可循環目前尺寸。 */
@@ -2422,7 +2421,7 @@ function markSel(){const ss=GEO.map(g=>g.size),si=ss.indexOf(size);
   geoTable.querySelectorAll('[data-s]').forEach(c=>{const i=ss.indexOf(c.dataset.s);c.style.transitionDelay=(Math.abs(i-si)*45)+'ms';c.classList.toggle('sel',c.dataset.s===size)})}
 geoTable.addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(!c||c.dataset.s===size)return;size=c.dataset.s;if(cmp===size)cmp=null;goGeo(size);updateGhost();renderGeo()});
 function renderGeo(){chips(document.getElementById('modelChips'),Object.values(MNAME),MNAME[selM],x=>setModel(Object.keys(MNAME).find(k=>MNAME[k]===x)));chips(document.getElementById('twChips'),twOpts(selM).map(String),String(TW_SEL[selM]||TW_DEF[selM]),x=>{TW_SEL[selM]=+x;if(GEOS[selM]){goGeo(size);updateGhost()}renderGeo()});/* v198：胎寬選項 */
-  {const hc=document.getElementById('hsTypeChips');if(hc){chips(hc,['外露式','全隱藏式'],hsT()==='hid'?'全隱藏式':'外露式',x=>{HS_SEL[selM]=x==='全隱藏式'?'hid':'ex';try{if(N){tween=null;logoNow=true;applyNodes(N)}}catch(e){}wk();renderGeo()});const hn=document.getElementById('hsTypeNote');if(hn)hn.textContent=hsT()==='hid'?'全隱藏式：軸承藏在頭管內，只露上蓋 9.5 mm 與下冠座 1 mm（參照 NECO H02 圖面）；頭管下端貼近叉冠，龍頭隨之降低。顏色同「座管束・頭碗組顏色」。':'外露式：上碗 14 mm、下碗 16 mm 圓環造型，外緣貼 KING 字樣（參照 Chris King AeroSet）；頭管畫短 15 mm 以下碗補足。顏色同「座管束・頭碗組顏色」。'}}
+  {const hc=document.getElementById('hsTypeChips');if(hc){chips(hc,['外露式','全隱藏式'],hsT()==='hid'?'全隱藏式':'外露式',x=>{HS_SEL[selM]=x==='全隱藏式'?'hid':'ex';try{if(N){tween=null;logoNow=true;applyNodes(N)}}catch(e){}wk();renderGeo()});}}
   document.getElementById('modelH').textContent=({'64':'全公路車','325':'全公路車','audax':'長途耐力車','ili':'礫石車','ss':'礫石車','ex':'探險礫石車'}[selM]||'車')+'型';
   const has=!!GEOS[selM];document.getElementById('sizeH').textContent=MNAME[selM]+(has?' 尺寸':'');stTagSet();
   const gg=has?(GEO.find(x=>x.size===size)||GEO[0]):null;heroSet(document.getElementById('geoScore'),gg?`<div class="hm">${MNAME[selM]}</div><span class="hk" data-next="1" role="button" tabindex="0"><i class="lb">尺寸</i><span class="v"><b class="num" data-v="size">${gg.size}</b></span></span><span data-dim="reach" role="button" tabindex="0" aria-pressed="${dimKey==='reach'}" class="hk ${dimKey==='reach'?'on':''}"><i class="lb">前伸量</i><span class="v"><b class="num" data-v="reach">${gg.reach}</b><i class="u">mm</i></span></span><span data-dim="stack" role="button" tabindex="0" aria-pressed="${dimKey==='stack'}" class="hk ${dimKey==='stack'?'on':''}"><i class="lb">堆疊高</i><span class="v"><b class="num" data-v="stack">${gg.stack}</b><i class="u">mm</i></span></span>`:'');/* v119：卡片頂端主視覺（車型＋尺寸＋前伸量＋堆疊高），數字換值時滾動 */ /* v199zzzzzz100：前伸量／堆疊高可點，同下方尺寸對照表的列（點一次在 3D 標出尺寸線、再點一次關閉） */
@@ -2605,17 +2604,16 @@ function fkDecInit(){if(FKD)return;
   const END=392+12;
   /* v199zzzzzz32：外側字樣再上移 15 mm；貼面頂點改投影到叉腿實際網格表面（見 fkProj）。2026-11-13 目視後調整：外側字樣上移 7 mm、放大 125%（以中心放大）；內側圖樣往車尾移 4 mm 弧長、放大 125% */
   /* v199zzzzzz34：右叉腿外側加上與左外側相同的 RIKULAU 字樣，UV 旋轉 180° */
-  FKD={out:mk(END-40-23-7-15,57.5,10.375,'L','logo',0),out2:mk(END-40-23-7-15,57.5,10.375,'RO','logo',0),inn:mk(END-70-107.5,268.75,33.5,'R','pat',-4)};
+  FKD={out:mk(END-40-23-7-15,57.5,10.375,'L','logo',0),out2:mk(END-40-23-7-15,57.5,10.375,'RO','logo',0),inn:mk(END-70-107.5,268.75,33.5,'R','pat',-4)};logoSplPatch(FKD.inn.mat);
   const ld=(k,svg)=>{const im=new Image();im.onload=()=>{FKIMG[k]=im;fkDecApply(true)};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgWH(svg))};ld('pat',FK_PAT_SVG);ld('logo',FK_LOGO_SVG);
   FKM=new Image();FKM.onload=()=>{const c=document.createElement('canvas');c.width=c.height=768;const g=c.getContext('2d');g.drawImage(FKM,0,0,768,768);const d=g.getImageData(0,0,768,768).data,a=new Uint8Array(768*768);for(let i=0;i<a.length;i++)a[i]=d[i*4];FKM.lum=a;fkDecApply(true)};FKM.src=SPL_MASK}
 function fkPatSpec(){if(!(ADD_S.ti.fork>0))return{c:FK_KING};const v=fkPat;if(v[0]==='m'&&ANO_MONO[+v.slice(1)])return{c:'#'+ANO_MONO[+v.slice(1)][2]};if(v[0]==='g'&&ANO_GRAD[+v.slice(1)]){const q=ANO_GRAD[+v.slice(1)];return{g:{t:q[1],c:q[2]}}}if(v[0]==='s'&&SPL[+v.slice(1)]){const q=SPL[+v.slice(1)];return{s:{a:q[1],b:q[2],sz:splSz}}}return{c:FK_KING}}
 function fkPaint(slot,spec){const im=FKIMG[slot.kind];if(!im)return;const cv=slot.cv,W=cv.width,H=cv.height,g=cv.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,W,H);g.drawImage(im,0,0,W,H);g.globalCompositeOperation='source-in';
   if(spec.c){g.fillStyle=spec.c;g.fillRect(0,0,W,H)}
   else if(spec.g){const gr=g.createLinearGradient(0,0,W,0);spec.g.t.forEach((t,i)=>gr.addColorStop(t,'#'+spec.g.c[i]));g.fillStyle=gr;g.fillRect(0,0,W,H)}
-  else if(spec.s){const lum=FKM&&FKM.lum,A=parseInt(spec.s.a,16),B=parseInt(spec.s.b,16),ca=[A>>16&255,A>>8&255,A&255],cb=[B>>16&255,B>>8&255,B&255];
-    if(!lum){g.fillStyle='#'+spec.s.b;g.fillRect(0,0,W,H)}else{const id=g.createImageData(W,H),d=id.data,pm=W/slot.len,tile=spec.s.sz*pm;
-      for(let y=0;y<H;y++){const my=(((y/tile)*768)|0)%768;for(let x=0;x<W;x++){const mx=(((x/tile)*768)|0)%768,l=lum[my*768+mx]/255,o=(y*W+x)*4;d[o]=ca[0]+(cb[0]-ca[0])*l;d[o+1]=ca[1]+(cb[1]-ca[1])*l;d[o+2]=ca[2]+(cb[2]-ca[2])*l;d[o+3]=255}}
-      const t=document.createElement('canvas');t.width=W;t.height=H;t.getContext('2d').putImageData(id,0,0);g.drawImage(t,0,0)}}
+  else if(spec.s){g.fillStyle='#fff';g.fillRect(0,0,W,H)}
+  /* v199zzzzzz125：碎花不再於畫布上沿叉腿軸向平鋪（圖樣方向隨叉腿傾角轉了約 90°，與車架、頭管不一致；同 v122 中管碎花問題）。畫布只留圖樣形狀（白），碎花由 logoSplPatch 以世界座標三向投影取樣車架同一張遮罩與尺度 */
+  {const U=slot.mat.userData.lsp;if(U){if(spec.s){U.uLSpl.value=1;U.uLA.value.setHex(parseInt(spec.s.a,16));U.uLB.value.setHex(parseInt(spec.s.b,16));U.uLS.value=1000/spec.s.sz;if(mcU&&mcU.uSplT)U.uLT.value=mcU.uSplT.value}else U.uLSpl.value=0}}
   g.globalCompositeOperation='source-over';
   if(!slot.mat.map){const tx=new THREE.CanvasTexture(cv);tx.anisotropy=4;tx.colorSpace=THREE.SRGBColorSpace;slot.mat.map=tx;slot.mat.needsUpdate=true}else slot.mat.map.needsUpdate=true}
 function fkDecApply(force){try{fkDecInit();const ti=ADD_S.ti.fork>0,o=FKD.out,o2=FKD.out2,n=FKD.inn,so={c:ti?FK_GUN:FK_KING},sn=fkPatSpec(),ko=JSON.stringify(so),kn=JSON.stringify(sn);
@@ -2796,7 +2794,7 @@ function addonHome(){try{scUser('取消加購');goHome();wk()}catch(e){console.w
 function renderAddon(){const box=document.getElementById('addonBox');if(!box)return;const t=ADD_S.ti,b=ADD_S.bk;
   const info=PARTS_URL?`<a class="info" href="${PARTS_URL}" target="_blank" rel="noopener noreferrer" aria-label="了解更多" title="了解更多">i</a>`:'';
   const seg=(k,labels,cur,o={})=>`<div class="style-seg${o.sub?' sub':''}${o.dis?' dis':''}" role="radiogroup">${labels.map((l,i)=>`<button type="button" role="radio" aria-checked="${i===cur}" data-k="${k}" data-v="${i+(o.off||0)}"${o.tog?' data-tog="1"':''}>${l}</button>`).join('')}</div>`;
-  let h='<h2>鈦零組件</h2><p class="fine">品項與規格依 RIKULAU 2026 年度車架組品項；價格不在此顯示。3D 示意前叉、龍頭、座管、曲柄組（鈦色）；其餘不畫。MASTER 車款的曲柄組預設為黑色鋁合金陽極（含大盤）；加購鈦合金曲柄組時，改畫 ili-ili 曲柄組（含大盤）的複本並上鈦色。'+info+'</p>';
+  let h='<h2>鈦零組件'+info+'</h2>';/* v199zzzzzz125：鈦零組件、傳動／煞車系列的說明段刪除，「了解更多」移到標題（使用者 2026-11-20） */
   TI_ITEMS.forEach(it=>{if(it.id==='cageS'&&!((BOLT_TB[selM]||{}).st))return;/* v199zzzt：EX 中管無水壺鎖孔，不顯示 */const on=t[it.id]>0;let sub=(on&&ADD_IMG[it.id])?`<figure class="ad-fig"><img data-ph="${it.id}" alt="${it.name}" width="600" height="600" loading="lazy"></figure>`:'';
     if(on&&it.opts.length)sub=seg('ti.'+it.id,it.opts,t[it.id]-1,{sub:1,off:1});
     if(on&&it.crank)sub=seg('ti.cInt',CR_INT,t.cInt,{sub:1})+seg('ti.cLen',CR_LEN,t.cLen,{sub:1});
@@ -2806,7 +2804,7 @@ function renderAddon(){const box=document.getElementById('addonBox');if(!box)ret
   BK_POS.forEach(([k,l,tn])=>{const ti=bkTi(k);h+=`<div class="arow ad"><div class="ad-h"><span>${l}${ti?`<small>已選${tn}，不加購碳纖件</small>`:''}</span></div>${seg('bk.'+k,['不加購'].concat(BK_COL.map(c=>c[0])),b[k]+1,{sub:1,dis:ti})}</div>`});
   const tis=BK_POS.filter(([k])=>bkTi(k)).map(x=>x[2]);
   h+=`<p class="fine">${tis.length?'已選'+tis.join('、')+'：其餘碳纖件可單售。':'未選鈦合金件：三件須成組加購（選一件，另兩件同色帶入，可再各自改色）。'}</p>`;
-  h+='<h2>傳動／煞車系列</h2><p class="fine">Shimano 105：曲柄組（50／34T）、後變速器（含吊耳）、卡鉗，外加 FD 示意；SRAM Force：曲柄組（43／30T）、卡鉗、碟盤，外加 FD 示意；Shimano Dura-Ace：曲柄組（50／34T）、後變速器（含吊耳）、卡鉗，外加 FD 示意；未列出的零件沿用現行。已加購鈦合金曲柄組時，曲柄以鈦合金曲柄組為準。鏈條不變，只跟隨大盤與導輪位置。'+info+'</p>';
+  h+='<h2>傳動／煞車系列'+info+'</h2>';
   h+=`<div class="arow ad"><div class="ad-h"><span>系列<small>整組連動</small></span></div>${seg('sr.ser',SER_NAME,ADD_S.ser,{sub:1})}</div>`;
   box.innerHTML=h;
   setTimeout(()=>box.querySelectorAll('img[data-ph]').forEach(im=>{const L=ADD_IMG[im.dataset.ph]||[];if(!L.length)return;im.onerror=()=>{if(!im.dataset.r&&/\?h=/.test(im.src)){im.dataset.r='1';im.src=im.src.replace(/\?h=[^&#]*/,'')}};im.src=scImgUrl(L[0]);phCycle(im,L)}),0);/* v199zzzzzz123：延到本檔執行完再設 src（scImgUrl 用到的 SC_FH 宣告在檔尾） */
@@ -3378,3 +3376,30 @@ function heroSet(el,html){if(!el)return;const old={};el.querySelectorAll('[data-
   /* 面板內容依序淡入（切分頁時） */
   document.querySelectorAll('aside .panel').forEach(p=>new MutationObserver(()=>{if(p.hidden||RMOm())return;p.classList.remove('v-enter');void p.offsetWidth;p.classList.add('v-enter');clearTimeout(p._ve);p._ve=setTimeout(()=>p.classList.remove('v-enter'),900)}).observe(p,{attributes:true,attributeFilter:['hidden']}));
 })();
+
+/* ===== v199zzzzzz125：說明小字改 i 圖示＋彈出卡片（使用者 2026-11-20）=====
+   p.fine 說明段保留在 DOM（隱藏，內容照常由各 render 更新、i18n 照常轉譯），在最近的前一個 h2 加 i 鈕；點開卡片顯示全部來源段落，最後放官網連結（段內 a.info 的網址優先；加購頁＝零組件頁；其餘＝官網首頁）。
+   不轉：details 內、進階彩現、對話框、狀態訊息（role=status／aria-live／*Msg）、騎士尺寸推薦結果、尺寸表。內容清空時 i 鈕隱藏。 */
+(function(){const SKIP='details,#qp,.modal,.scrim,#fitOut,#geoTable,[role=status],[aria-live]',FOR={paintNote:'paintChips',gradInfo:'paintChips'};
+  let pop=null,cur=null;
+  const close=()=>{if(pop){pop.hidden=true}if(cur){cur.setAttribute('aria-expanded','false');cur=null}};
+  const url=b=>{for(const p of b._src){const a=p.querySelector('a.info[href]');if(a)return a.href}return b.closest('[data-sub="addon"],#addonBox')?PARTS_URL:'https://rikulau.com/'};
+  const open=b=>{if(cur===b){close();return}close();if(!pop){pop=document.createElement('div');pop.id='fpop';pop.className='fpop';pop.setAttribute('role','dialog');document.body.appendChild(pop)}
+    const L=b._src.filter(p=>p.isConnected&&p.style.display!=='none'&&p.textContent.trim());
+    pop.innerHTML=L.map(p=>{const c=p.cloneNode(true);c.querySelectorAll('a.info').forEach(a=>a.remove());c.removeAttribute('id');c.className='fpop-p';return c.outerHTML}).join('')+`<a class="fpop-a" href="${url(b)}" target="_blank" rel="noopener noreferrer">官網了解更多 →</a>`;
+    pop.hidden=false;const r=b.getBoundingClientRect(),W=Math.min(320,innerWidth-24);pop.style.width=W+'px';
+    let x=Math.max(12,Math.min(r.left-W/2+r.width/2,innerWidth-W-12)),y=r.bottom+8;pop.style.left=x+'px';pop.style.top=y+'px';
+    const h=pop.offsetHeight;if(y+h>innerHeight-12)pop.style.top=Math.max(12,r.top-8-h)+'px';cur=b;b.setAttribute('aria-expanded','true')};
+  const host=p=>{if(FOR[p.id]){const k=document.getElementById(FOR[p.id]);let e=k&&k.previousElementSibling;while(e&&e.tagName!=='H2')e=e.previousElementSibling;if(e)return e}
+    let e=p.previousElementSibling;while(e&&e.tagName!=='H2')e=e.previousElementSibling;return e};
+  const run=()=>{document.querySelectorAll('main p.fine:not([data-fp])').forEach(p=>{if(p.closest(SKIP)||/Msg$/.test(p.id||''))return;p.dataset.fp='1';p.classList.add('fp-src');
+      const h=host(p);let b=h&&h.querySelector(':scope>button.fpi');
+      if(!b){b=document.createElement('button');b.type='button';b.className='info fpi';b.textContent='i';b.setAttribute('aria-label','說明');b.setAttribute('aria-expanded','false');b._src=[];b.onclick=e=>{e.stopPropagation();open(b)};
+        if(h){h.querySelectorAll(':scope>a.info').forEach(a=>a.remove());h.appendChild(b)}else p.before(b)}
+      b._src.push(p)});
+    document.querySelectorAll('button.fpi').forEach(b=>{b._src=b._src.filter(p=>p.isConnected);b.hidden=!b._src.some(p=>p.style.display!=='none'&&p.textContent.trim())})};
+  let q=0;const kick=()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;run()})};
+  new MutationObserver(kick).observe(document.querySelector('main')||document.body,{childList:true,subtree:true,characterData:true});
+  document.addEventListener('pointerdown',e=>{if(pop&&!pop.hidden&&!pop.contains(e.target)&&!(e.target.closest&&e.target.closest('button.fpi')))close()},true);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});addEventListener('resize',close);
+  document.addEventListener('scroll',e=>{if(pop&&!pop.hidden&&!pop.contains(e.target))close()},true);run()})();
