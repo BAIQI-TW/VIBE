@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" data-theme="dark">
 <head>
-<!-- VIBE 幾何探索 v199zzzzzz129｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
+<!-- VIBE 幾何探索 v199zzzzzz138｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
 <meta charset="utf-8">
 <meta name="vibe-feat" content="6807ed851a">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/vibe.css?h=4379082a1e">
+<link rel="stylesheet" href="css/vibe.css?h=4a801269bd">
 </head>
 <body>
 <div id="s3dVeil" role="status" aria-label="載入中"><div class="logo"></div></div>
@@ -49,22 +49,27 @@
       <div class="row"><button class="btn" id="exBtn" type="button" aria-pressed="false">拆解</button></div>
       <p class="fine">把整車攤開看零件關係與安裝方向；再按一次復原。攤開狀態下按播放鈕照樣會自動環繞與特寫。</p>
       <!-- v199zzzzzz103：特色說明（自旋特寫節點的照片與簡介；點選跳到該特寫） -->
-      <h2>特色說明</h2>
-      <p class="fine">車架八處特色，平時收折。點選任一項，3D 跳到該處特寫並展開照片與說明；再點一次收起並回整車。</p>
-      <ul class="plist featlist" id="featList"></ul>
-      <h2>扭力巡檢</h2>
+      <!-- v199zzzzzz138（B2）：特色說明、扭力巡檢兩大項預設收折；展開後 3D 才顯示藍點／橘點 -->
+      <h2 class="foldh"><button type="button" class="fold-b" id="featFoldB" aria-expanded="false" aria-controls="featFold"><i class="fdot fdot-b" aria-hidden="true"></i>特色說明<i class="chev" aria-hidden="true"></i></button></h2>
+      <p class="fine">車架八處特色。展開後 3D 顯示藍點；點藍點或清單任一項，3D 跳到該處特寫並展開照片與說明；再點一次收起並回整車。</p>
+      <div class="fold" id="featFold" hidden><ul class="plist featlist" id="featList"></ul></div>
+      <h2 class="foldh"><button type="button" class="fold-b" id="tqFoldB" aria-expanded="false" aria-controls="tqFold"><i class="fdot fdot-o" aria-hidden="true"></i>扭力巡檢<i class="chev" aria-hidden="true"></i></button></h2>
+      <p class="fine">展開後 3D 顯示橘點。點橘點或清單進入該點；同一個點再按一下收起卡片。</p>
+      <div class="fold" id="tqFold" hidden>
       <div class="score"><span>得分 <b class="num" id="sc">0</b><span class="num"> / 48</span></span><span>完成 <b class="num" id="dn">0</b><span class="num"> / 16</span></span></div>
       <div class="row"><button class="btn" id="tableBtn">查表</button></div>
-      <p class="fine">點 3D 上的橘點或下方清單進入該點；同一個點再按一下收起卡片。</p>
       <ul class="plist" id="plist"></ul>
+      </div>
     </section>
     <section class="panel" data-panel="geo" hidden>
       <div class="score" id="geoScore"></div>
       <h2 id="modelH">全公路車型</h2><div class="chips" id="modelChips"></div><h2 id="sizeH">MASTER 64Ti 尺寸</h2><div class="chips" id="sizeChips"></div>
-      <h2>疊圖比較<i class="lg" aria-hidden="true"></i></h2><div class="chips" id="cmpChips"></div>
       <h2>騎士尺寸</h2>
       <div class="rider" data-r="g"></div>
       <div id="fitOut"></div>
+  <!-- v199zzzzzz138（B1，使用者 2026-11-20）：幾何客製留在客製服務，此處只搭橋 --><p class="fine geoCustGo"><a href="#" id="geoCustGo">標準尺寸都不合身？改用幾何客製 →</a></p>
+      <!-- v199zzzzzz138：疊圖比較移到騎士尺寸之後（使用者 2026-11-20） -->
+      <h2>疊圖比較<i class="lg" aria-hidden="true"></i></h2><div class="chips" id="cmpChips"></div>
       <h2>尺寸對照（mm）</h2><div class="tscroll" id="geoTable"></div>
       <h2>胎寬（mm）</h2><div class="chips" id="twChips"></div><p class="fine">僅供示意對照，非胎寬相容性保證。</p><h2>頭碗組</h2><div class="chips" id="hsTypeChips"></div><div id="specBox"></div>
       <details class="spec"><summary>說明</summary><p class="fine" id="m325note"></p><p class="fine">座管長為中心到中心。</p></details>
@@ -72,7 +77,7 @@
     <section class="panel" data-panel="custom" hidden>
       <label class="alpha" data-sub="all" style="display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;margin-top:12px"><span style="grid-column:1/-1">零組件透明度</span><input type="range" id="alphaR" min="0" max="100" step="5" value="10" aria-label="零組件透明度" style="width:100%;min-width:0"><span class="num" id="alphaV">10%</span></label>
       <div class="subtabs" id="cSub" role="tablist" hidden><button type="button" role="tab" data-sub="paint" aria-selected="false">塗裝客製</button><button type="button" role="tab" data-sub="addon" aria-selected="false">加購套件</button><button type="button" role="tab" data-sub="geo" aria-selected="true">幾何客製</button></div>
-      <h2 data-sub="paint">表面處理</h2><div class="chips" id="finChips" data-sub="paint"></div><h2 data-sub="paint">車架顏色</h2><div class="chips" id="paintChips" data-sub="paint"></div><div class="chips" id="gradCtl" data-sub="paint" style="margin-top:10px"></div><label class="gelSw" id="gelSw" data-sub="paint" hidden><input type="checkbox" id="gelOn" checked><span>色光背景</span></label><h2 data-sub="paint" id="anoH">陽極色</h2><div class="chips" id="anoSw" data-sub="paint"></div><h2 data-sub="paint" id="dtCH">下管標顏色（先選）</h2><div class="chips" id="dtColSw" data-sub="paint"></div><div class="chips" id="dtRevCtl" data-sub="paint" style="margin-top:10px"></div><h2 data-sub="paint" id="logoCH">其他 Logo 顏色</h2><div class="chips" id="logoColSw" data-sub="paint"></div><div class="chips" id="lgRevCtl" data-sub="paint" style="margin-top:10px"></div><p class="fine" id="paintNote" data-sub="paint"></p><p class="fine" id="gradInfo" data-sub="paint"></p>
+      <h2 data-sub="paint">表面處理</h2><div class="chips" id="finChips" data-sub="paint"></div><h2 data-sub="paint">車架顏色</h2><div class="chips" id="paintChips" data-sub="paint"></div><div class="chips" id="gradCtl" data-sub="paint" style="margin-top:10px"></div><label class="gelSw" id="gelSw" data-sub="paint" hidden><input type="checkbox" id="gelOn" checked><span>色光背景</span></label><h2 data-sub="paint" id="anoH">陽極色</h2><div class="chips" id="anoSw" data-sub="paint"></div><h2 data-sub="paint" id="dtCH">下管標顏色</h2><div class="chips" id="dtColSw" data-sub="paint"></div><div class="chips" id="dtRevCtl" data-sub="paint" style="margin-top:10px"></div><p class="fine" data-sub="paint">先選下管標顏色，其他 Logo 顏色預設跟著連動；另選其他 Logo 顏色後改為各自設定。</p><h2 data-sub="paint" id="logoCH">其他 Logo 顏色</h2><div class="chips" id="logoColSw" data-sub="paint"></div><div class="chips" id="lgRevCtl" data-sub="paint" style="margin-top:10px"></div><p class="fine" id="paintNote" data-sub="paint"></p><p class="fine" id="gradInfo" data-sub="paint"></p>
       <div id="addonBox" data-sub="addon"></div><h2 data-sub="addon" id="hsCH">座管束・頭碗組顏色（座管束、上下碗、BB 杯共同設定）</h2><div class="chips" id="hsColSw" data-sub="addon"></div><h2 data-sub="addon" id="smCH">鈦螺絲與金屬小件顏色（龍頭螺絲、貫通軸與手柄、RD 吊耳與導輪軸心）</h2><div class="chips" id="smColSw" data-sub="addon"></div><h2 data-sub="addon" id="fkPH">前叉內側圖樣顏色（鈦合金前叉）</h2><div class="chips" id="fkPSw" data-sub="addon"></div><p class="fine" data-sub="addon" id="fkPN">右叉腿內側圖樣可選陽極單色、漸層或碎花；左叉腿外側 RIKULAU 字樣固定槍灰色。碳纖前叉兩處皆為 KING 貼圖色。</p>
       <h2 data-sub="addon">輪組</h2>
       <div class="score"><span>狀態 <b id="cState">待補</b></span></div>
@@ -100,16 +105,16 @@
 </div>
 <script src="js/three.min.js?h=e50c9013f4"></script>
 <script src="data/core.js?h=7639df7abf"></script>
-<script src="data/decals.js?h=b9d1aa0540"></script>
+<script src="data/decals.js?h=ac06940f7e"></script>
 <script src="data/cranks.js?h=c2970df9c0"></script>
 <script src="data/series.js?h=d7edc879fb"></script>
 <script src="data/ex.js?h=e28673cb76"></script>
 <script src="data/addons.js?h=def97cba44"></script>
-<script src="js/app.js?h=81b19375e1"></script>
+<script src="js/app.js?h=377799d4dd"></script>
 <script src="js/fbconfig.js?h=e757b15d82"></script>
 <script src="js/cloud.js?h=0f5ad2516b"></script>
 <script src="js/bgm-arr.js?h=c9fa7deebd"></script>
 <script src="js/bgm.js?h=ceff5e1f80"></script>
-<script src="js/i18n.js?h=a326113a90"></script>
+<script src="js/i18n.js?h=de44e4d224"></script>
 </body>
 </html>

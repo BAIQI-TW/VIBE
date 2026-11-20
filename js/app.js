@@ -950,6 +950,8 @@ function nodesRaw(n){if(!n)return n;const c=Object.assign({},n),o=n._ttA,CK=['st
 function goNodes(n,instant){if(!N||instant||NODE_MS>30){tween=null;logoNow=true;applyNodes(n);return}tween={from:nodesRaw(N),to:n,t0:performance.now(),d:450}}
 
 /* ===== 扭力熱點 ===== */
+/* v199zzzzzz130（B2）：特色說明／扭力巡檢清單展開狀態（預設收折；展開才顯示 3D 藍點／橘點） */
+var FOLD={feat:false,tq:false};
 const HS=[],coreGeo=new THREE.SphereGeometry(.011,16,12),haloGeo=new THREE.RingGeometry(.016,.022,32),hitGeo=new THREE.SphereGeometry(.03,8,6);
 PARTS.forEach((p,i)=>{const g=new THREE.Group();scene.add(g);
   const core=new THREE.Mesh(coreGeo,new THREE.MeshBasicMaterial({color:0xE2703A,depthTest:false,transparent:true,toneMapped:false}));
@@ -968,7 +970,7 @@ let sel=null,hint=false,tab='torque';
 const wrap=document.getElementById('cardWrap');
 function paintHS(){HS.forEach(h=>{const s=st[h.p.id];let c=0xE2703A;if(s.done)c=s.pts===3?(isDark()?0x8DBF78:0x4A7A3A):0x8A7A5C;
   h.core.material.color.setHex(c);h.halo.material.color.setHex(c);
-  h.g.visible=tab==='torque'&&(!sel||sel===h.p);/* v199zzzzzz99：選取（亮起）某點時，其餘橘點先隱藏，只留被選的那一顆；取消選取（closeCard→sel=null→paintHS）即全部恢復 */h.halo.visible=sel===h.p})}
+  h.g.visible=tab==='torque'&&FOLD.tq&&(!sel||sel===h.p);/* v199zzzzzz99：選取（亮起）某點時，其餘橘點先隱藏，只留被選的那一顆；取消選取（closeCard→sel=null→paintHS）即全部恢復 */h.halo.visible=sel===h.p})}
 
 /* ===== 尺寸標註線 ===== */
 const dimMat=new THREE.LineBasicMaterial({color:new THREE.Color(0xE2703A),depthTest:false,toneMapped:false});
@@ -1096,12 +1098,23 @@ function afPts(){const P=AF.P,t0=performance.now();P.length=0;bike.updateWorldMa
   bike.traverseVisible(o=>{if(!o.isMesh||o.isInstancedMesh||o.isBatchedMesh||!o.geometry)return;const m=o.material;if(m&&!Array.isArray(m)&&(m.visible===false||(m.transparent&&m.opacity<.05)))return;
     const h=afHull(o.geometry,t0),e=o.matrixWorld.elements;for(let i=0;i<h.length;i+=3){const x=h[i],y=h[i+1],z=h[i+2];P.push(e[0]*x+e[4]*y+e[8]*z+e[12],e[1]*x+e[5]*y+e[9]*z+e[13],e[2]*x+e[6]*y+e[10]*z+e[14])}});
   const T=riderTop();if(T>0)P.push(bike.position.x,T,0);/* 騎士尺寸橘線的頂端也要入鏡 */return P}
-function afVis(){ovCalc();return{w:stage.clientWidth,h:Math.max(80,stage.clientHeight-ovPx)}}
-function frameR(){try{const P=afPts();if(P.length<24)return 0;let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9,y0=1e9,y1=-1e9;
+function afVis(){ovCalc();return{w:stage.clientWidth,h:Math.max(80,stage.clientHeight-ovPx-(AF.top||0)-(AF.bot||0))}}/* v199zzzzzz130：桌機上方讓出頂部車款列（AF.top） */
+/* v199zzzzzz130（使用者 2026-11-20）：桌機頂部車款標下方的車款彩蛋（MASTER＝爪痕、AUDAX＝高山、ili-ili 系列＝掌印），與底部車款簡介（中／英隨語言） */
+const M_EGG_OF={'64':'claw','325':'claw','audax':'mtn','ili':'paw','ss':'paw','ex':'paw'};
+function mPopFill(){const P=document.getElementById('mPop');if(!P)return;const T=VIBE_D.M_INTRO&&VIBE_D.M_INTRO[selM],en=!!(window.RKL_LANG&&window.RKL_LANG.get()==='en'),t=T?(en?T.en:T.tw):'';if(P.textContent!==t)P.textContent=t;P.lang=en?'en':'zh-Hant'}
+function mInfo(){try{mPopFill();const eg=document.querySelector('#mStrip .ms-egg'),IN=document.getElementById('mIntro'),k=M_EGG_OF[selM],sv=k&&VIBE_D.M_EGG?VIBE_D.M_EGG[k]:null;
+  if(eg){if(eg.dataset.k!==k){eg.dataset.k=k||'';const u=sv?'url("data:image/svg+xml;charset=utf-8,'+encodeURIComponent(sv)+'")':'none';eg.style.webkitMaskImage=eg.style.maskImage=u;eg.dataset.sh=k||''}eg.hidden=!sv}
+  if(IN){const T=VIBE_D.M_INTRO&&VIBE_D.M_INTRO[selM],en=!!(window.RKL_LANG&&window.RKL_LANG.get()==='en'),t=T?(en?T.en:T.tw):'';if(IN.textContent!==t)IN.textContent=t;IN.lang=en?'en':'zh-Hant';IN.classList.toggle('en',en)}}catch(e){}}
+/* v199zzzzzz131（A4）：簡介預留六款中最高者的高度（同寬、同語言），換款時 AF.bot 不變，不觸發 afTopChanged 重設鏡頭 */
+var __imh={k:'',h:0};function introMinH(w){try{const en=!!(window.RKL_LANG&&window.RKL_LANG.get()==='en'),k=w+'|'+en;if(__imh.k===k)return __imh.h;const IN=document.getElementById('mIntro'),T=VIBE_D.M_INTRO||{};if(!IN)return 0;
+  const t0=IN.textContent,l0=IN.lang,e0=IN.classList.contains('en'),m0=IN.style.minHeight;IN.style.minHeight='0px';IN.lang=en?'en':'zh-Hant';IN.classList.toggle('en',en);
+  let h=0;for(const m in T){IN.textContent=en?T[m].en:T[m].tw;h=Math.max(h,IN.offsetHeight)}IN.textContent=t0;IN.lang=l0;IN.classList.toggle('en',e0);IN.style.minHeight=m0;if(h)__imh={k,h};return h}catch(e){return 0}}
+function afTopChanged(){try{if(AF.pan||sel)return;const r=homeR();want.r=r;want.tgt.copy(homeTgt(tab==='torque',homeFlip))}catch(e){}}
+const AF_ZH=.81;function frameR(){try{const P=afPts();if(P.length<24)return 0;let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9,y0=1e9,y1=-1e9;
   for(let i=0;i<P.length;i+=3){const x=P[i],y=P[i+1],z=P[i+2];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;if(z<z0)z0=z;if(z>z1)z1=z}
   const cx=(x0+x1)/2,cz=(z0+z1)/2;AF.cx=cx;AF.cz=cz;AF.cy=(y0+y1)/2;/* 旋轉中心高度＝外形中心（含騎士橘線頂點），展示仰角改變時車身不會上下偏 */let R=0;for(let i=0;i<P.length;i+=3)R=Math.max(R,Math.hypot(P[i]-cx,P[i+2]-cz));
-  AF.R=R;AF.H=(y1-y0)/2;const v=afVis(),t=Math.tan(15*Math.PI/180),asp=Math.max(.3,v.w/v.h),cw=v.w<=480?.86:.84,ch=.8;
-  return Math.max(2.1,R/(cw*t*asp),(AF.H+.12*R)/(ch*t))}/* 高度加 0.12R：展示環繞仰角約 1.45 rad，正面視角時車長會往上下多投影一些 */catch(e){console.warn('frameR',e);return 0}}
+  AF.R=R;AF.H=(y1-y0)/2;const v=afVis(),tp=(AF.top||0)+(AF.bot||0),hb=v.h+tp,kv=v.h/hb,t=Math.tan(15*Math.PI/180),asp=Math.max(.3,v.w/hb),cw=v.w<=480?.86:.84,ch=.8;/* v199zzzzzz130：上方讓位 AF.top 只縮可用高度（kv），寬度比照原本；tp＝0（行動版）時與舊公式相同 */
+  return Math.max(2.1,R/(cw*t*asp),AF_ZH*(AF.H+.12*R)/(ch*t*kv))}/* v199zzzzzz131b：高度項 ×AF_ZH（使用者 2026-11-20：首頁視角太遠，依截圖拉近約 1.23 倍；只縮高度項，寬度項不動，窄舞台不會裁切） *//* 高度加 0.12R：展示環繞仰角約 1.45 rad，正面視角時車長會往上下多投影一些 */catch(e){console.warn('frameR',e);return 0}}
 function homeR(){const r=tab==='torque'?fitR()*TK():fitSide();AF.rH=r;try{afFix()}catch(e){console.warn('afFix',e)}return r}
 const zMax=()=>Math.max(4.2,AF.rH*1.25);/* 縮放上限：行動版窄高舞台的首頁距離可能 >4.2，拉近時不得先跳回 4.2 */
 function afW(){if((sel&&!wrap.hidden)||AF.pan||!(AF.rH>0))return 0;return Math.min(1,Math.max(0,(cam.r/AF.rH-.5)/.3))}
@@ -1112,7 +1125,7 @@ function afFix(){const P=afPts();if(P.length<24||!(AF.rH>0))return;const tq=tab=
   if(W!==stage.clientWidth||H!==stage.clientHeight)c.setViewOffset(stage.clientWidth,stage.clientHeight,0,0,W,H);else c.clearViewOffset();c.updateProjectionMatrix();c.updateMatrixWorld();
   const M=AF.M.multiplyMatrices(c.projectionMatrix,c.matrixWorldInverse).elements;let a=1e9,b=-1e9,e=1e9,d=-1e9;
   for(let i=0;i<P.length;i+=3){const x=P[i],y=P[i+1],z=P[i+2],w=M[3]*x+M[7]*y+M[11]*z+M[15];if(w<=1e-4)continue;const nx=(M[0]*x+M[4]*y+M[8]*z+M[12])/w,ny=(M[1]*x+M[5]*y+M[9]*z+M[13])/w;if(nx<a)a=nx;if(nx>b)b=nx;if(ny<e)e=ny;if(ny>d)d=ny}
-  if(b<a)return;AF.ox=((a+b)/4+.5)*W-v.w/2;AF.oy=(.5-(e+d)/4)*H-v.h/2;AF.nFix=(AF.nFix||0)+1}
+  if(b<a)return;AF.ox=((a+b)/4+.5)*W-v.w/2;AF.oy=(.5-(e+d)/4)*H-(AF.top||0)-v.h/2;/* AF.bot 已含在 v.h */AF.nFix=(AF.nFix||0)+1}
 function goHome(){AF.pan=0;AF.uv=0;AF.hold=0;want.r=homeR();want.tgt.copy(homeTgt(tab==='torque',homeFlip));if(tab==='torque'){want.ph=1.36;want.th=nearest(want.th,homeTh(true,homeFlip))}else{want.ph=Math.PI/2;want.th=nearest(want.th,homeTh(false,homeFlip))}}
 /* v199zzzzzz112（D2）：鏡頭最低高度 STU_YMIN＝0.04 m（不得低於攝影棚地面）。目標點 y≥0；極角上限由 y＝tgt.y＋r·cosφ ≥ YMIN 反解。對 want 與 cam 各夾一次：想去的位置與補間途中的位置都不會穿地（只夾 want 時，r 與 φ 同時補間會在途中穿地）。拖曳、縮放、捏合、特寫補間、展示環繞都經過這裡，不需逐處修改。 */
 const STU_YMIN=.04;function stuLimit(o){if(o.tgt.y<0)o.tgt.y=0;const k=(STU_YMIN-o.tgt.y)/Math.max(.05,o.r);if(k>-1){const m=Math.acos(Math.min(1,k));if(o.ph>m)o.ph=m}}
@@ -1120,7 +1133,7 @@ function applyCam(){stuLimit(want);cam.tgt.lerp(want.tgt,.12);cam.r+=(want.r-cam
   const sp=Math.sin(cam.ph);camera.position.set(cam.tgt.x+cam.r*sp*Math.sin(cam.th),cam.tgt.y+cam.r*Math.cos(cam.ph),cam.tgt.z+cam.r*sp*Math.cos(cam.th));camera.lookAt(cam.tgt);
   STU.mesh.rotation.y=cam.th;lyaw(cam.th);/* v199zzzzzz112（D1）轉台：攝影棚偏航＝鏡頭偏航；鏡頭在棚內物件空間永遠位於 +z，亮區放 −z（車後牆）。俯仰與縮放照世界座標 */
   const w=stage.clientWidth,h=stage.clientHeight,leg=(sel&&!wrap.hidden)?h*.24:(ovPx>0?ovPx/2:(window.innerWidth<=760?h*.14:h*.07)),wA=afW();
-  let gx=0,gy=leg;if(AF.hold){gx=0;gy=ovPx/2}/* v120e：自訂視角自旋中——鏡頭目標固定在可見區中心 */else if(wA>0){if((AF.n++)%6===0){const o=ovPx;ovCalc();if(Math.abs(o-ovPx)>1){const r=homeR();if(!sel&&Math.abs(want.r-AF.rH)<.02*AF.rH&&!(window.__scRz&&window.__scRz()))want.r=r}}/* 卡片上緣變了（拖曳卡片不一定觸發 #stage 尺寸變動）：重讀並在首頁距離時重算 */gx=wA*AF.ox;gy=wA*AF.oy+(1-wA)*leg}/* v199zzzzzz120：整車置中；特寫（wA＝0）沿用舊的固定位移 */
+  let gx=0,gy=leg;if(AF.hold){gx=0;gy=(ovPx+(AF.bot||0)-(AF.top||0))/2}/* v120e：自訂視角自旋中——鏡頭目標固定在可見區中心 */else if(wA>0){if((AF.n++)%6===0){const o=ovPx;ovCalc();if(Math.abs(o-ovPx)>1){const r=homeR();if(!sel&&Math.abs(want.r-AF.rH)<.02*AF.rH&&!(window.__scRz&&window.__scRz()))want.r=r}}/* 卡片上緣變了（拖曳卡片不一定觸發 #stage 尺寸變動）：重讀並在首頁距離時重算 */gx=wA*AF.ox;gy=wA*AF.oy+(1-wA)*leg}/* v199zzzzzz120：整車置中；特寫（wA＝0）沿用舊的固定位移 */
   offY+=(gy-offY)*.12;if(Math.abs(gy-offY)<.02)offY=gy;offX+=(gx-offX)*.12;if(Math.abs(gx-offX)<.02)offX=gx;
   if(cam.tgt.distanceToSquared(want.tgt)<1e-10&&Math.abs(want.r-cam.r)<1e-5&&Math.abs(want.th-cam.th)<1e-5&&Math.abs(want.ph-cam.ph)<1e-5){cam.tgt.copy(want.tgt);cam.r=want.r;cam.th=want.th;cam.ph=want.ph}/* 接近目標即吸附，鏡頭簽章不再變動 */
  
@@ -1132,7 +1145,7 @@ stage.addEventListener('pointerdown',e=>{if(e.target!==renderer.domElement)retur
 stage.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId)){const p=ptrs.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;dragMoved+=Math.abs(dx)+Math.abs(dy);if(dragMoved>4)scUser('3D 移動')/* v199zzzzzz101：先停展示再套用本次位移 */;
     if(ptrs.size===1){if(p.pan){AF.pan=1;const k=2*cam.r*Math.tan(15*Math.PI/180)/Math.max(1,stage.clientHeight),rt=new V3().setFromMatrixColumn(camera.matrixWorld,0),up=new V3().setFromMatrixColumn(camera.matrixWorld,1);want.tgt.addScaledVector(rt,-dx*k).addScaledVector(up,dy*k)}
       else{want.th-=dx*.008;want.ph=Math.min(2.6,Math.max(.35,want.ph-dy*.006))}if(dragMoved>4)stage.classList.add('dragging')}
-    else if(ptrs.size===2&&pinch0){const[a,b]=[...ptrs.values()];want.r=Math.min(zMax(),Math.max(.6,pinch0.r*pinch0.d/Math.hypot(a.x-b.x,a.y-b.y)));
+    else if(ptrs.size===2&&pinch0){const[a,b]=[...ptrs.values()];/* v199zzzzzz130（A1）：捏合朝雙指中心縮放（P 於捏合開始取一次） */if(!pinch0.P)pinch0.P=zoomPt(pinch0.cx,pinch0.cy);zoomAt(pinch0.cx,pinch0.cy,pinch0.r*pinch0.d/Math.hypot(a.x-b.x,a.y-b.y),pinch0.P);
       /* 雙指中心點移動＝平移（與中鍵拖曳同算法），與捏合縮放同時進行 */
       const cx=(a.x+b.x)/2,cy=(a.y+b.y)/2,k=2*cam.r*Math.tan(15*Math.PI/180)/Math.max(1,stage.clientHeight),rt=new V3().setFromMatrixColumn(camera.matrixWorld,0),up=new V3().setFromMatrixColumn(camera.matrixWorld,1);
       pinch0.mv=(pinch0.mv||0)+Math.abs(cx-pinch0.cx)+Math.abs(cy-pinch0.cy);if(pinch0.mv>12)AF.pan=1;/* 捏合時中心點難免小抖動，累計超過 12 px 才算平移 */want.tgt.addScaledVector(rt,-(cx-pinch0.cx)*k).addScaledVector(up,(cy-pinch0.cy)*k);pinch0.cx=cx;pinch0.cy=cy;if(dragMoved>4)stage.classList.add('dragging')}}
@@ -1141,16 +1154,30 @@ function endPtr(e){if(!ptrs.has(e.pointerId))return;const wasPan=ptrs.get(e.poin
   if(ptrs.size>0)return;const wasMulti=multi;multi=false;
   if(wasPan||wasMulti||dragMoved>=6||e.target!==renderer.domElement||e.type==='pointercancel'){lastTap=null;return}
   /* 點一下：扭力巡檢點到零件＝開卡片；其餘情況 350 ms 內再點一下（相距 30 px 內）＝回到全車（單指雙擊） */
+  if(tab==='torque'&&window.__fdPick){const fi=window.__fdPick(e);if(fi>=0&&!(FOLD.tq&&pick(e))){window.__featSel(window.__featCur()===fi?-1:fi);lastTap=null;return}}/* v199zzzzzz130（B2）：點藍點＝同點清單列 */
   if(tab==='torque'){const h=pick(e);if(h){scUser('點巡檢點',true)/* v199zzzzzz101：點到橘點會移動鏡頭，展示補間會蓋掉，故此情況仍暫停；點空白處不算 */;if(sel===h&&!wrap.hidden){closeCard();scResume()/* v199zzzzzz105：關 popup＝復位並繼續自旋（若暫停前在自旋） */}else openPart(h);/* v106：關閉＝一律回整車（取代 v96 的視角保留）；暫停前在自旋才續播（使用者 2026-11-18） */lastTap=null;return}}
   const now=performance.now();
   if(lastTap&&now-lastTap.t<350&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<30){lastTap=null;scUser('雙擊回全車');closeCard();goHome()}else lastTap={t:now,x:e.clientX,y:e.clientY}}
 stage.addEventListener('mousedown',e=>{if(e.button===1)e.preventDefault()});stage.addEventListener('auxclick',e=>{if(e.button===1)e.preventDefault()});stage.addEventListener('pointerup',endPtr);stage.addEventListener('pointercancel',endPtr);
-stage.addEventListener('wheel',e=>{e.preventDefault();scUser('3D 縮放');want.r=Math.min(zMax(),Math.max(.6,want.r*(1-Math.sign(e.deltaY)*.1)))},{passive:false});
+/* v199zzzzzz130（A1）：朝游標縮放（使用者 2026-11-20 UX 評估）。原本只朝整車中心縮放、下限 0.6 m，細部（貼圖、碎花、漸層交界）看不清楚。
+   拉近：以游標射線打到車上的點 P（打不到＝過目標點、垂直視線的平面）為不動點，tgt 與 r 同比例縮向 P（相機也以 P 為中心縮放，P 在畫面上不動），並關閉自動取景（AF.pan）。
+   拉遠：tgt 依「r 走完到首頁距離的比例」漸回首頁目標，回到首頁距離即恢復自動取景。下限 Z_MIN＝0.25 m（可見高度約 13 cm）。P 在同一手勢（游標 30 px 內、0.3 s 內）重複使用，避免每格都做射線檢測。 */
+const Z_MIN=.25,ZRC=new THREE.Raycaster();let zP=null;
+function zoomPt(cx,cy){const n=performance.now();if(zP&&n-zP.t<300&&Math.hypot(cx-zP.x,cy-zP.y)<30){zP.t=n;return zP.p}
+  const r=renderer.domElement.getBoundingClientRect(),nd=new THREE.Vector2((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1);ZRC.setFromCamera(nd,camera);let P=null;
+  try{const vis=o=>{for(let q=o;q;q=q.parent)if(!q.visible)return false;return true};const h=ZRC.intersectObject(bike,true).find(q=>q.object.isMesh&&q.object!==G.shadow&&!(q.object.material&&q.object.material.opacity===0)&&vis(q.object));if(h)P=h.point.clone()}catch(e){}
+  if(!P){const dn=camera.getWorldDirection(new V3());P=ZRC.ray.intersectPlane(new THREE.Plane().setFromNormalAndCoplanarPoint(dn,want.tgt),new V3())}
+  zP={x:cx,y:cy,t:n,p:P};return P}
+function zoomAt(cx,cy,r1,P){const r0=want.r;r1=Math.min(zMax(),Math.max(Z_MIN,r1));if(Math.abs(r1-r0)<1e-6)return;
+  if(r1<r0){P=P||zoomPt(cx,cy);if(P){want.tgt.sub(P).multiplyScalar(r1/r0).add(P);AF.pan=1}}
+  else{const rH=AF.rH||homeR(),H=homeTgt(tab==='torque',homeFlip),t=rH>r0?Math.min(1,(r1-r0)/(rH-r0)):1;want.tgt.lerp(H,t);if(r1>=rH*.98)AF.pan=0}
+  want.r=r1;wk()}
+stage.addEventListener('wheel',e=>{e.preventDefault();scUser('3D 縮放');zoomAt(e.clientX,e.clientY,want.r*(1+Math.sign(e.deltaY)*.1))/* v199zzzzzz130：滾輪方向改為通例（往上滾＝拉近；原本相反） */},{passive:false});
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
 function pick(e){const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
   ray.setFromCamera(ndc,camera);const hits=ray.intersectObjects(HS.filter(h=>h.g.visible).map(h=>h.hit))/* v199zzzzzz99：隱藏的橘點不可被點到（Raycaster 不看 visible） */;return hits.length?hits[0].object.userData.part:null}
 const tipEl=document.getElementById('tip');
-function hover(e){const p=tab==='torque'?pick(e):null;if(p){const r=stage.getBoundingClientRect();tipEl.style.left=(e.clientX-r.left)+'px';tipEl.style.top=(e.clientY-r.top)+'px';tipEl.textContent=p.name;tipEl.style.display='block';renderer.domElement.style.cursor='pointer'}else{tipEl.style.display='none';renderer.domElement.style.cursor=''}}
+function hover(e){let p=tab==='torque'?pick(e):null;if(!p&&tab==='torque'&&window.__fdPick){const fi=window.__fdPick(e);if(fi>=0)p={name:scName(SC_NODES[fi])}}if(p){const r=stage.getBoundingClientRect();tipEl.style.left=(e.clientX-r.left)+'px';tipEl.style.top=(e.clientY-r.top)+'px';tipEl.textContent=p.name;tipEl.style.display='block';renderer.domElement.style.cursor='pointer'}else{tipEl.style.display='none';renderer.domElement.style.cursor=''}}
 /* v86：已在全車（鏡頭目標＝全車視角，左右任一側）時再按一次，轉 180° 看另一側；否則照舊回到全車 */
 document.getElementById('reset').onclick=()=>{const tq=tab==='torque',hP=tq?1.36:Math.PI/2,hR=homeR(),hy=homeTgt(tq,homeFlip),ht=homeTh(tq,homeFlip),d=Math.abs(want.th-nearest(want.th,ht)),atHome=!sel&&Math.abs(want.ph-hP)<.03&&d<.03&&Math.abs(want.r-hR)<.03*hR&&want.tgt.distanceTo(hy)<.01;
   closeCard();if(atHome){homeFlip^=1;let t=homeTh(tq,homeFlip);while(t<want.th+1)t+=2*Math.PI;want.th=t;want.tgt.copy(homeTgt(tq,homeFlip));wk()}else{/* v199zzzzzz31：旋轉過時第一下回到離目前視角最近的正側面（左或右），第二下才切到另一側 */const dS=f=>Math.abs(want.th-nearest(want.th,homeTh(tq,f))),d0=dS(0),d1=dS(1);homeFlip=d1<d0-1e-6?1:(d0<d1-1e-6?0:homeFlip);goHome()}};
@@ -1703,7 +1730,7 @@ function renderPaint(){try{setTimeout(gelSync,0)}catch(_){}paintFix();hsUI();smU
   if(is64)colorSelect(pc);else chips(pc,PAINT_OPTS.filter(o=>o[0]!=='mono').map(o=>o[1]),cur[1],x=>{paintSel=PAINT_OPTS.find(o=>o[1]===x)[0];renderPaint();wk()});
   const an=paintSel!=='ti',lg=logoOk(),dG=dtCol[0]==='g',lG=!logoLinked&&typeof logoCol==='string'&&logoCol[0]==='g';lcc.style.display=lch.style.display=dtc.style.display=dth.style.display=lg?'':'none';
   dtr.innerHTML='';lgr.innerHTML='';dtr.style.display=lg&&dG?'':'none';lgr.style.display=lg&&lG?'':'none';
-  {let lfH=document.getElementById('logoFinH'),lfC=document.getElementById('logoFinChips');if(!lfC){lfH=document.createElement('h2');lfH.id='logoFinH';lfH.dataset.sub='paint';lfH.textContent='下管標表面處理（與車架表面處理連動）';lfC=document.createElement('div');lfC.id='logoFinChips';lfC.className='chips';lfC.dataset.sub='paint';dtr.after(lfH,lfC);[lfH,lfC].forEach(e=>e.classList.toggle('subhide',cSub!=='paint'))}lfH.style.display=lfC.style.display=lg?'':'none';if(lg)chips(lfC,logoFinOpts().map(o=>o[1]),logoFinLabel(),x=>{logoFinSel=logoFinOpts().find(o=>o[1]===x)[0];renderPaint();wk()})}
+  {let lfH=document.getElementById('logoFinH'),lfC=document.getElementById('logoFinChips');if(!lfC){lfH=document.createElement('h2');lfH.id='logoFinH';lfH.dataset.sub='paint';lfH.textContent='下管標表面處理';lfC=document.createElement('div');lfC.id='logoFinChips';lfC.className='chips';lfC.dataset.sub='paint';/* v199zzzzzz130（A3）：括號說明改 i 圖示 */const lfP=document.createElement('p');lfP.id='logoFinP';lfP.className='fine';lfP.dataset.sub='paint';lfP.textContent='預設與車架表面處理連動，讓標與車架的紋路拉開對比（例：車架噴砂、標不加工）。';dtr.after(lfH,lfC,lfP);[lfH,lfC,lfP].forEach(e=>e.classList.toggle('subhide',cSub!=='paint'))}{const lfP=document.getElementById('logoFinP');lfH.style.display=lfC.style.display=lg?'':'none';if(lfP)lfP.style.display=lg?'':'none'}if(lg)chips(lfC,logoFinOpts().map(o=>o[1]),logoFinLabel(),x=>{logoFinSel=logoFinOpts().find(o=>o[1]===x)[0];renderPaint();wk()})}
   if(lg){logoColSelect(lcc);dtColSelect(dtc);const rb=(box,get,set)=>{const b=document.createElement('button');b.className='chip';b.textContent='反向';b.setAttribute('aria-pressed',get());b.onclick=()=>{set(!get());renderPaint();wk()};box.appendChild(b)};if(dG)rb(dtr,()=>dtRev,v=>{dtRev=v});if(lG)rb(lgr,()=>lgRev,v=>{lgRev=v})}
   document.getElementById('paintNote').textContent=MNAME[selM]+'｜'+(paintSel==='grad'?(is64?'漸層陽極：'+ANO_GRAD[anoG][0]+'，漸變帶由 A 到 B（拖曳 3D 上的綠點調整位置，或按「反向」）。中間色依薄膜干涉的色序計算（膜厚由 A 端漸增到 B 端），不是 RGB 直接混色；兩端為色樣實色。':'顏色沿車架由頭管的藍紫，漸變到五通與後叉的古銅。'):paintSel==='spl'?'碎花陽極：'+SPL[splI][0]+'，遮罩依 2026-11-03 提供的碎花遮罩，三向投影貼在車架；平鋪尺寸為暫估（可選細／中／粗）。'+(splI?'此組底色暫用單色色號，待底色票。':''):paintSel==='mono'?'單色陽極：'+ANO_MONO[anoM][0]+'（'+ANO_MONO[anoM][1]+'），全車同色。':'維持鈦合金原色'+(is64&&finEff()==='brush'?'（拉絲表面不能做陽極，請改選「標準」或「噴砂」）':'')+'。')+(an?'為示意色，實際以陽極製程為準。前叉不在此範圍。':'')+'表面處理：'+finLabel()+'。'+(finEff()==='brush'?'拉絲方向沿各管長邊。':'')+(logoShown()?'下管標表面處理：'+logoFinLabel()+'（'+(finEff()==='blast'?'車架噴砂，標不加工以拉開對比':'與車架表面處理拉開對比')+'；標面積小，不做拉絲）。':'')/* v199zzzzzz125：其他 Logo 顏色的說明刪除（使用者 2026-11-20） */;gradUI()}
 function syncSub(){const pn=document.querySelector('.panel[data-panel=custom]'),bar=document.getElementById('cSub');if(!pn||!bar)return;
@@ -1740,7 +1767,7 @@ const clock=new THREE.Timer();
   if(tween){const k=Math.min(1,(performance.now()-tween.t0)/tween.d),e=1-Math.pow(1-k,3);applyNodes(lerpN(tween.from,tween.to,e));if(k>=1){applyNodes(tween.to);tween=null}}
   if(vTween){const k=Math.min(1,(performance.now()-vTween.t0)/vTween.d),e=1-Math.pow(1-k,3);
     if(k>=1){liveV=Object.assign({},vTween.to);vTween=null}else VK.forEach(q=>{liveV[q]=vTween.from[q]+(vTween.to[q]-vTween.from[q])*e});updLive()}
-  refreshDimText();applyCam();STU.tick();/* v199zzzzzz112 */setRS();if(Math.abs(RS-RSdone)>.04){RSdone=RS;updateGhost();updateDim()}HS.forEach(h=>{h.halo.lookAt(camera.position);const s=1+.35*Math.sin(t*3+h.phase);h.halo.scale.setScalar(st[h.p.id].done?1.3:s);h.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(sel===h.p?3:2):1))});
+  refreshDimText();applyCam();STU.tick();/* v199zzzzzz112 */setRS();if(Math.abs(RS-RSdone)>.04){RSdone=RS;updateGhost();updateDim()}try{window.__fdTick&&window.__fdTick(t)}catch(_){}HS.forEach(h=>{h.halo.lookAt(camera.position);const s=1+.35*Math.sin(t*3+h.phase);h.halo.scale.setScalar(st[h.p.id].done?1.3:s);h.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(sel===h.p?3:2):1))});
   if(G.exBusy&&G.exBusy())wk(5);/* v199zzzzzz87：拆解動畫進行中保持繪製 */
   const sg=cam.tgt.x+cam.tgt.y*3+cam.tgt.z*7+cam.r*11+cam.th*13+cam.ph*17+offY*19+offX*29+RS*23,mv=Math.abs(sg-lastSig)>1e-7;lastSig=sg;if(wake>0)wake--;
   {const _n=performance.now(),_dt=Math.min(.05,(_n-spinL)/1000);spinL=_n;if(tab==='torque'&&!SPIN_SC){if(spinA!==0){spinA=0;applySpin();wake=Math.max(wake,2)}}/* v199zzzzzz93：離開展示即歸零回預設曲柄角（同 v179）。曾試過補完整圈再停，但一圈在 60 fps 要 17 秒、停不下來反而像沒停；熱點在展示期間已改為跟著曲柄角走（placeHS），所以不需要靠歸零來對位 */else{if(mv)spinT=_n+SPIN_HOLD;if(_n<spinT&&SPIN_ON){spinA+=_dt*spinW(spinA);applySpin();wake=Math.max(wake,2)}}}/* v199zzzzzz93：扭力分頁在展示執行中（SPIN_SC）照常示意旋轉——曲柄與鏈條連動，自旋路徑與其他分頁相同；展示期間 scTick0 每幀續約 spinT。 *//* v179：示意旋轉 */
@@ -2101,7 +2128,7 @@ function renderList(){plist.innerHTML='';PARTS.forEach(p=>{const s=st[p.id],li=d
 function updScore(){let sc=0,dn=0;PARTS.forEach(p=>{sc+=st[p.id].pts;if(st[p.id].done)dn++});document.getElementById('sc').textContent=sc;document.getElementById('dn').textContent=dn}
 function closeCard(){wrap.hidden=true;sel=null;paintHS()}
 const head=(p,x='')=>`<h3><span>${p.name}</span>${x}<button class="btn close x" data-act="close" aria-label="收起" title="收起"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button></h3><div class="meta">工具：${p.tool}</div>`;
-function openPart(p){sel=p;const h=HS.find(x=>x.p===p);focus(h.g.position.clone());paintHS();wrap.hidden=false;
+function openPart(p){if(!FOLD.tq&&window.__fold)window.__fold('tq',true);/* v199zzzzzz130：從其他入口開巡檢點時自動展開清單（橘點才看得到） */sel=p;const h=HS.find(x=>x.p===p);focus(h.g.position.clone());paintHS();wrap.hidden=false;
   if(st[p.id].done){showResult(p);return}
   card.innerHTML=head(p)+`<p class="q">這個位置要用扭力板手鎖到指定值嗎？</p><div class="row"><button class="btn solid" data-act="yes">要，設定扭力值</button><button class="btn" data-act="no">不用，靠手感</button></div>`;bind()}
 function bind(){card.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>act(b.dataset.act))}
@@ -2415,7 +2442,7 @@ function specBox(){const el=document.getElementById('specBox');if(!el)return;con
 function GEOV(){return GEO}
 var SER_DEF={'64':3,'325':1,'audax':0,'ili':2,'ss':0,'ex':0};/* v199zzzg：各車款預設傳動／煞車系列（0 現行、1 Shimano 105、2 SRAM Force、3 Dura-Ace）；SS-2205、EX 維持現行 */ /* v199zzzl：AUDAX 325 與 ili-ili 325 的傳動／煞車套件互換——AUDAX 改為現行（含 AUDAX 曲柄組）、ili-ili 325 改為 SRAM Force（曲柄組隨系列，不再是 M64 曲柄組）（使用者 2026-11-10） */
 /* v199zzzzzz89：車款・尺寸膠囊內容。扭力巡檢分頁 3D 固定是 M 尺寸標準節點，故尺寸顯示 M 且不可點；其餘分頁顯示並可循環目前尺寸。 */
-function stTagSet(){const el=document.getElementById('stTag');if(!el)return;const has=!!GEOS[selM],tq=tab==='torque';el.innerHTML='<span data-k="m" role="button" tabindex="0">'+MNAME[selM]+'</span>'+(has?(tq?'・<span>M</span>':'・<span data-k="s" role="button" tabindex="0">'+size+'</span>'):'')}
+function stTagSet(){try{mInfo()}catch(_){}const el=document.getElementById('stTag');if(!el)return;const has=!!GEOS[selM],tq=tab==='torque';el.innerHTML='<span data-k="m" role="button" tabindex="0">'+MNAME[selM]+'</span>'+(has?(tq?'・<span>M</span>':'・<span data-k="s" role="button" tabindex="0">'+size+'</span>'):'')}
 function setModel(m){selM=m;if(!window.__WARMING){try{window.__featRe&&window.__featRe()}catch(e){}try{window.__bgmModel&&window.__bgmModel(m)}catch(e){}}/* v199zzzzzz128：預熱中不換 BGM、不重設特色說明 *//* v199zzzzzz58：BGM 換主題 */if(typeof SER_DEF!=='undefined'&&m in SER_DEF&&!ADD_S.serUser){ADD_S.ser=SER_DEF[m];try{renderAddon()}catch(e){}}/* v199zzzzzz30：使用者自選過傳動系列就不再被車款預設蓋掉 */try{addonApply()}catch(e){}try{F.model=MNAME[m];const q=form.querySelector('[name=model]');if(q)q.value=F.model}catch(e){}syncSub();if(GEOS[m]){model=m;GEO=GEOS[m];if(!GEO.some(g=>g.size===size))size='M';fitPick();cmp=null;swT=performance.now()+700;goGeo(tab==='torque'?'M':size,true,true);updateGhost()}tblKey='';renderGeo();stTagSet()}/* v199：換車型立即套用（節點不再補間）並暫以像素比 1 繪製 700 ms */
 function markSel(){const ss=GEO.map(g=>g.size),si=ss.indexOf(size);
   geoTable.querySelectorAll('[data-s]').forEach(c=>{const i=ss.indexOf(c.dataset.s);c.style.transitionDelay=(Math.abs(i-si)*45)+'ms';c.classList.toggle('sel',c.dataset.s===size)})}
@@ -2581,6 +2608,38 @@ function fkProj(P,leg){const g=T.FKL.geometry;if(!g||!g.index||!g.attributes.pos
       const z=l0*q[6]+l1*q[9]+l2*q[12];if(leg==='L'?z<0:z>0){if(best===null||(leg==='RO'?z>best:z<best))best=z}}
     if(best!==null){P[p+2]=best+(leg==='RO'?.35e-3:-.35e-3);n++}}
   return n}
+/* v199zzzzzz130：前叉貼面依實際網格建構（使用者 2026-11-20：兩側貼圖不夠置中且傾斜）。
+   原因：①畫面上的叉腿是 OPTG 減面幾何（取自 v96 舊叉腿，中心線與 v31／v32 改直後的 FK.legs 不同），以 FK.legs 公式置中偏約 2.5 mm；②舊做法每列取「固定 a（垂直轉向管軸）」的截面，叉腿相對轉向管軸斜約 7°，貼圖被剪切成斜體。
+   做法：叉腿三角形依 x 分桶；每列沿「垂直叉腿軸線」的直線取樣，以 z 向投影求表面，取投影有效範圍中點為該列中心（側視輪廓置中）；中心點擬合直線定軸向（三輪），再以移動平均貼合叉腿彎度；寬度依表面弧長展開。單位 mm，回傳公尺座標。 */
+function fkMeshDec(ac,len,w,leg,sc,NA,NV,cp0){const g=T.FKL.geometry;if(!g||!g.index||!g.attributes.position)return null;
+  const pa=g.attributes.position.array,ix=g.index.array,sg=leg==='L'?-1:1,BW=2,bins=new Map(),tr=[];
+  for(let t=0;t<ix.length;t+=3){const a=ix[t]*3,b=ix[t+1]*3,c=ix[t+2]*3,x0=pa[a]*1e3,y0=pa[a+1]*1e3,z0=pa[a+2]*1e3,x1=pa[b]*1e3,y1=pa[b+1]*1e3,z1=pa[b+2]*1e3,x2=pa[c]*1e3,y2=pa[c+1]*1e3,z2=pa[c+2]*1e3;
+    if(z0*sg<=0||z1*sg<=0||z2*sg<=0)continue;const den=(y1-y2)*(x0-x2)+(x2-x1)*(y0-y2);if(Math.abs(den)<1e-9)continue;
+    const q=[Math.min(x0,x1,x2),Math.max(x0,x1,x2),Math.min(y0,y1,y2),Math.max(y0,y1,y2),x0,y0,z0,x1,y1,z1,x2,y2,z2,den],k=tr.length;tr.push(q);
+    for(let bb=Math.floor(q[0]/BW);bb<=Math.floor(q[1]/BW);bb++){let L=bins.get(bb);if(!L)bins.set(bb,L=[]);L.push(k)}}
+  if(!tr.length)return null;
+  const better=leg==='RO'?(z,b)=>z>b:(z,b)=>z<b;
+  const hit=(x,y)=>{const L=bins.get(Math.floor(x/BW));if(!L)return null;let best=null;for(const k of L){const q=tr[k];if(x<q[0]||x>q[1]||y<q[2]||y>q[3])continue;const l0=((q[8]-q[11])*(x-q[10])+(q[10]-q[7])*(y-q[11]))/q[13],l1=((q[11]-q[5])*(x-q[10])+(q[4]-q[10])*(y-q[11]))/q[13],l2=1-l0-l1;if(l0<-1e-6||l1<-1e-6||l2<-1e-6)continue;const z=l0*q[6]+l1*q[9]+l2*q[12];if(best===null||better(z,best))best=z}return best};
+  /* 一列：自 (cx,cy) 沿 n 取樣 d∈[−40,40]，回傳含最接近 d＝0 有效點的連續段 */
+  const DS=.25,row=(cx,cy,nx,ny)=>{const D=[],Z=[];for(let i=0;i<=320;i++){const d=-40+i*DS;D.push(d);Z.push(hit(cx+nx*d,cy+ny*d))}let k0=-1,bd=1e9;D.forEach((d,i)=>{if(Z[i]!==null&&Math.abs(d)<bd){bd=Math.abs(d);k0=i}});if(k0<0)return null;let lo=k0,hi=k0;while(lo>0&&Z[lo-1]!==null)lo--;while(hi<D.length-1&&Z[hi+1]!==null)hi++;return{D:D.slice(lo,hi+1),Z:Z.slice(lo,hi+1)}};
+  const L0=FK.legs,L1=L0[L0.length-1];let q=(L1[2]-L0[0][2])/10/(L1[0]-L0[0][0]),p=cp0-q*ac;
+  let rows=null,E=null,nx=0,ny=1;
+  for(let pass=0;pass<3;pass++){const nn=Math.hypot(1,q),tx=1/nn,ty=q/nn;nx=-q/nn;ny=1/nn;const ay=p+q*ac;rows=[];E=[];
+    for(let i=0;i<=NA;i++){const u=len/2-len*i/NA,cx=ac+tx*u,cy=ay+ty*u,r=row(cx,cy,nx,ny);rows.push({cx,cy,r});E.push(r&&r.D.length>4?(r.D[0]+r.D[r.D.length-1])/2:null)}
+    if(pass===2)break;
+    let n=0,sx=0,sy=0,sxx=0,sxy=0;rows.forEach((o,i)=>{if(E[i]===null)return;const X=o.cx+nx*E[i],Y=o.cy+ny*E[i];n++;sx+=X;sy+=Y;sxx+=X*X;sxy+=X*Y});if(n<3)return null;
+    q=(n*sxy-sx*sy)/(n*sxx-sx*sx);p=(sy-q*sx)/n}
+  const W=3,Es=E.map((_,i)=>{let s=0,c=0;for(let k=i-W;k<=i+W;k++)if(k>=0&&k<E.length&&E[k]!==null){s+=E[k];c++}return c?s/c:0});
+  const out=[],off=(leg==='RO'?.35:-.35);
+  for(let i=0;i<=NA;i++){const o=rows[i],r=o.r,e=Es[i];let A=null;
+    if(r&&r.D.length>1){const n=r.D.length,S=new Array(n).fill(0);let k0=0;r.D.forEach((d,k)=>{if(Math.abs(d-e)<Math.abs(r.D[k0]-e))k0=k});
+      for(let k=k0+1;k<n;k++)S[k]=S[k-1]+Math.hypot(r.D[k]-r.D[k-1],r.Z[k]-r.Z[k-1]);for(let k=k0-1;k>=0;k--)S[k]=S[k+1]-Math.hypot(r.D[k+1]-r.D[k],r.Z[k+1]-r.Z[k]);
+      const sh=e-r.D[k0];for(let k=0;k<n;k++)S[k]-=sh;A={S,D:r.D,Z:r.Z}}
+    for(let j=0;j<=NV;j++){const s=sc+w/2-w*j/NV;let d=e+s,z=null;
+      if(A){const S=A.S,n=S.length;if(s<=S[0]){d=A.D[0];z=A.Z[0]}else if(s>=S[n-1]){d=A.D[n-1];z=A.Z[n-1]}else{let k=0;while(k<n-2&&S[k+1]<s)k++;const t=(s-S[k])/((S[k+1]-S[k])||1);d=A.D[k]+(A.D[k+1]-A.D[k])*t;z=A.Z[k]+(A.Z[k+1]-A.Z[k])*t}}
+      if(z===null){const zz=hit(o.cx+nx*d,o.cy+ny*d);z=zz===null?0:zz}
+      out.push((o.cx+nx*d)*1e-3,(o.cy+ny*d)*1e-3,(z+off)*1e-3)}}
+  return out}
 const FK_KING='#c8c4b8',FK_GUN='#585c60',FK_PAT_SVG=VIBE_D.FK_PAT_SVG,FK_LOGO_SVG="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<svg id=\"_圖層_1\" data-name=\"圖層_1\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewBox=\"0 0 196.87 35.59\">\n  <\!-- Generator: Adobe Illustrator 29.7.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 8)  -->\n  <defs>\n    <style>\n      .st0 {\n        fill: #fff;\n        fill-rule: evenodd;\n      }\n\n      .st1 {\n        fill: none;\n        stroke: #231814;\n        stroke-miterlimit: 10;\n      }\n    </style>\n  </defs>\n  <g>\n    <path class=\"st0\" d=\"M0,8.85h5.04s7.77,0,7.77,0c5.99,0,10.87,4.84,10.87,10.87,0,3.47-1.6,6.52-4.16,8.51l3.93,7.36H0S0,11.99,0,11.99v-3.14h0Z\"/>\n    <polygon class=\"st0\" points=\"48.25 8.85 48.25 35.59 74.42 35.59 64.43 22.2 74.42 8.85 48.25 8.85 48.25 8.85\"/>\n    <path class=\"st0\" d=\"M79.11,22.52c0,7.21,5.86,13.07,13.07,13.07,7.21,0,13.07-5.86,13.07-13.07v-13.67s-26.14,0-26.14,0v13.67h0Z\"/>\n    <polygon class=\"st0\" points=\"124.36 22.22 124.36 8.85 110.99 8.85 110.99 35.59 131.77 35.59 131.77 22.22 124.36 22.22 124.36 22.22\"/>\n    <path class=\"st0\" d=\"M169.8,22.52c0,7.21,5.86,13.07,13.07,13.07,7.21,0,13.07-5.86,13.07-13.07v-13.67s-26.14,0-26.14,0v13.67h0Z\"/>\n    <path class=\"st0\" d=\"M151.88,8.85l-15.78,26.74h31.56s-15.78-26.74-15.78-26.74ZM151.89,19.93l6.17,10.45h-12.33s6.17-10.45,6.17-10.45Z\"/>\n    <g>\n      <path class=\"st0\" d=\"M28.86,11.76v23.82s13.79,0,13.79,0V9.07c-5.92,2.59-10.26,3.16-13.79,2.69h0Z\"/>\n      <path class=\"st0\" d=\"M42.65,4.63c-8.45,3.69-13.03,2.49-17.01.39,6.56.4,10.01-.39,15.18-3.44l1.83,3.06h0Z\"/>\n    </g>\n  </g>\n  <polygon class=\"st1\" points=\"-71.53 44.06 -78.39 50.92 -78.39 37.2 -71.53 44.06\"/>\n</svg>";
 function fkDecInit(){if(FKD)return;
   const L=FK.legs,NR=32;
@@ -2593,9 +2652,12 @@ function fkDecInit(){if(FKD)return;
     s=Math.max(cum[n-1],Math.min(cum[0],s));let i=0;while(i<n-2&&s<cum[i+1])i++;const t=(cum[i]-s)/((cum[i]-cum[i+1])||1),y=Y[i]+(Y[i+1]-Y[i])*t,z=Z[i]+(Z[i+1]-Z[i])*t,pr=Math.hypot(y,z)||1,k=(pr+.12)/pr;return{y:y*k,z:z*k}};
   const mat=()=>new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,side:THREE.DoubleSide,toneMapped:false});
   const mk=(ac,len,w,leg,kind,sc)=>{const NA=Math.max(24,Math.round(len/2.5)),NV=16,P=[],U=[],I=[];
-    for(let i=0;i<=NA;i++){const a=ac+len/2-len*i/NA,S=stAt(a);for(let j=0;j<=NV;j++){const p=surfAt(S,leg,sc+w/2-w*j/NV);P.push(a*1e-3,(S.cp+p.y)*1e-3,(leg.charAt(0)==='L'?S.cl+p.z:-(S.cl+p.z))*1e-3);
-      if(leg==='RO')U.push(i/NA,j/NV);else U.push(i/NA,1-j/NV)}}
-    try{fkProj(P,leg)}catch(e){console.warn('fkProj',e)}
+    /* v199zzzzzz130：貼面改由實際叉腿網格（OPTG 減面版）逐列取輪廓置中，列方向垂直叉腿軸線（見 fkMeshDec）；失敗才退回舊公式 */
+    let okM=false;try{const R=fkMeshDec(ac,len,w,leg,sc,NA,NV,stAt(ac).cp);if(R){R.forEach(v=>P.push(v));okM=true}}catch(e){console.warn('fkMeshDec',e)}
+    for(let i=0;i<=NA;i++){const a=ac+len/2-len*i/NA,S=okM?null:stAt(a);for(let j=0;j<=NV;j++){if(!okM){const p=surfAt(S,leg,sc+w/2-w*j/NV);P.push(a*1e-3,(S.cp+p.y)*1e-3,(leg.charAt(0)==='L'?S.cl+p.z:-(S.cl+p.z))*1e-3)}
+      /* v199zzzzzz130：右叉腿外側字樣旋轉 180°（使用者 2026-11-20：原本上下顛倒） */
+      if(leg==='RO')U.push(1-i/NA,1-j/NV);else U.push(i/NA,1-j/NV)}}
+    if(!okM)try{fkProj(P,leg)}catch(e){console.warn('fkProj',e)}
     for(let i=0;i<NA;i++)for(let j=0;j<NV;j++){const q=i*(NV+1)+j;I.push(q,q+1,q+NV+1,q+1,q+NV+2,q+NV+1)}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.setIndex(I);
     const m=new THREE.Mesh(g,mat());m.userData.keepOpaque=true;m.userData.noBT=true;m.frustumCulled=false;m.renderOrder=2;T.FKL.add(m);
@@ -2604,7 +2666,7 @@ function fkDecInit(){if(FKD)return;
   const END=392+12;
   /* v199zzzzzz32：外側字樣再上移 15 mm；貼面頂點改投影到叉腿實際網格表面（見 fkProj）。2026-11-13 目視後調整：外側字樣上移 7 mm、放大 125%（以中心放大）；內側圖樣往車尾移 4 mm 弧長、放大 125% */
   /* v199zzzzzz34：右叉腿外側加上與左外側相同的 RIKULAU 字樣，UV 旋轉 180° */
-  FKD={out:mk(END-40-23-7-15,57.5,10.375,'L','logo',0),out2:mk(END-40-23-7-15,57.5,10.375,'RO','logo',0),inn:mk(END-70-107.5,268.75,33.5,'R','pat',-4)};logoSplPatch(FKD.inn.mat);
+  FKD={out:mk(END-40-23-7-15,57.5,10.375,'L','logo',0),out2:mk(END-40-23-7-15,57.5,10.375,'RO','logo',0),inn:mk(END-70-107.5,268.75,33.5,'R','pat',0)};/* v199zzzzzz130：網格置中後取消 v32 的往車尾 4 mm 補償 */logoSplPatch(FKD.inn.mat);
   const ld=(k,svg)=>{const im=new Image();im.onload=()=>{FKIMG[k]=im;fkDecApply(true)};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgWH(svg))};ld('pat',FK_PAT_SVG);ld('logo',FK_LOGO_SVG);
   FKM=new Image();FKM.onload=()=>{const c=document.createElement('canvas');c.width=c.height=768;const g=c.getContext('2d');g.drawImage(FKM,0,0,768,768);const d=g.getImageData(0,0,768,768).data,a=new Uint8Array(768*768);for(let i=0;i<a.length;i++)a[i]=d[i*4];FKM.lum=a;fkDecApply(true)};FKM.src=SPL_MASK}
 function fkPatSpec(){if(!(ADD_S.ti.fork>0))return{c:FK_KING};const v=fkPat;if(v[0]==='m'&&ANO_MONO[+v.slice(1)])return{c:'#'+ANO_MONO[+v.slice(1)][2]};if(v[0]==='g'&&ANO_GRAD[+v.slice(1)]){const q=ANO_GRAD[+v.slice(1)];return{g:{t:q[1],c:q[2]}}}if(v[0]==='s'&&SPL[+v.slice(1)]){const q=SPL[+v.slice(1)];return{s:{a:q[1],b:q[2],sz:splSz}}}return{c:FK_KING}}
@@ -3353,8 +3415,8 @@ function scTagSet(i){const t=i==null?'':scName(SC_NODES[i]);if(t&&scTag.textCont
   SC_NODES.forEach((d,i)=>{const n=scName(d),f=SC_INFO[scKey(d)]||{sub:'',body:['（假文）此處放詳細說明。']},sb=scL(f.sub),bd=scL(f.body);
     const li=document.createElement('li');li.className='feat';
     const b=document.createElement('button');b.type='button';b.className='feat-h';b.setAttribute('aria-expanded','false');
-    const dot=document.createElement('span');dot.className='dot';const nm=document.createElement('span');nm.textContent=n;const pt=document.createElement('span');pt.className='pts';pt.textContent=sb.t||'';if(sb.fb)pt.setAttribute('data-noi18n','');
-    b.append(dot,nm,pt);
+    const dot=document.createElement('span');dot.className='dot';const nm=document.createElement('span');nm.textContent=n;/* v199zzzzzz130（A3）：右欄副標與名稱重複，刪除 */
+    b.append(dot,nm);
     const body=document.createElement('div');body.className='feat-b';body.hidden=true;
     const fg=document.createElement('figure');const im=document.createElement('img');im.alt=n;im.width=600;im.height=600;im.loading='lazy';
     const fc=document.createElement('figcaption');fc.textContent=scPhoto(f,im,fc,n);fg.append(im,fc);
@@ -3362,11 +3424,22 @@ function scTagSet(i){const t=i==null?'':scName(SC_NODES[i]);if(t&&scTag.textCont
     body.append(fg,tx);li.append(b,body);box.appendChild(li);R.push({w:li,b,body,dot});
     b.onclick=()=>featSel(cur===i?-1:i)});if(was>=0&&was<R.length)applyRow(was)}
   build();
-  function featSel(i){if(i>=0){const d=SC_NODES[i],p=scPos(d);if(!p){console.warn('特色說明：取不到節點位置',scName(d));return}scUser('特色說明',true);scFocus(p,(d&&typeof d==='object')?d:null);wk()}
+  function featSel(i){if(i>=0&&!FOLD.feat&&window.__fold)window.__fold('feat',true);if(i>=0){const d=SC_NODES[i],p=scPos(d);if(!p){console.warn('特色說明：取不到節點位置',scName(d));return}scUser('特色說明',true);scFocus(p,(d&&typeof d==='object')?d:null);wk()}
     else{scUser('特色說明',true);goHome();wk()}
     applyRow(i);
     if(i>=0)try{R[i].w.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(_){}else scResume()/* v199zzzzzz105：收起＝回整車並繼續自旋 */}
-  window.__featSel=featSel;
+  window.__featSel=featSel;window.__featCur=()=>cur;
+  /* v199zzzzzz130（B2）：特色節點在 3D 顯示藍點（形式同扭力橘點：核心＋脈動光環＋透明點擊球）。清單展開且在整車組裝分頁才顯示；選取某點時只留該點（同 v99 橘點規則）。位置每幀取 scPos（隨車款、尺寸、拆解移動）。 */
+  const FD=[],FDC=0x3D8BFF,FDC_D=0x6FA8FF;SC_NODES.forEach((d,i)=>{const g=new THREE.Group();g.visible=false;scene.add(g);
+    const core=new THREE.Mesh(coreGeo,new THREE.MeshBasicMaterial({color:FDC,depthTest:false,transparent:true,toneMapped:false})),halo=new THREE.Mesh(haloGeo,new THREE.MeshBasicMaterial({color:FDC,depthTest:false,transparent:true,side:THREE.DoubleSide,toneMapped:false})),hit=new THREE.Mesh(hitGeo,new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+    core.renderOrder=halo.renderOrder=10;hit.userData.fi=i;g.add(core,halo,hit);FD.push({g,core,halo,hit,ph:i*.9})});
+  window.__fdTick=t=>{const on=tab==='torque'&&FOLD.feat,c=isDark()?FDC_D:FDC;FD.forEach((f,i)=>{const v=on&&(cur<0||cur===i);let p=null;if(v){p=scPos(SC_NODES[i])}f.g.visible=!!(v&&p);if(!f.g.visible)return;f.g.position.copy(p);f.core.material.color.setHex(c);f.halo.material.color.setHex(c);f.halo.visible=cur===i;f.halo.lookAt(camera.position);f.halo.scale.setScalar(1+.35*Math.sin(t*3+f.ph));f.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(cur===i?3:2):1))})};
+  window.__fdPick=e=>{const L=FD.filter(f=>f.g.visible).map(f=>f.hit);if(!L.length)return -1;const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ndc,camera);const h=ray.intersectObjects(L);return h.length?h[0].object.userData.fi:-1};
+  /* 兩大項收折鈕 */
+  const fold=(k,on)=>{FOLD[k]=on;const b=document.getElementById(k==='feat'?'featFoldB':'tqFoldB'),bx=document.getElementById(k==='feat'?'featFold':'tqFold');if(b)b.setAttribute('aria-expanded',on?'true':'false');if(bx)bx.hidden=!on;
+    if(!on){if(k==='feat'&&cur>=0)featSel(-1);if(k==='tq'&&sel){closeCard();try{scResume()}catch(_){}}}try{paintHS()}catch(_){}wk()};
+  window.__fold=fold;
+  [['feat','featFoldB'],['tq','tqFoldB']].forEach(([k,id])=>{const b=document.getElementById(id);if(b)b.onclick=()=>fold(k,!FOLD[k])});
   /* v199zzzzzz107：載入 data/feat.json（相對文件位址，同 bgm/）。欄位：sub、body[]、img（相對路徑）、ph（true＝佔位圖，換真照片時改 false 或刪掉）。 */
   try{const u0=new URL('data/feat.json',document.baseURI).href;/* v110（C1）帶內容雜湊避開快取；若主機不接受查詢字串則退回原網址 */fetch(SC_FH?u0+'?h='+SC_FH:u0).then(r=>r.ok?r:fetch(u0)).then(r=>r.ok?r.json():null).then(j=>{if(!j||typeof j!=='object')return;const ok=new Set(SC_NODES.map(scKey));Object.keys(j).forEach(k=>{if(!ok.has(k)){console.warn('feat.json：app 不認得的鍵「'+k+'」，已略過。有效鍵：'+[...ok].join('、'));return}if(j[k]&&typeof j[k]==='object')SC_INFO[k]=Object.assign({},SC_INFO[k],j[k])});build(true)}).catch(e=>console.warn('feat.json 未載入，沿用內建文案',e))}catch(_){}
   const lh=window.__langHook;window.__langHook=l=>{if(typeof lh==='function')lh(l);try{build(true);if(scInfoNode!=null)scInfoSet(scInfoNode)}catch(_){}}/* v110（C3）：切語言即重繪特色說明（雙語欄位依語言取值） */
@@ -3376,14 +3449,63 @@ const scBtn=document.createElement('button');scBtn.id='scBtn';scBtn.type='button
 scBtn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="sc-pl" d="M8 5.5v13l10.5-6.5z" fill="currentColor"/><g class="sc-pa" fill="currentColor"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></g></svg>';
 stage.appendChild(scBtn);
 function scUI(){SPIN_SC=SC.on;/* v199zzzzzz93：示意旋轉用的展示旗標；play／stop 兩條路徑末端都會到這裡 */scBtn.hidden=!scOK();scBtn.dataset.on=SC.on?'1':'0';scBtn.setAttribute('aria-label',SC.on?'暫停展示':'播放展示');scBtn.title=SC.on?'暫停展示':'播放展示'}
-function scPlace(){const rb=document.getElementById('reset');if(!rb)return;const a=rb.getBoundingClientRect(),b=stage.getBoundingClientRect();if(!a.width){scBtn.style.visibility='hidden';return}
-  const cs=getComputedStyle(rb);scBtn.style.visibility='';const vt=innerWidth>760,st=a.height+8;/* v199zzzzzz71：桌機三顆圓鈕改垂直（回到全車在下、播放、音樂在最上），避免與主分頁膠囊干涉；行動版維持水平 */Object.assign(scBtn.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:st))+'px',top:(a.top-b.top-(vt?st:0))+'px',background:cs.backgroundColor,borderRadius:cs.borderRadius});/* 字色不跟回到全車鈕（它處理中會轉黃）；v199zzzzzz64：音樂鈕在播放鈕左側（播放鈕隱藏時貼回到全車鈕），樣式同兩顆圓鈕 */const mw=document.getElementById('bgmW');if(mw){const k=scBtn.hidden?1:2;Object.assign(mw.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:k*st))+'px',top:(a.top-b.top-(vt?k*st:0))+'px'});const mb=mw.querySelector('button');if(mb)Object.assign(mb.style,{background:cs.backgroundColor,borderRadius:cs.borderRadius})}
+function scPlace(){const rb=document.getElementById('reset');if(!rb)return;let a=rb.getBoundingClientRect();const b=stage.getBoundingClientRect();if(!a.width){scBtn.style.visibility='hidden';return}
+  /* v199zzzzzz134（使用者 2026-11-20，行動版）：圓鈕群組右緣對齊底部卡片右緣 */{const ar0=innerWidth<=760?document.querySelector('aside')?.getBoundingClientRect():null;if(ar0&&ar0.width){const dx=ar0.right-a.right;if(Math.abs(dx)>.5){const sb=getComputedStyle(rb).position==='static'?rb.parentElement:rb;sb.style.right=((parseFloat(getComputedStyle(sb).right)||0)-dx)+'px';a=rb.getBoundingClientRect()}}else{let ch=0;[rb,rb.parentElement].forEach(e=>{if(e&&e.style.right){e.style.right='';ch=1}});if(ch)a=rb.getBoundingClientRect()}}
+  const cs=getComputedStyle(rb);scBtn.style.visibility='';const vt=innerWidth>760,st=a.height+8;/* v199zzzzzz71：桌機三顆圓鈕改垂直（回到全車在下、播放、音樂在最上），避免與主分頁膠囊干涉；行動版維持水平 */Object.assign(scBtn.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:st))+'px',top:(a.top-b.top-(vt?st:0))+'px',borderRadius:cs.borderRadius});/* v199zzzzzz130：底色改由 CSS（.vb 立體樣式）統一，不再複製回到全車鈕的底色 *//* 字色不跟回到全車鈕（它處理中會轉黃）；v199zzzzzz64：音樂鈕在播放鈕左側（播放鈕隱藏時貼回到全車鈕），樣式同兩顆圓鈕 */const mw=document.getElementById('bgmW');if(mw){const k=scBtn.hidden?1:2;Object.assign(mw.style,{width:a.width+'px',height:a.height+'px',left:(a.left-b.left-(vt?0:k*st))+'px',top:(a.top-b.top-(vt?k*st:0))+'px'});const mb=mw.querySelector('button');if(mb)Object.assign(mb.style,{background:'transparent',borderRadius:cs.borderRadius})}
+  /* v199zzzzzz130（B3＋桌機右側直列，使用者 2026-11-20；僅桌機 >760px）：
+     ①主分頁膠囊直排（中文字直立、英文轉 90° 並用短標籤），上緣與右側卡片上緣齊平，與圓鈕同一中線；
+     ②明暗、語言鈕改直排，疊在音樂鈕上方（由下往上：音樂→語言→明暗；使用者 2026-11-20 兩者互換，間距同圓鈕 8 px）；
+     ③FPS／ms 移到 3D 左下角。
+     頁首元素改 position:fixed，座標由此處依 #reset 與舞台位置寫入；行動版清除行內樣式、回到原本頁首排版。分頁膠囊下緣若會碰到明暗／語言鈕（舞台太矮），退回原本底部中央橫排。 */
+  {const dk=vt,R=document.documentElement,lg=document.getElementById('langSeg'),th=document.getElementById('themeBtn'),qs=document.getElementById('qpStat'),tb=stage.querySelector('#stBar .tabs'),clr=e=>{if(e){e.style.left=e.style.top=e.style.bottom=e.style.right=e.style.transform=''}};
+    R.classList.toggle('dkv',dk);R.classList.toggle('mbv',!dk);if(dk){const P=document.getElementById('mPop');if(P)P.hidden=true}
+    /* v199zzzzzz130（使用者 2026-11-20）：桌機把卡片頂端的車款選擇（車款標 SVG）與尺寸鈕移到 3D 頂部品牌標誌下方，取代車款・尺寸膠囊（#stTag）。
+       直接搬移原節點（事件與 renderGeo 照舊），排成一列；舞台不夠寬時尺寸鈕自動換到車款列下方（flex-wrap）。行動版搬回卡片原位。 */
+    {let S=document.getElementById('mStrip');const mc=document.getElementById('modelChips'),sz=document.getElementById('sizeChips');
+      if(!S){S=document.createElement('div');S.id='mStrip';S.hidden=true;stage.appendChild(S);
+        /* 只顯示選中車款；左右滑動／觸控板橫滑／←→／兩側箭頭切換（循環），方向寫入 data-dir 供滑入動畫 */
+        const W=document.createElement('div');W.className='ms-m';W.setAttribute('role','group');W.setAttribute('aria-label','車款（左右滑動切換）');W.tabIndex=0;
+        const EG=document.createElement('div');EG.className='ms-egg';EG.setAttribute('aria-hidden','true');S.append(W,EG);W.title='點選或左右滑動切換車款';{const P=document.createElement('div');P.id='mPop';P.hidden=true;P.setAttribute('data-noi18n','');P.setAttribute('role','dialog');stage.appendChild(P);EG.setAttribute('role','button');EG.tabIndex=0;EG.title='車款簡介';
+          /* v199zzzzzz137（使用者 2026-11-20，行動版）：點彩蛋跳出車款簡介；點其他地方關閉 */
+          const tog=e=>{if(innerWidth>760)return;e.stopPropagation();e.preventDefault();if(!P.hidden){P.hidden=true;return}mPopFill();const r=S.getBoundingClientRect(),q=stage.getBoundingClientRect();P.style.top=Math.round(r.bottom-q.top+6)+'px';P.hidden=false;P.style.left=Math.round(Math.max(8,(innerWidth-P.offsetWidth)/2-q.left))+'px'};/* v199zzzzzz138：卡片水平置中於頁面（使用者 2026-11-20） */
+          EG.addEventListener('click',tog);EG.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')tog(e)});addEventListener('pointerdown',e=>{if(!P.hidden&&!P.contains(e.target)&&e.target!==EG)P.hidden=true},true)}/* v199zzzzzz133（B2）：換款提示 */
+        {const IN=document.createElement('p');IN.id='mIntro';IN.hidden=true;IN.setAttribute('data-noi18n','');stage.appendChild(IN)}/* 車款簡介（底部置中，文字直接壓在 3D 上） */
+        S.insertBefore(W,EG);/* 車款標在上、彩蛋在下 *//* v199zzzzzz130：取消左右箭頭（使用者 2026-11-20）；點車款標＝下一款 */
+        const go=d=>{const m=document.getElementById('modelChips');if(!m)return;const L=[...m.querySelectorAll('.chip')],i=L.findIndex(c=>c.getAttribute('aria-pressed')==='true');if(L.length<2)return;S.dataset.dir=d>0?'l':'r';clearTimeout(S._dt);S._dt=setTimeout(()=>{delete S.dataset.dir},400);/* 只在切換當下播滑入，換尺寸等重繪不再播 */S._prog=1;try{L[((i<0?0:i)+d+L.length)%L.length].click()}finally{S._prog=0}};
+        /* 點選中的車款標＝下一款；點選中的尺寸＝下一個尺寸（循環）。拖曳後的點擊不算 */
+        const nextSize=()=>{const z=document.getElementById('sizeChips');if(!z)return;const L=[...z.querySelectorAll('.chip')],i=L.findIndex(c=>c.getAttribute('aria-pressed')==='true');if(L.length<2)return;S._prog=1;try{L[((i<0?0:i)+1)%L.length].click()}finally{S._prog=0}};
+        S.addEventListener('click',e=>{if(S._prog)return;const c=e.target.closest&&e.target.closest('.chip');if(!c)return;e.stopPropagation();e.preventDefault();if(moved){moved=false;return}if(c.closest('#modelChips'))go(1);else if(c.closest('#sizeChips'))nextSize()},true);
+        W.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){go(-1);e.preventDefault()}else if(e.key==='ArrowRight'){go(1);e.preventDefault()}});
+        let x0=null,moved=false;W.addEventListener('pointerdown',e=>{x0=e.clientX;moved=false;W.classList.add('drag')});/* 不用 pointer capture（會把 click 目標改成容器，點車款標就換不了下一款）；移動與放開改在 window 上追 */
+        addEventListener('pointermove',e=>{if(x0!==null&&Math.abs(e.clientX-x0)>6)moved=true});
+        const up=e=>{if(x0===null)return;const dx=e.clientX-x0;x0=null;W.classList.remove('drag');if(Math.abs(dx)>30)go(dx<0?1:-1)};addEventListener('pointerup',up);addEventListener('pointercancel',()=>{x0=null;W.classList.remove('drag')});
+        
+        let acc=0,cool=0;S.addEventListener('wheel',e=>{e.stopPropagation();e.preventDefault();if(Math.abs(e.deltaX)<=Math.abs(e.deltaY))return;const n=performance.now();if(n<cool)return;acc+=e.deltaX;if(Math.abs(acc)>50){go(acc>0?1:-1);acc=0;cool=n+450}},{passive:false})}
+      if(mc&&sz){if(dk){if(mc.parentNode!==S.querySelector('.ms-m')){const W=S.querySelector('.ms-m');W.appendChild(mc)}if(S.contains(sz))document.getElementById('sizeH').after(sz);/* v199zzzzzz130：尺寸改回右側卡片（使用者 2026-11-20） */mInfo();S.hidden=false;const lo=document.querySelector('header .logo'),lr=lo?lo.getBoundingClientRect():null,lim=document.querySelector('aside'),ar=lim?lim.getBoundingClientRect():null,rgt=ar&&ar.width&&ar.left<b.right?ar.left:b.right;
+          S.style.maxWidth=Math.max(240,Math.round((rgt-b.left)-2*64))+'px';S.style.left=Math.round((b.left+rgt)/2-b.left)+'px';S.style.top=Math.round((lr&&lr.height?lr.bottom-b.top:40)+18)+'px';/* 標誌與車款標間隙 6→18 px */
+          /* 車子垂直置中於「頂部車款列（車款標＋彩蛋）下緣」到「底部簡介上緣」之間：AF.top／AF.bot（afVis／afFix／frameR 使用） */
+          {const IN=document.getElementById('mIntro');if(IN){IN.hidden=false;const w=Math.min(560,Math.round((rgt-b.left)-2*72));IN.style.width=w+'px';IN.style.left=Math.round((b.left+rgt)/2-b.left-w/2)+'px';IN.style.bottom='16px';IN.style.minHeight=introMinH(w)+'px'}
+           const zr=S.getBoundingClientRect(),tp=zr.height?Math.round(zr.bottom-b.top+10):0,ir=IN?IN.getBoundingClientRect():null,bt=ir&&ir.height&&b.height>=620?Math.round(b.bottom-ir.top+10):0;/* v199zzzzzz133（B3，使用者 2026-11-20）：舞台高 <620 px 時不讓位給簡介，文字可壓在車上 */
+           if(Math.abs(tp-(AF.top||0))>1||Math.abs(bt-(AF.bot||0))>1){AF.top=tp;AF.bot=bt;afTopChanged()}}}
+        else{if(AF.top||AF.bot){AF.top=0;AF.bot=0;afTopChanged()}/* v199zzzzzz134（使用者 2026-11-20）：行動版取消車款・尺寸膠囊，車款標＋彩蛋放品牌標誌下方（左緣對齊標誌）；尺寸留在底部卡片；不讓位（AF.top＝0） */
+          if(mc.parentNode!==S.querySelector('.ms-m'))S.querySelector('.ms-m').appendChild(mc);if(S.contains(sz))document.getElementById('sizeH').after(sz);mInfo();S.hidden=false;const lo=document.querySelector('header .logo'),lr=lo?lo.getBoundingClientRect():null;S.style.maxWidth='';S.style.left=Math.round(lr&&lr.width?lr.left-b.left-10:6)+'px';S.style.top=Math.round(lr&&lr.height?Math.max(4,lr.bottom-b.top+16):8)+'px'}}}/* v199zzzzzz134b：標誌與車款標間距 6→16 px */
+    if(!dk){if(tb){tb.classList.remove('vtabs');clr(tb)}
+      /* v199zzzzzz134（使用者 2026-11-20，行動版）：明暗、語言移到音樂鈕左側，五顆一列（明暗→語言→音樂→播放→回到全車），右緣對齊卡片；FPS 移右上角；簡介只在寬 ≥600 px（平板、Fold5 內螢幕）顯示於左下角、靠左 */
+      const k=scBtn.hidden?1:2,cy=a.top+a.height/2;let x=a.left-k*st;
+      [lg,th].forEach(e=>{if(!e)return;const h=e.offsetHeight,w=e.offsetWidth;x-=8+w;Object.assign(e.style,{left:Math.round(x)+'px',top:Math.round(cy-h/2)+'px'})});
+      if(qs){const lo=document.querySelector('header .logo'),lr=lo?lo.getBoundingClientRect():null,h=qs.offsetHeight,w=qs.offsetWidth;Object.assign(qs.style,{left:Math.round(innerWidth-12-w)+'px',top:Math.round(lr&&lr.height?lr.top+lr.height/2-h/2:8)+'px'})}
+      {const IN=document.getElementById('mIntro');if(IN)IN.hidden=true}/* v199zzzzzz137（使用者 2026-11-20）：行動版取消簡介，改為點彩蛋跳出 #mPop */}
+    else{const k=scBtn.hidden?1:2,cx=a.left+a.width/2;let y=a.top-k*st;/* 音樂鈕上緣（視窗座標） */
+      [lg,th].forEach(e=>{if(!e)return;const h=e.offsetHeight,w=e.offsetWidth;y-=8+h;Object.assign(e.style,{left:Math.round(cx-w/2)+'px',top:Math.round(y)+'px'})});
+      if(qs){const h=qs.offsetHeight;Object.assign(qs.style,{left:Math.round(b.left+14)+'px',top:Math.round(b.bottom-12-h)+'px'})}
+      if(tb){tb.classList.add('vtabs');const as=document.querySelector('aside'),ar=as?as.getBoundingClientRect():null,ty=(ar&&ar.height?ar.top:b.top+12)-b.top,h=tb.offsetHeight,w=tb.offsetWidth;
+        if(ty+h>y-b.top-16){tb.classList.remove('vtabs');clr(tb)}else Object.assign(tb.style,{left:Math.round(cx-b.left-w/2)+'px',top:Math.round(ty)+'px',bottom:'auto',transform:'none'})}}}
   /* v199zzzzzz97：特寫小卡改放在車款膠囊（#stTag）正下方（使用者 2026-11-18：v96 放舞台下緣，混在主分頁膠囊旁看不出來）。
      桌機與膠囊同一條中線；行動版與膠囊左緣對齊。 */
-  {const t=document.getElementById('stTag'),q=t&&!t.hidden?t.getBoundingClientRect():null,y=q&&q.height?q.bottom-b.top+8:56;scTag.style.top=Math.round(y)+'px';
+  {const ms=document.getElementById('mStrip'),t=(ms&&!ms.hidden)?ms:document.getElementById('stTag'),q=t&&!t.hidden?t.getBoundingClientRect():null,y=q&&q.height?q.bottom-b.top+8:56;/* v199zzzzzz130：桌機改接在頂部車款列下方 */scTag.style.top=Math.round(y)+'px';
    if(q&&q.width&&!vt){scTag.classList.add('rt');scTag.style.right='auto';scTag.style.left=Math.round(q.left-b.left)+'px'}
    else{scTag.classList.remove('rt');scTag.style.right='auto';scTag.style.left=Math.round(q&&q.width?(q.left+q.right)/2-b.left:b.width/2)+'px'}}}
-new ResizeObserver(scPlace).observe(stage);window.addEventListener('resize',scPlace);setTimeout(scPlace,0);setInterval(()=>{if(scBtn.hidden!==!scOK())scUI();scPlace()},1000);
+new ResizeObserver(scPlace).observe(stage);window.addEventListener('resize',scPlace);{const lh=window.__langHook;window.__langHook=l=>{if(typeof lh==='function')lh(l);try{mInfo();scPlace()}catch(_){}}}/* v199zzzzzz130：切語言後膠囊長度改變，重新定位 */setTimeout(scPlace,0);setInterval(()=>{if(scBtn.hidden!==!scOK())scUI();scPlace()},1000);
 scBtn.addEventListener('click',()=>{if(SC.on){SC.why='按鈕';scStop(true,true)}else{SC.why='按鈕';scPlay()}});
 ['pointerdown','wheel','keydown'].forEach(e=>window.addEventListener(e,ev=>{const t=ev.target&&ev.target.closest?ev.target:null;if(t&&t.closest('#scBtn,#bgmW'))return;const g=!!(t&&t.closest('.gb'));if(!SC.on&&SC.pre){SC.pre=false;if(!g)scSheet('mid')}/* v199zzzzzz101：這裡不再停展示（使用者 2026-11-18）；暫停改由 3D 內真的拖曳／縮放觸發（scUser），單點、右側區塊、鍵盤皆不算 */void g},{capture:true,passive:true}));
 window.__scAuto=()=>{const calm=false;SC.why=calm?'減少動態，未自動':'自動';if(!calm)scPlay()};
@@ -3492,3 +3614,5 @@ function heroSet(el,html){if(!el)return;const old={};el.querySelectorAll('[data-
   document.addEventListener('pointerdown',e=>{if(pop&&!pop.hidden&&!pop.contains(e.target)&&!(e.target.closest&&e.target.closest('button.fpi')))close()},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});addEventListener('resize',close);
   document.addEventListener('scroll',e=>{if(pop&&!pop.hidden&&!pop.contains(e.target))close()},true);run()})();
+/* v199zzzzzz134（B1，使用者 2026-11-20）：尺寸幾何 → 客製服務／幾何客製 的入口（騎士尺寸為全站共用 RID，免重填） */
+(function(){const g=document.getElementById('geoCustGo');if(!g)return;g.addEventListener('click',e=>{e.preventDefault();const t=document.querySelector('#stBar .tab[data-tab="custom"]');if(t)t.click();setTimeout(()=>{const s=document.querySelector('#cSub [data-sub="geo"]');if(s&&s.getAttribute('aria-selected')!=='true')s.click();const f=document.getElementById('cform');try{(document.querySelector('aside')||document.body).scrollTo({top:0,behavior:'smooth'})}catch(_){}},60)})})();

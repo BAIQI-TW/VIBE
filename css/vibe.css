@@ -520,3 +520,135 @@ aside .panel>h2::before{content:"";flex:none;width:5px;height:5px;background:var
 
 /* v120f：色光背景開關（塗裝客製，漸層陽極時才出現） */
 .gelSw{display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:14px;cursor:pointer}.gelSw input{width:18px;height:18px;accent-color:var(--accent-solid,#c2561f)}
+/* v199zzzzzz130（B2）：特色說明／扭力巡檢收折標題。整列可點；色點對應 3D 藍點／橘點；展開時箭頭轉向 */
+aside h2.foldh{display:flex;align-items:center;gap:6px}
+.fold-b{display:inline-flex;align-items:center;gap:8px;font:inherit;color:inherit;letter-spacing:inherit;background:none;border:0;padding:4px 0;cursor:pointer;flex:1;text-align:left}
+.fold-b:hover,.fold-b[aria-expanded="true"]{color:var(--text-strong)}
+.fold-b:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.fold-b .fdot{width:8px;height:8px;border-radius:50%;flex:none}
+.fold-b .fdot-b{background:#3D8BFF}.fold-b .fdot-o{background:#E2703A}
+html[data-theme="dark"] .fold-b .fdot-b{background:#6FA8FF}
+.fold-b .chev{margin-left:auto;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s;flex:none}
+.fold-b[aria-expanded="true"] .chev{transform:rotate(-135deg) translate(-2px,-2px)}
+.featlist .feat-h .dot{border-color:#3D8BFF}.featlist .feat-h .dot.ok{background:#3D8BFF;border-color:#3D8BFF}
+html[data-theme="dark"] .featlist .feat-h .dot{border-color:#6FA8FF}html[data-theme="dark"] .featlist .feat-h .dot.ok{background:#6FA8FF}
+aside h2.foldh::before{display:none}/* v199zzzzzz130：收折標題以色點（藍／橘）取代方塊標記 */
+/* v199zzzzzz130（B3）：桌機直排主分頁（mixed：中文直立、英文轉 90°）（位置由 scPlace 寫入） */
+@media (min-width:761px){
+  #stBar .tabs.vtabs{flex-direction:column;gap:2px;padding:3px}
+  #stBar .tabs.vtabs .tab{writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.12em;padding:12px 7px;min-height:0;width:32px;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+}
+/* v199zzzzzz130：直排時英文改短標籤（Geometry／Custom／Assembly，同行動版），否則長度放不下 */
+@media (min-width:761px){html[lang="en"] #stBar .tabs.vtabs .tab[data-short] .tl{display:none}html[lang="en"] #stBar .tabs.vtabs .tab[data-short]::before{content:attr(data-short)}}
+/* v199zzzzzz130：桌機右側直列（明暗、語言疊在音樂鈕上方）與 FPS 左下角；座標由 scPlace 寫入（html.dkv 僅桌機） */
+@media (min-width:761px){
+  html.dkv #langSeg,html.dkv #themeBtn,html.dkv #qpStat{position:fixed;z-index:5}
+  html.dkv #themeBtn{flex-direction:column;width:32px;box-sizing:border-box;align-items:center}
+  html.dkv #langSeg{width:32px;height:32px;box-sizing:border-box;padding:0;border-radius:50%;display:grid;place-items:center}
+  html.dkv #langSeg button[aria-checked="false"]{display:none}html.dkv #langSeg button[aria-checked="true"]{min-width:0;width:28px;height:28px;padding:0;border-radius:50%;display:grid;place-items:center}
+  html.dkv #qpStat{flex-direction:row}
+}
+/* ===== v199zzzzzz130（使用者 2026-11-20）=====
+   ① 3D 頂部車款列（桌機）：車款標 SVG 不加框，下陰影；未選降透明度，選中全不透明＋底線；尺寸鈕排在旁邊，空間不足時自動換行到下一列。
+   ② 3D 圓鈕／膠囊立體化（桌機與行動版同步，位置不變）：上亮下暗的漸層面＋頂緣高光＋兩層投影（近貼地、遠擴散）；懸停微浮、按下內凹；選中分頁＝凸起的小鍵帽。
+      不用 backdrop-filter（會讓整張 WebGL 畫布每幀重新合成，GPU 成本高）。 */
+:root{--vb-top:#fbfaf7;--vb-bot:#e6e3dc;--vb-hi:rgba(255,255,255,.9);--vb-lo:rgba(60,50,40,.10);--vb-sh1:rgba(40,30,20,.16);--vb-sh2:rgba(40,30,20,.22);--vb-ink:var(--text-muted);--strip-sh:rgba(40,30,20,.28)}
+html[data-theme="dark"]{--vb-top:#4a4844;--vb-bot:#2c2b29;--vb-hi:rgba(255,255,255,.14);--vb-lo:rgba(0,0,0,.35);--vb-sh1:rgba(0,0,0,.40);--vb-sh2:rgba(0,0,0,.50);--strip-sh:rgba(0,0,0,.65)}
+@media (prefers-color-scheme:dark){html:not([data-theme="light"]){--vb-top:#4a4844;--vb-bot:#2c2b29;--vb-hi:rgba(255,255,255,.14);--vb-lo:rgba(0,0,0,.35);--vb-sh1:rgba(0,0,0,.40);--vb-sh2:rgba(0,0,0,.50);--strip-sh:rgba(0,0,0,.65)}}
+#stBar #reset,#scBtn,#bgmW,#stBar .tabs,html.dkv #langSeg,html.dkv #themeBtn,#stTag,html[data-theme="light"] #stBar #reset,html[data-theme="light"] #stBar .tabs,html[data-theme="light"] #stTag{
+  background:linear-gradient(180deg,var(--vb-top),var(--vb-bot))!important;border:0!important;
+  box-shadow:inset 0 1px 0 var(--vb-hi),inset 0 -1px 0 var(--vb-lo),0 1px 2px var(--vb-sh1),0 6px 14px -6px var(--vb-sh2)!important;
+  transition:transform .16s cubic-bezier(.3,.8,.2,1),box-shadow .16s}
+#bgmW{border-radius:50%}
+#stBar #reset:hover,#scBtn:hover,#bgmW:hover,html.dkv #langSeg:hover,html.dkv #themeBtn:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 var(--vb-hi),inset 0 -1px 0 var(--vb-lo),0 2px 3px var(--vb-sh1),0 10px 18px -6px var(--vb-sh2)!important}
+#stBar #reset:active,#scBtn:active,#bgmW:active,html.dkv #langSeg:active,html.dkv #themeBtn:active{transform:translateY(0);box-shadow:inset 0 2px 4px var(--vb-lo),inset 0 -1px 0 var(--vb-hi),0 1px 1px var(--vb-sh1)!important}
+#stBar .tab[aria-selected="true"],html.dkv #langSeg button[aria-checked="true"]{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 34%,var(--vb-top)),color-mix(in srgb,var(--accent) 48%,var(--vb-bot)))!important;color:var(--text-strong);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px var(--vb-sh1),0 3px 6px -3px var(--vb-sh2)}
+#stBar .tab:not([aria-selected="true"]):hover{color:var(--text-strong)}
+/* ① 頂部車款列 */
+#mStrip{position:absolute;z-index:4;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 18px}
+#mStrip[hidden]{display:none}
+#mStrip #modelChips.mcards{display:flex;flex-wrap:nowrap;gap:2px;margin:0;padding:0;overflow:visible}
+#mStrip #modelChips.mcards .chip{flex:none;width:auto;padding:4px 8px 7px;background:none!important;border:0!important;box-shadow:none!important;border-radius:6px;position:relative;filter:drop-shadow(0 1px 1px var(--strip-sh)) drop-shadow(0 3px 5px var(--strip-sh))}
+#mStrip #modelChips.mcards .chip .mc-img{width:84px;aspect-ratio:3.2/1;opacity:.5}
+#mStrip #modelChips.mcards .chip:hover .mc-img.has{opacity:.8}
+#mStrip #modelChips.mcards .chip[aria-pressed="true"] .mc-img.has{opacity:1}
+#mStrip #modelChips.mcards .chip[aria-pressed="true"]::after{content:"";position:absolute;left:22%;right:22%;bottom:0;height:2px;border-radius:1px;background:var(--accent)}
+#mStrip #modelChips.mcards .chip:hover{transform:none}/* v199zzzzzz131（A1）：頂部車款標懸停不浮動（通用 .mcards 懸停 −2px 亦一併取消） */
+html.dkv aside #modelH{display:none}
+@media (min-width:761px){html.dkv #stTag{display:none!important}}
+/* v199zzzzzz130（使用者 2026-11-20 修正，僅桌機）：頂部只顯示選中的車款標；左右滑動（拖曳／觸控板橫滑／←→ 鍵／兩側箭頭）前後切換，循環；切換時標從滑動方向滑入。
+   尺寸列＝每顆圓形外框，選中者 highlight，其餘半透明。 */
+#mStrip{flex-direction:column;gap:8px}
+#mStrip .ms-m{display:flex;align-items:center;gap:6px;touch-action:pan-y;cursor:grab;user-select:none}
+#mStrip .ms-m.drag{cursor:grabbing}
+#mStrip #modelChips.mcards .chip:not([aria-pressed="true"]){display:none}
+#mStrip #modelChips.mcards .chip[aria-pressed="true"]{cursor:inherit;padding:4px 10px 8px}
+#mStrip #modelChips.mcards .chip[aria-pressed="true"] .mc-img{width:120px}
+#mStrip #modelChips.mcards .chip[aria-pressed="true"]::after{display:none}
+#mStrip[data-dir="l"] #modelChips .chip[aria-pressed="true"]{animation:msInL .32s cubic-bezier(.3,.8,.2,1)}
+#mStrip[data-dir="r"] #modelChips .chip[aria-pressed="true"]{animation:msInR .32s cubic-bezier(.3,.8,.2,1)}
+@keyframes msInL{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes msInR{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+#mStrip .ms-a{width:22px;height:22px;display:grid;place-items:center;padding:0;border:0;background:none;color:var(--text-strong);opacity:.35;cursor:pointer;filter:drop-shadow(0 1px 2px var(--strip-sh))}
+#mStrip .ms-a:hover{opacity:.9}
+#mStrip .ms-a::before{content:"";width:7px;height:7px;border-left:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg);margin-left:3px}
+#mStrip .ms-a.nx::before{transform:rotate(-135deg);margin-left:-3px}
+#mStrip #sizeChips{display:flex;gap:8px;margin:0;padding:0;background:none}
+#mStrip #sizeChips.seg::before{display:none}
+#mStrip #sizeChips .chip{width:32px;height:32px;min-width:0;min-height:0;padding:0;display:grid;place-items:center;border-radius:50%;font-size:11px;line-height:1;font-weight:500;color:var(--text-strong);background:transparent;border:1.2px solid color-mix(in srgb,var(--text-strong) 70%,transparent);opacity:.45;box-shadow:0 2px 6px -2px var(--strip-sh);transition:opacity .15s,transform .15s}
+#mStrip #sizeChips .chip:hover{opacity:.8;transform:translateY(-1px)}
+#mStrip #sizeChips .chip[aria-pressed="true"]{opacity:1;border-color:transparent;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 70%,#fff),var(--accent));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px var(--vb-sh1),0 4px 10px -3px var(--vb-sh2)}
+#mStrip #sizeChips .chip[aria-pressed="true"]{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 70%,#fff),var(--accent))!important;color:#fff!important}#mStrip #sizeChips .chip{flex:none;min-height:0}
+/* v199zzzzzz130（使用者 2026-11-20）：車款標取消下陰影；尺寸只顯示選中那顆；點選即換下一個 */
+#mStrip #modelChips.mcards .chip{filter:none!important}
+#mStrip #modelChips.mcards .chip[aria-pressed="true"]{cursor:pointer}
+#mStrip #sizeChips .chip:not([aria-pressed="true"]){display:none}
+#mStrip #sizeChips .chip[aria-pressed="true"]{cursor:pointer}
+/* v199zzzzzz130（使用者 2026-11-20）：車款彩蛋（車款標下方，小尺寸、單色隨主題）；車款簡介（3D 底部置中，無底無框，淡陰影保可讀） */
+#mStrip{gap:6px}
+#mStrip .ms-egg{width:26px;height:22px;background:var(--text-strong);opacity:.6;-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
+#mStrip .ms-egg[data-sh="claw"]{width:14px;height:26px}
+#mStrip .ms-egg[hidden]{display:none}
+#mIntro{position:absolute;z-index:3;margin:0;text-align:center;font-size:12.5px;line-height:1.85;letter-spacing:.04em;color:var(--text-muted);text-wrap:balance;pointer-events:none;
+  text-shadow:0 0 8px var(--intro-halo),0 0 2px var(--intro-halo)}
+:root{--intro-halo:rgba(255,255,255,.55)}html[data-theme="dark"]{--intro-halo:rgba(0,0,0,.6)}@media (prefers-color-scheme:dark){html:not([data-theme="light"]){--intro-halo:rgba(0,0,0,.6)}}
+#mIntro.en{font-size:12px;line-height:1.7;letter-spacing:.01em}
+#mIntro[hidden]{display:none}
+/* v199zzzzzz134：行動版也顯示彩蛋與簡介（簡介僅寬 ≥600 px，由 scPlace 控制） */
+/* v199zzzzzz131（使用者 2026-11-20）
+   A2 彩蛋與選中車款標同色同不透明度（var(--text-strong)、1）
+   A3 簡介行距 中 1.85→1.6、英 1.7→1.5
+   A4 彩蛋外框固定 26 px 高（爪痕 26、其餘 22 置中），簡介高度由 JS 預留六款中最高者，換款時 AF.top／AF.bot 不變、鏡頭不重設
+   A5 光暈只留簡介；品牌標、車款標、彩蛋不加 */
+#mStrip .ms-egg{box-sizing:border-box;height:26px;padding:2px 0;opacity:1;background:var(--text-strong);-webkit-mask-origin:content-box;mask-origin:content-box}
+#mStrip .ms-egg[data-sh="claw"]{padding:0}
+#mIntro{line-height:1.6;display:flex;flex-direction:column;justify-content:flex-end}
+#mIntro.en{line-height:1.5}
+/* v199zzzzzz134（使用者 2026-11-20，行動版 ≤760px）
+   ① 取消車款・尺寸膠囊 #stTag；車款標 SVG＋彩蛋放品牌標誌下方（同桌機，標小一號），卡片內車款列隱藏
+   ② 明暗、語言鈕移到音樂鈕左側，五顆一列，右緣對齊卡片（座標由 scPlace 寫入）；FPS 移右上角
+   ③ 簡介只在寬 ≥600 px 顯示於左下角，文字靠左 */
+@media (max-width:760px){
+  html.mbv #stTag{display:none!important}
+  html.mbv aside #modelH{display:none}
+  html.mbv #mStrip{transform:none;align-items:center;gap:4px}
+  html.mbv #mStrip #modelChips.mcards .chip{min-height:0;padding:2px 10px 4px}
+  html.mbv #mStrip #modelChips.mcards .chip[aria-pressed="true"] .mc-img{width:92px}
+  html.mbv #mStrip .ms-egg{height:22px;transform:scale(.85)}
+  html.mbv #langSeg,html.mbv #themeBtn,html.mbv #qpStat{position:fixed;z-index:5;margin:0}
+  html.mbv #themeBtn{height:32px;box-sizing:border-box;align-items:center}
+  html.mbv #langSeg{width:32px;height:32px;box-sizing:border-box;padding:0;border-radius:50%;display:grid;place-items:center}
+  html.mbv #langSeg button[aria-checked="false"]{display:none}html.mbv #langSeg button[aria-checked="true"]{min-width:0;width:28px;height:28px;padding:0;border-radius:50%;display:grid;place-items:center}
+  html.mbv #langSeg,html.mbv #themeBtn{background:linear-gradient(180deg,var(--vb-top),var(--vb-bot))!important;border:0!important;box-shadow:inset 0 1px 0 var(--vb-hi),inset 0 -1px 0 var(--vb-lo),0 1px 2px var(--vb-sh1),0 6px 14px -6px var(--vb-sh2)!important}
+  html.mbv #langSeg:active,html.mbv #themeBtn:active{box-shadow:inset 0 2px 4px var(--vb-lo),inset 0 -1px 0 var(--vb-hi),0 1px 1px var(--vb-sh1)!important}
+  html.mbv #mIntro{text-align:left;text-wrap:pretty;font-size:12px}
+}
+.geoCustGo{margin:6px 0 0}.geoCustGo a{color:var(--accent);text-decoration:none}.geoCustGo a:hover{text-decoration:underline}
+/* v199zzzzzz137（使用者 2026-11-20，行動版）：點彩蛋跳出車款簡介 */
+#mPop{position:absolute;z-index:6;max-width:min(320px,calc(100vw - 24px));box-sizing:border-box;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;letter-spacing:.02em;text-align:left;color:var(--text-primary);
+  background:linear-gradient(180deg,var(--vb-top),var(--vb-bot));box-shadow:inset 0 1px 0 var(--vb-hi),0 1px 2px var(--vb-sh1),0 10px 24px -8px var(--vb-sh2);animation:mPopIn .18s ease-out}
+#mPop[hidden]{display:none}
+@keyframes mPopIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+html.mbv #mStrip .ms-egg{cursor:pointer;-webkit-tap-highlight-color:transparent}
