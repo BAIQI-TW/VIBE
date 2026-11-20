@@ -8,7 +8,7 @@
   --surface-page:var(--c-line-100);--surface-card:var(--c-surface-025);--text-primary:var(--c-ink-900);--text-strong:var(--c-brand-900);
   --text-muted:var(--c-neutral-500);--accent:var(--c-accent-700);--accent-solid:var(--c-accent-700);--border-soft:var(--c-line-300);
   --hairline:var(--c-line-300);--state-ok:#4A7A3A;--state-warn:#B85A28;--state-filled-bg:#FFF6F1;--track:#EFEDE0;--hl:rgba(226,112,58,.14);
-  --overlay:rgba(49,47,34,.35);--elevation-card:0 12px 40px rgba(49,47,34,.22);--stage-top:#EDE6D2;--stage-bot:#CFC4A8;/* v199zzzzzz112：攝影棚 3D 背景色（單一來源；JS 以 getComputedStyle 讀取）。#stage 的 CSS 漸層保留當備援（3D 未繪製、context 遺失時可見） */--studio-top:#D8CFB7;--studio-mid:#EAE3CF;--studio-hot:#F7F2E6;--studio-floor:#DDD4BC;--studio-edge:#C2B699;
+  --overlay:rgba(49,47,34,.35);--elevation-card:0 12px 40px rgba(49,47,34,.22);--stage-top:#EDE6D2;--stage-bot:#CFC4A8;/* v199zzzzzz112：攝影棚 3D 背景色（單一來源；JS 以 getComputedStyle 讀取）。#stage 的 CSS 漸層保留當備援（3D 未繪製、context 遺失時可見） */--studio-top:#8A8A8A;--studio-mid:#ABABAB;--studio-hot:#C8C8C8;--studio-floor:#A0A0A0;--studio-edge:#767676;/* v199zzzzzz120：攝影棚改中性灰階（使用者 2026-11-19 參照灰色無縫背景）；卡片色 --stage-* 不動 */
   --r-sm:5px;--r-pill:999px;--ghost:#2F6384;--below-top:var(--stage-bot);--below-end:var(--surface-page);color-scheme:light;box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -16,12 +16,12 @@
   --surface-page:var(--c-line-700);--surface-card:var(--c-ink-900);--text-primary:var(--c-surface-050);--text-strong:var(--c-surface-025);
   --text-muted:var(--c-line-300);--accent:var(--c-accent-500);--border-soft:var(--c-muted-500);--hairline:var(--c-muted-500);
   --state-ok:#8DBF78;--state-warn:#E2703A;--state-filled-bg:#3A2A1E;--track:#3A3828;--hl:rgba(226,112,58,.18);
-  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--studio-top:#1B1912;--studio-mid:#3B382A;--studio-hot:#5C5843;--studio-floor:#2E2B20;--studio-edge:#100F0A;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}}
+  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--studio-top:#050505;--studio-mid:#1B1B1B;--studio-hot:#333333;--studio-floor:#151515;--studio-edge:#000000;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}}
 :root[data-theme="dark"]{
   --surface-page:var(--c-line-700);--surface-card:var(--c-ink-900);--text-primary:var(--c-surface-050);--text-strong:var(--c-surface-025);
   --text-muted:var(--c-line-300);--accent:var(--c-accent-500);--border-soft:var(--c-muted-500);--hairline:var(--c-muted-500);
   --state-ok:#8DBF78;--state-warn:#E2703A;--state-filled-bg:#3A2A1E;--track:#3A3828;--hl:rgba(226,112,58,.18);
-  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--studio-top:#1B1912;--studio-mid:#3B382A;--studio-hot:#5C5843;--studio-floor:#2E2B20;--studio-edge:#100F0A;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}
+  --overlay:rgba(20,19,12,.55);--elevation-card:0 12px 40px rgba(0,0,0,.45);--stage-top:#4A4636;--stage-bot:#1C1A10;--studio-top:#050505;--studio-mid:#1B1B1B;--studio-hot:#333333;--studio-floor:#151515;--studio-edge:#000000;--ghost:#8CBBD8;--below-top:var(--stage-bot);--below-end:var(--stage-bot);color-scheme:dark}
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;height:100%;background:var(--surface-page);color:var(--text-primary);
@@ -511,3 +511,6 @@ aside .panel>h2::before{content:"";flex:none;width:5px;height:5px;background:var
 .panel.v-enter>*:not(#geoScore){animation:vIn .4s cubic-bezier(.2,.7,.2,1) both}
 .panel.v-enter>*:nth-child(2){animation-delay:.03s}.panel.v-enter>*:nth-child(3){animation-delay:.06s}.panel.v-enter>*:nth-child(4){animation-delay:.09s}.panel.v-enter>*:nth-child(5){animation-delay:.12s}.panel.v-enter>*:nth-child(6){animation-delay:.15s}.panel.v-enter>*:nth-child(7){animation-delay:.18s}.panel.v-enter>*:nth-child(8){animation-delay:.21s}.panel.v-enter>*:nth-child(n+9){animation-delay:.24s}
 @media (prefers-reduced-motion:reduce){.panel.v-enter>*,#geoScore b.flip{animation:none}.chips.seg::before{transition:none}#modelChips.mcards .chip{transition:none}#modelChips.mcards .chip:hover{transform:none}}
+
+/* v120f：色光背景開關（塗裝客製，漸層陽極時才出現） */
+.gelSw{display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:14px;cursor:pointer}.gelSw input{width:18px;height:18px;accent-color:var(--accent-solid,#c2561f)}

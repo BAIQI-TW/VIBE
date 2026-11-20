@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" data-theme="dark">
 <head>
-<!-- VIBE 幾何探索 v199zzzzzz119｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
+<!-- VIBE 幾何探索 v199zzzzzz121｜多檔版（由 tools/split.mjs 自單檔原始碼產生；各檔 ?h= 為內容雜湊，未改的檔案瀏覽器沿用快取） -->
 <meta charset="utf-8">
 <meta name="vibe-feat" content="cc3aa79220">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/vibe.css?h=aa886cbfaf">
+<link rel="stylesheet" href="css/vibe.css?h=2806d15520">
 </head>
 <body>
 <div id="s3dVeil" role="status" aria-label="載入中"><div class="logo"></div></div>
@@ -72,7 +72,7 @@
     <section class="panel" data-panel="custom" hidden>
       <label class="alpha" data-sub="all" style="display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;margin-top:12px"><span style="grid-column:1/-1">零組件透明度</span><input type="range" id="alphaR" min="0" max="100" step="5" value="10" aria-label="零組件透明度" style="width:100%;min-width:0"><span class="num" id="alphaV">10%</span></label>
       <div class="subtabs" id="cSub" role="tablist" hidden><button type="button" role="tab" data-sub="paint" aria-selected="false">塗裝客製</button><button type="button" role="tab" data-sub="addon" aria-selected="false">加購套件</button><button type="button" role="tab" data-sub="geo" aria-selected="true">幾何客製</button></div>
-      <h2 data-sub="paint">表面處理</h2><div class="chips" id="finChips" data-sub="paint"></div><h2 data-sub="paint">車架顏色</h2><div class="chips" id="paintChips" data-sub="paint"></div><div class="chips" id="gradCtl" data-sub="paint" style="margin-top:10px"></div><h2 data-sub="paint" id="anoH">陽極色</h2><div class="chips" id="anoSw" data-sub="paint"></div><h2 data-sub="paint" id="dtCH">下管標顏色（先選）</h2><div class="chips" id="dtColSw" data-sub="paint"></div><div class="chips" id="dtRevCtl" data-sub="paint" style="margin-top:10px"></div><h2 data-sub="paint" id="logoCH">其他 Logo 顏色（頭管、上管、座管；預設連動下管標）</h2><div class="chips" id="logoColSw" data-sub="paint"></div><div class="chips" id="lgRevCtl" data-sub="paint" style="margin-top:10px"></div><p class="fine" id="paintNote" data-sub="paint"></p><p class="fine" id="gradInfo" data-sub="paint"></p>
+      <h2 data-sub="paint">表面處理</h2><div class="chips" id="finChips" data-sub="paint"></div><h2 data-sub="paint">車架顏色</h2><div class="chips" id="paintChips" data-sub="paint"></div><div class="chips" id="gradCtl" data-sub="paint" style="margin-top:10px"></div><label class="gelSw" id="gelSw" data-sub="paint" hidden><input type="checkbox" id="gelOn" checked><span>色光背景</span></label><h2 data-sub="paint" id="anoH">陽極色</h2><div class="chips" id="anoSw" data-sub="paint"></div><h2 data-sub="paint" id="dtCH">下管標顏色（先選）</h2><div class="chips" id="dtColSw" data-sub="paint"></div><div class="chips" id="dtRevCtl" data-sub="paint" style="margin-top:10px"></div><h2 data-sub="paint" id="logoCH">其他 Logo 顏色（頭管、上管、座管；預設連動下管標）</h2><div class="chips" id="logoColSw" data-sub="paint"></div><div class="chips" id="lgRevCtl" data-sub="paint" style="margin-top:10px"></div><p class="fine" id="paintNote" data-sub="paint"></p><p class="fine" id="gradInfo" data-sub="paint"></p>
       <div id="addonBox" data-sub="addon"></div><h2 data-sub="addon" id="hsCH">座管束・頭碗組顏色（座管束、上下碗、BB 杯共同設定）</h2><div class="chips" id="hsColSw" data-sub="addon"></div><h2 data-sub="addon" id="smCH">鈦螺絲與金屬小件顏色（龍頭螺絲、貫通軸與手柄、RD 吊耳與導輪軸心）</h2><div class="chips" id="smColSw" data-sub="addon"></div><h2 data-sub="addon" id="fkPH">前叉內側圖樣顏色（鈦合金前叉）</h2><div class="chips" id="fkPSw" data-sub="addon"></div><p class="fine" data-sub="addon" id="fkPN">右叉腿內側圖樣可選陽極單色、漸層或碎花；左叉腿外側 RIKULAU 字樣固定槍灰色。碳纖前叉兩處皆為 KING 貼圖色。</p>
       <h2 data-sub="addon">輪組</h2>
       <div class="score"><span>狀態 <b id="cState">待補</b></span></div>
@@ -105,11 +105,11 @@
 <script src="data/series.js?h=d7edc879fb"></script>
 <script src="data/ex.js?h=e28673cb76"></script>
 <script src="data/addons.js?h=def97cba44"></script>
-<script src="js/app.js?h=11d7112d69"></script>
+<script src="js/app.js?h=460497f42c"></script>
 <script src="js/fbconfig.js?h=e757b15d82"></script>
 <script src="js/cloud.js?h=0f5ad2516b"></script>
 <script src="js/bgm-arr.js?h=c9fa7deebd"></script>
 <script src="js/bgm.js?h=ceff5e1f80"></script>
-<script src="js/i18n.js?h=441ca845ff"></script>
+<script src="js/i18n.js?h=5f7c05ed24"></script>
 </body>
 </html>
