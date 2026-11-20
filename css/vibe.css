@@ -700,3 +700,27 @@ html.mbv #mStrip .ms-egg{cursor:pointer;-webkit-tap-highlight-color:transparent}
 /* v199zzzzzz143（使用者 2026-11-20，行動版）：FPS／ms 一律兩行；數字欄靠右對齊、單位欄靠左 */
 @media (max-width:760px){html.mbv #qpStat{display:grid!important;grid-template-columns:auto auto;column-gap:3px;row-gap:2px;align-items:baseline}
   html.mbv #qpStat>span{display:contents}html.mbv #qpStat b{text-align:right}html.mbv #qpStat small{text-align:left}}
+/* v199zzzzzz144（使用者 2026-11-20）：明暗切換改圓形、只顯示當下模式（淺色＝太陽、深色＝月亮）；點一下切換。桌機與行動版同 */
+#themeBtn.theme-pill,html.dkv #themeBtn,html.mbv #themeBtn{width:32px!important;height:32px!important;padding:0!important;border-radius:50%!important;box-sizing:border-box;display:grid!important;place-items:center;gap:0}
+#themeBtn .ti-slot{width:20px;height:20px}
+#themeBtn[aria-checked="true"] .ti-slot:has(.ti-moon),#themeBtn:not([aria-checked="true"]) .ti-slot:has(.ti-sun){display:none}
+#themeBtn .ti-sun,#themeBtn .ti-moon{color:var(--text-strong)}
+#themeBtn:hover .ti-sun,#themeBtn:hover .ti-moon{color:var(--accent)}
+/* v199zzzzzz145（使用者 2026-11-20）：語言鈕取消橘底，與其他圓鈕同底 */
+#langSeg button[aria-checked="true"],html.dkv #langSeg button[aria-checked="true"],html.mbv #langSeg button[aria-checked="true"]{background:none!important;box-shadow:none!important;color:var(--text-strong)!important}
+#langSeg:hover button[aria-checked="true"]{color:var(--accent)!important}
+/* v199zzzzzz146（使用者 2026-11-20）：3D 圓鈕（明暗、語言、音樂、播放、回到全車）與桌機直排主分頁的底色改用主分頁／卡片底色 --stage-top（保留淡漸層立體感）；卡片內所有填字框底色同 */
+:root{--vb-top:color-mix(in srgb,var(--stage-top) 60%,#fff);--vb-bot:var(--stage-top)}
+html[data-theme="dark"]{--vb-top:color-mix(in srgb,var(--stage-top) 88%,#fff);--vb-bot:color-mix(in srgb,var(--stage-top) 80%,#000)}
+@media (prefers-color-scheme:dark){html:not([data-theme="light"]){--vb-top:color-mix(in srgb,var(--stage-top) 88%,#fff);--vb-bot:color-mix(in srgb,var(--stage-top) 80%,#000)}}
+aside input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),aside textarea,aside select,.cl-modal input:not([type="checkbox"]),.cl-modal textarea{background-color:var(--stage-top)!important}
+.panel[data-panel=custom] label.f.bad input,.panel[data-panel=custom] label.f.todo input{background-color:color-mix(in srgb,var(--accent-solid) 18%,var(--stage-top))!important}
+/* v199zzzzzz147（使用者 2026-11-20）：最深／最亮文字改用品牌標色——品牌標圖檔本色 #B3B3B3（深色模式直接顯示）；明亮模式以 brightness(.274) 壓暗＝#313131 */
+:root{--logo-ink:#313131;--logo-gray:#B3B3B3}
+:root,html[data-theme="light"]{--text-strong:var(--logo-ink);--text-primary:var(--logo-ink)}
+html:root[data-theme="dark"]{--text-strong:var(--logo-gray);--text-primary:var(--logo-gray)}
+@media (prefers-color-scheme:dark){html:root:not([data-theme="light"]){--text-strong:var(--logo-gray);--text-primary:var(--logo-gray)}}
+/* v199zzzzzz148（使用者 2026-11-20）：深色模式品牌淺灰 #B3B3B3→#DADADA（與次要灰字 #B8AE98 拉開層次）；品牌標圖同步 brightness(218/179≈1.22)，文字與標誌維持同色。明亮模式不動 */
+:root{--logo-gray:#DADADA}
+html:root[data-theme="dark"] .logo{filter:brightness(1.218)}
+@media (prefers-color-scheme:dark){html:root:not([data-theme="light"]) .logo{filter:brightness(1.218)}}
