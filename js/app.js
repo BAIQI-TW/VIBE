@@ -1864,7 +1864,7 @@ function qpUI(){const b=document.getElementById('qpBody');if(!b)return;
   b.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.stu){STU.setP(t.dataset.stu,t.value);STU.ui()}else if(t.dataset&&t.dataset.stc){STU.setC(t.dataset.stc,t.value);t.nextElementSibling.textContent=t.value;STU.ui()}});b.querySelector('#qpStuDef').onclick=()=>{STU.reset();STU.ui()};b.querySelector('#qpSunTop').addEventListener('change',e=>{STU.setP('sunTop',e.target.checked?1:0);STU.ui()});/* v120i：寫入目前主題 */
   let last=performance.now();(function f(now){requestAnimationFrame(f);const dt=now-last;last=now;
     if(wake>0&&!document.hidden&&dt>4&&dt<120&&RMS>0){QP.ms=QP.n?QP.ms*.92+RMS*.08:RMS;QP.n++;if(!SLOW&&!IPH&&!DESK&&QP.n>=60&&QP.ms>30&&performance.now()>RT0){SLOW=true;TIER='lo';wk()}wdN=QP.ms>20?wdN+1:0;if(TIER==='hi'&&!DESK&&!IPH&&wdN>=45&&now>8000)TIER='mid';}})(last);
-  setInterval(()=>{const d=document.getElementById('qp');if(!d||!d.open)return;const o=document.getElementById('qpOut');if(o&&!/^\{/.test(o.textContent))o.textContent='單幀 '+(QP.ms?QP.ms.toFixed(1):'—')+' ms｜層級 '+TIER+(SLOW?'（慢機）':'')+'｜陽極 '+(mcCur==='P'?'PBR':'Matcap')/* v199zzzzzz125：評估內容簡化 */},600)})();
+  setInterval(()=>{const d=document.getElementById('qp');if(!d||!d.open)return;const o=document.getElementById('qpOut');if(o&&!/^\{/.test(o.textContent)){const g=window.__gpuMs?window.__gpuMs():null;o.textContent='單幀 '+(QP.ms?QP.ms.toFixed(1):'—')+' ms｜GPU '+(g==null?'—（瀏覽器未提供）':g>0?g.toFixed(2)+' ms':'—')+'｜層級 '+TIER+(SLOW?'（慢機）':'')+'｜陽極 '+(mcCur==='P'?'PBR':'Matcap')}/* v199zzzzzz125：評估內容簡化；v126：加 GPU ms */},600)})();
 
 /* ===== v199zf：3D 設定檔（客製服務主分頁下方；使用者 2026-11-05 指示，為「預設個人化」做準備）=====
    「下載」「複製」把目前 3D 的全部設定輸出成 .md：車款（車型、尺寸、各車型胎寬與頭碗型式）、塗裝與顏色（表面處理、車架顏色、漸層端點、下管標、Logo、座管束・頭碗組、鈦螺絲）、
@@ -2795,11 +2795,11 @@ function renderAddon(){const box=document.getElementById('addonBox');if(!box)ret
   const info=PARTS_URL?`<a class="info" href="${PARTS_URL}" target="_blank" rel="noopener noreferrer" aria-label="了解更多" title="了解更多">i</a>`:'';
   const seg=(k,labels,cur,o={})=>`<div class="style-seg${o.sub?' sub':''}${o.dis?' dis':''}" role="radiogroup">${labels.map((l,i)=>`<button type="button" role="radio" aria-checked="${i===cur}" data-k="${k}" data-v="${i+(o.off||0)}"${o.tog?' data-tog="1"':''}>${l}</button>`).join('')}</div>`;
   let h='<h2>鈦零組件'+info+'</h2>';/* v199zzzzzz125：鈦零組件、傳動／煞車系列的說明段刪除，「了解更多」移到標題（使用者 2026-11-20） */
-  TI_ITEMS.forEach(it=>{if(it.id==='cageS'&&!((BOLT_TB[selM]||{}).st))return;/* v199zzzt：EX 中管無水壺鎖孔，不顯示 */const on=t[it.id]>0;let sub=(on&&ADD_IMG[it.id])?`<figure class="ad-fig"><img data-ph="${it.id}" alt="${it.name}" width="600" height="600" loading="lazy"></figure>`:'';
+  TI_ITEMS.forEach(it=>{if(it.id==='cageS'&&!((BOLT_TB[selM]||{}).st))return;/* v199zzzt：EX 中管無水壺鎖孔，不顯示 */const on=t[it.id]>0;const fig=(on&&ADD_IMG[it.id])?`<figure class="ad-fig"><img data-ph="${it.id}" alt="${it.name}" width="600" height="600" loading="lazy"></figure>`:'';let sub='';/* v199zzzzzz126：照片另存 fig，最後放回最前面——原本有規格選項（龍頭）或曲柄規格（曲柄組）時 sub 被覆寫，照片不出現（使用者 2026-11-20） */
     if(on&&it.opts.length)sub=seg('ti.'+it.id,it.opts,t[it.id]-1,{sub:1,off:1});
     if(on&&it.crank)sub=seg('ti.cInt',CR_INT,t.cInt,{sub:1})+seg('ti.cLen',CR_LEN,t.cLen,{sub:1});
     if(on&&it.id!=='post'&&it.id!=='collar')sub+=`<div class="ad-h"><span><small>陽極色</small></span></div>`+seg('co.'+it.id,['鈦原色'].concat(ANO_MONO.map(a=>a[1].split('・')[0])),ADD_S.col[it.id]+1,{sub:1});
-    h+=`<div class="arow ad"><div class="ad-h"><span>${it.name}${it.note?`<small>${it.note}</small>`:''}</span><div class="style-seg" role="group"><button type="button" role="switch" aria-checked="${on}" data-k="ti.${it.id}" data-v="${on?0:1}" data-tog="1">加購</button></div></div>${sub}</div>`});
+    h+=`<div class="arow ad"><div class="ad-h"><span>${it.name}${it.note?`<small>${it.note}</small>`:''}</span><div class="style-seg" role="group"><button type="button" role="switch" aria-checked="${on}" data-k="ti.${it.id}" data-v="${on?0:1}" data-tog="1">加購</button></div></div>${fig}${sub}</div>`});
   h+='<h2>BLKTEC 變色龍塗裝碳纖三套件</h2><p class="fine">三件：一體把、前叉、座管。烤漆色：藍紫、古銅、煙霧紫，三件可各自選色。'+info+'</p>';
   BK_POS.forEach(([k,l,tn])=>{const ti=bkTi(k);h+=`<div class="arow ad"><div class="ad-h"><span>${l}${ti?`<small>已選${tn}，不加購碳纖件</small>`:''}</span></div>${seg('bk.'+k,['不加購'].concat(BK_COL.map(c=>c[0])),b[k]+1,{sub:1,dis:ti})}</div>`});
   const tis=BK_POS.filter(([k])=>bkTi(k)).map(x=>x[2]);
@@ -3342,7 +3342,12 @@ const TI_BLAST=.5;
  const qb=document.getElementById('qpBody'),ss=document.getElementById('styleSeg');
  if(qb&&ss){const r=document.createElement('div');r.className='qk';const l=document.createElement('label');l.textContent='顯示風格';r.append(l,ss);qb.insertBefore(r,qb.firstChild)}
  {
-  let n=0,ms=0,acc=0,tk=performance.now();const rr=renderer.render.bind(renderer);renderer.render=function(a,b){const ov=!!a.overrideMaterial,t0=performance.now();rr(a,b);const d=performance.now()-t0;if(!ov){ms=acc;RMS=acc;acc=d;n++}else acc+=d};/* v199g：FPS 數畫面張數（描邊的兩次覆蓋材質繪製不另計）、ms＝上一張畫面全部 render 呼叫的 CPU 時間總和；v199f 起為每次 render 呼叫計，插畫風格每張畫面 3 次，數字被放大 3 倍 */
+  let n=0,ms=0,acc=0,tk=performance.now();const rr=renderer.render.bind(renderer);
+  /* v199zzzzzz126：GPU 計時（EXT_disjoint_timer_query_webgl2）——只量主繪製（不含描邊覆蓋材質）；結果非同步回收，每 600 ms 由效能監控取平均。GPU 使用率％受驅動動態調頻影響（負載變輕時降頻，％不一定跟著降），比較效能改看 GPU ms（使用者 2026-11-20：明暗模式、色光背景開關 GPU％皆差不多） */
+  const gl=renderer.getContext(),TQ=gl.getExtension('EXT_disjoint_timer_query_webgl2'),qPool=[],qPend=[];let gAcc=0,gN=0;
+  const gPoll=()=>{while(qPend.length){const q=qPend[0];if(!gl.getQueryParameter(q,gl.QUERY_RESULT_AVAILABLE))break;const dis=gl.getParameter(TQ.GPU_DISJOINT_EXT),v=gl.getQueryParameter(q,gl.QUERY_RESULT);qPend.shift();qPool.push(q);if(!dis){gAcc+=v/1e6;gN++}}};
+  window.__gpuMs=()=>{if(!TQ)return null;const r=gN?gAcc/gN:0;gAcc=0;gN=0;return r};
+  renderer.render=function(a,b){const ov=!!a.overrideMaterial,t0=performance.now();let q=null;if(TQ&&!ov&&qPend.length<8){try{gPoll();q=qPool.pop()||gl.createQuery();gl.beginQuery(TQ.TIME_ELAPSED_EXT,q)}catch(e){q=null}}rr(a,b);if(q){try{gl.endQuery(TQ.TIME_ELAPSED_EXT);qPend.push(q)}catch(e){}}else if(TQ&&qPend.length)try{gPoll()}catch(e){}const d=performance.now()-t0;if(!ov){ms=acc;RMS=acc;acc=d;n++}else acc+=d};/* v199g：FPS 數畫面張數（描邊的兩次覆蓋材質繪製不另計）、ms＝上一張畫面全部 render 呼叫的 CPU 時間總和；v199f 起為每次 render 呼叫計，插畫風格每張畫面 3 次，數字被放大 3 倍 */
   const F=document.getElementById('qsF'),M=document.getElementById('qsM');
   if(F&&M)setInterval(()=>{const now=performance.now(),dt=(now-tk)/1000;tk=now;const f=n/dt;n=0;F.textContent=f>0?f.toFixed(0):'0';M.textContent=f>0?ms.toFixed(1):'—'},500)}})();
 /* v199zzzzzz58：給 cloud.js（雲端保存）與 bgm.js（背景音樂）的對外介面 */window.VIBE_API={gather:()=>cfgGather(),apply:J=>cfgApply(J),model:()=>selM,size:()=>size,ver:()=>CFG_VER};
