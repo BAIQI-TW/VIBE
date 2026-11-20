@@ -645,10 +645,58 @@ html.dkv aside #modelH{display:none}
   html.mbv #langSeg:active,html.mbv #themeBtn:active{box-shadow:inset 0 2px 4px var(--vb-lo),inset 0 -1px 0 var(--vb-hi),0 1px 1px var(--vb-sh1)!important}
   html.mbv #mIntro{text-align:left;text-wrap:pretty;font-size:12px}
 }
-.geoCustGo{margin:6px 0 0}.geoCustGo a{color:var(--accent);text-decoration:none}.geoCustGo a:hover{text-decoration:underline}
 /* v199zzzzzz137（使用者 2026-11-20，行動版）：點彩蛋跳出車款簡介 */
 #mPop{position:absolute;z-index:6;max-width:min(320px,calc(100vw - 24px));box-sizing:border-box;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;letter-spacing:.02em;text-align:left;color:var(--text-primary);
   background:linear-gradient(180deg,var(--vb-top),var(--vb-bot));box-shadow:inset 0 1px 0 var(--vb-hi),0 1px 2px var(--vb-sh1),0 10px 24px -8px var(--vb-sh2);animation:mPopIn .18s ease-out}
 #mPop[hidden]{display:none}
 @keyframes mPopIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 html.mbv #mStrip .ms-egg{cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* v199zzzzzz139（使用者 2026-11-20）
+   ① #geoScore 右側「幾何客製」CTA（桌機與行動版同位置）
+   ② 行動版卡片固定區大幅降高：把手 24→14、分頁 32→28、主視覺取消車型名（3D 已有車款標）、數字 28→21 px、標籤 10 px */
+#geoScore{grid-template-columns:auto auto auto 1fr}
+#geoScore .gcCta{grid-column:4;justify-self:end;align-self:center;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:6px 12px;border-radius:12px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;line-height:1.15;white-space:nowrap;
+  color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);transition:background-color .15s,transform .15s}
+#geoScore .gcCta i{font-style:normal;font-size:10.5px;font-weight:400;letter-spacing:.04em;color:var(--text-muted)}
+#geoScore .gcCta:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+#geoScore .gcCta:active{transform:translateY(1px)}
+#geoScore .gcCta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:760px){
+  #sheetTabs .gb{height:10px}#sheetTabs .gb::after{top:4px;width:56px;margin-left:-28px}
+  #sheetTabs .tab{height:26px}
+  #sheetTabs{margin-bottom:0}
+  #geoScore .hm{display:none}
+  #geoScore{padding:4px 16px 6px;column-gap:16px;margin-bottom:2px}#geoScore .v{line-height:1}#geoScore .gcCta{line-height:1.1}
+  #geoScore b{font-size:21px}
+  #geoScore .lb,#geoScore .u{font-size:10px;letter-spacing:.06em}
+  #geoScore .hk{gap:2px}
+  #geoScore .gcCta{padding:4px 9px;font-size:12px;border-radius:10px}#geoScore .gcCta i{font-size:9.5px}
+}
+/* v199zzzzzz140（使用者 2026-11-20）
+   ① CTA 改單行膠囊「客製化幾何 →」
+   ② 窄螢幕（Fold5 外螢幕）前伸量與堆疊高數字重疊：標籤不換行、欄寬不得小於內容，≤400 px 再縮字
+   ③ 尺寸與疊圖膠囊降高：桌機 36／32→28 px，行動版 44／40→30 px */
+#geoScore .gcCta{flex-direction:row;align-items:center;gap:0;padding:6px 14px;border-radius:999px;font-size:13px;line-height:1;font-weight:600}
+#geoScore .hk{min-width:auto}#geoScore .lb{white-space:nowrap}
+@media (max-width:760px){#geoScore .gcCta{padding:6px 12px;font-size:12px}}
+@media (max-width:400px){#geoScore{column-gap:12px;padding-left:12px;padding-right:12px}#geoScore b{font-size:18px}#geoScore .gcCta{padding:5px 10px;font-size:11.5px}}
+#sizeChips.seg .chip,#cmpChips.seg .chip{min-height:28px;font-size:13px}
+#sizeChips .chip.cmpd::after{bottom:3px}
+@media (max-width:760px){#sizeChips.seg .chip,#cmpChips.seg .chip{min-height:30px}}
+/* v199zzzzzz141（使用者 2026-11-20）
+   ① 主視覺三組數值平均分配寬度（不再擠在左側），CTA 在最右
+   ② CTA 改圓形：桌機兩行（客製化／幾何 →）、行動版三行（客製化／幾何／→）
+   ③ 行動版尺寸與疊圖膠囊 30→24 px */
+#geoScore{grid-template-columns:repeat(3,minmax(0,1fr)) auto}
+#geoScore .gcCta{grid-column:4;flex-direction:column;justify-content:center;align-items:center;gap:3px;width:66px;height:66px;padding:0;border-radius:50%;font-size:12.5px;line-height:1.1;text-align:center;white-space:nowrap}
+#geoScore .gcCta .l1,#geoScore .gcCta .l2{display:block}
+@media (max-width:760px){#geoScore .gcCta{width:58px;height:58px;font-size:11.5px;gap:1px}#geoScore .gcCta .ar{display:block}}
+@media (max-width:400px){#geoScore .gcCta{width:52px;height:52px;font-size:11px}}
+@media (max-width:760px){#sizeChips.seg .chip,#cmpChips.seg .chip{min-height:24px;height:24px;font-size:12px}#sizeChips .chip.cmpd::after{bottom:2px}}
+/* v199zzzzzz142（使用者 2026-11-20）：尺寸／前伸量／堆疊高／CTA 四者等距（space-between），整列垂直置中；尺寸值改橘色呼應尺寸膠囊與 CTA */
+#geoScore{grid-template-columns:auto auto auto auto;justify-content:space-between;align-items:center}
+#geoScore .hm{align-self:end}
+#geoScore b[data-v="size"]{color:var(--accent)}
+/* v199zzzzzz143（使用者 2026-11-20，行動版）：FPS／ms 一律兩行；數字欄靠右對齊、單位欄靠左 */
+@media (max-width:760px){html.mbv #qpStat{display:grid!important;grid-template-columns:auto auto;column-gap:3px;row-gap:2px;align-items:baseline}
+  html.mbv #qpStat>span{display:contents}html.mbv #qpStat b{text-align:right}html.mbv #qpStat small{text-align:left}}
