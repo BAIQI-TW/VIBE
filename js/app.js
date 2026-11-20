@@ -2818,7 +2818,16 @@ function keepPrograms(){const L=[];bike.traverse(o=>{if(!o.isMesh||o.isInstanced
   warmTabs();renderer.compileAsync(kpGrp,camera,scene).catch(()=>{})}
 /* v199zzzj：切主分頁首次延遲（客製分頁首次進入要現場連結 6 個 physical program）。原因：keepPrograms 的備份材質與實際切到客製／扭力分頁時的材質狀態不完全一致（series 材質、焊道／噴砂補丁後的 customProgramCacheKey 等），program 快取鍵對不上而重編。改為直接走真實路徑預熱：同一個同步區塊內把場景切到客製／扭力分頁的半透明狀態、renderer.compile，再切回——中間不會 render，畫面無閃爍。 */
 var WARM_DONE=0;
-function warmTabs(){if(WARM_DONE>=2)return;WARM_DONE++;const t0=tab;try{if(t0!=='custom'){partAlpha(true);try{HS.forEach(h=>{if(h.g)h.g.visible=true})}catch(e){}renderer.compile(scene,camera)}}catch(e){}finally{try{partAlpha(t0==='custom');paintHS()}catch(e){}}}
+/* v199zzzzzz126：預熱擴大為「兩種燈光狀態 × 不透明／半透明」，並暫時打開所有隱藏物件。
+   原因（使用者 2026-11-20 回報切分頁會頓；5800U Chrome 實測）：頂光只在暗色出現，燈數 3↔4 是 program 快取鍵的一部分；原 warmTabs 只預熱當下主題、且 renderer.compile 只走可見物件——
+   明亮載入後切暗色新編 25 個 program（卡 364 ms），再進客製服務新編 14 個（卡 182 ms）。
+   做法：同一個同步區塊內切換頂光可見性與 partAlpha，各呼叫一次 compileAsync（KHR_parallel_shader_compile 下連結在背景完成），再全部還原；中間不 render，畫面無閃爍。
+   three 的 program 依材質保存在各自的快取表，切回時直接取用不重編。 */
+function warmTabs(){if(WARM_DONE>=4)return;WARM_DONE++;const t0=tab,tv=topL.visible,ti=topL.intensity,hid=[];
+  try{scene.traverse(o=>{if(!o.visible&&!o.isLight){hid.push(o);o.visible=true}});try{HS.forEach(h=>{if(h.g)h.g.visible=true})}catch(e){}
+    [tv,!tv].forEach(lt=>{topL.visible=lt;topL.intensity=lt?Math.max(ti,1):0;[t0==='custom',t0!=='custom'].forEach(a=>{partAlpha(a);renderer.compileAsync(scene,camera).catch(()=>{})})})}
+  catch(e){console.warn('warmTabs',e)}
+  finally{topL.visible=tv;topL.intensity=ti;hid.forEach(o=>o.visible=false);try{partAlpha(t0==='custom');paintHS()}catch(e){}}}
 /* ===== v199zh：傳動／煞車系列（現行配置／Shimano 105／SRAM Force），加購頁整組連動（使用者 2026-11-09）。
    資料：使用者上傳 Shimano_105_Crankset_FD_RD.zip、SRAM_FORCE_AXS_Crankset_FD_Brake.zip 共 8 個 GLB，離線以減面（容許 0.06–0.2 mm）、35° 折角拆頂點、Int16×0.01 mm、Z85 轉成與其他零件相同的內嵌格式；首次選用才解碼建網格（延後解碼）。
    座標：曲柄組＝軸沿 z、右臂向 +x、原點＝五通軸心；RD＝原點在吊掛螺栓軸、Z=0 為導輪面；卡鉗／碟盤＝原點在碟盤圓心、Z=0 為碟盤中面、徑向 +Y（同 CALD）；FD＝局部 (a 向前切線、b 沿座管朝五通、c 向右)、原點在夾環軸上（FD 為示意，GLB 為鏡像座標，以帶鏡像的基底放置）。
