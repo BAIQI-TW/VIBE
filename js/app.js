@@ -1145,10 +1145,10 @@ stage.addEventListener('pointerdown',e=>{if(e.target!==renderer.domElement)retur
 stage.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId)){const p=ptrs.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;dragMoved+=Math.abs(dx)+Math.abs(dy);if(dragMoved>4)scUser('3D 移動')/* v199zzzzzz101：先停展示再套用本次位移 */;
     if(ptrs.size===1){if(p.pan){AF.pan=1;const k=2*cam.r*Math.tan(15*Math.PI/180)/Math.max(1,stage.clientHeight),rt=new V3().setFromMatrixColumn(camera.matrixWorld,0),up=new V3().setFromMatrixColumn(camera.matrixWorld,1);want.tgt.addScaledVector(rt,-dx*k).addScaledVector(up,dy*k)}
       else{want.th-=dx*.008;want.ph=Math.min(2.6,Math.max(.35,want.ph-dy*.006))}if(dragMoved>4)stage.classList.add('dragging')}
-    else if(ptrs.size===2&&pinch0){const[a,b]=[...ptrs.values()];/* v199zzzzzz130（A1）：捏合朝雙指中心縮放（P 於捏合開始取一次） */if(!pinch0.P)pinch0.P=zoomPt(pinch0.cx,pinch0.cy);zoomAt(pinch0.cx,pinch0.cy,pinch0.r*pinch0.d/Math.hypot(a.x-b.x,a.y-b.y),pinch0.P);
+    else if(ptrs.size===2&&pinch0){const[a,b]=[...ptrs.values()];/* v199zzzzzz130（A1）：捏合朝雙指中心縮放（P 於捏合開始取一次） *//* v199zzzzzz151（使用者 2026-11-21：雙指平移不靈活）：①捏合死區——兩指距離變化超過 5% 才進入縮放，平移時指距的自然抖動不再觸發縮放；②縮放一律以捏合點為錨（拉遠也是），不再把目標拉回首頁中心——原本每次微小拉遠都把平移量往回拉 */const zs=pinch0.d/Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));if(!pinch0.z&&Math.abs(Math.log(zs))>.05){pinch0.z=1;pinch0.r=want.r;pinch0.d=Math.hypot(a.x-b.x,a.y-b.y)}if(pinch0.z){if(!pinch0.P)pinch0.P=zoomPt(pinch0.cx,pinch0.cy);zoomAt(pinch0.cx,pinch0.cy,pinch0.r*pinch0.d/Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),pinch0.P,true)}
       /* 雙指中心點移動＝平移（與中鍵拖曳同算法），與捏合縮放同時進行 */
       const cx=(a.x+b.x)/2,cy=(a.y+b.y)/2,k=2*cam.r*Math.tan(15*Math.PI/180)/Math.max(1,stage.clientHeight),rt=new V3().setFromMatrixColumn(camera.matrixWorld,0),up=new V3().setFromMatrixColumn(camera.matrixWorld,1);
-      pinch0.mv=(pinch0.mv||0)+Math.abs(cx-pinch0.cx)+Math.abs(cy-pinch0.cy);if(pinch0.mv>12)AF.pan=1;/* 捏合時中心點難免小抖動，累計超過 12 px 才算平移 */want.tgt.addScaledVector(rt,-(cx-pinch0.cx)*k).addScaledVector(up,(cy-pinch0.cy)*k);pinch0.cx=cx;pinch0.cy=cy;if(dragMoved>4)stage.classList.add('dragging')}}
+      pinch0.mv=(pinch0.mv||0)+Math.abs(cx-pinch0.cx)+Math.abs(cy-pinch0.cy);if(pinch0.mv>3)AF.pan=1;/* v151：12→3 px（自動取景不再吃掉起手的平移） *//* 捏合時中心點難免小抖動，累計超過 12 px 才算平移 */want.tgt.addScaledVector(rt,-(cx-pinch0.cx)*k).addScaledVector(up,(cy-pinch0.cy)*k);pinch0.cx=cx;pinch0.cy=cy;if(dragMoved>4)stage.classList.add('dragging')}}
   else if(e.pointerType==='mouse')hover(e)});
 function endPtr(e){if(!ptrs.has(e.pointerId))return;const wasPan=ptrs.get(e.pointerId).pan;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=null;stage.classList.remove('dragging');
   if(ptrs.size>0)return;const wasMulti=multi;multi=false;
@@ -1168,8 +1168,8 @@ function zoomPt(cx,cy){const n=performance.now();if(zP&&n-zP.t<300&&Math.hypot(c
   try{const vis=o=>{for(let q=o;q;q=q.parent)if(!q.visible)return false;return true};const h=ZRC.intersectObject(bike,true).find(q=>q.object.isMesh&&q.object!==G.shadow&&!(q.object.material&&q.object.material.opacity===0)&&vis(q.object));if(h)P=h.point.clone()}catch(e){}
   if(!P){const dn=camera.getWorldDirection(new V3());P=ZRC.ray.intersectPlane(new THREE.Plane().setFromNormalAndCoplanarPoint(dn,want.tgt),new V3())}
   zP={x:cx,y:cy,t:n,p:P};return P}
-function zoomAt(cx,cy,r1,P){const r0=want.r;r1=Math.min(zMax(),Math.max(Z_MIN,r1));if(Math.abs(r1-r0)<1e-6)return;
-  if(r1<r0){P=P||zoomPt(cx,cy);if(P){want.tgt.sub(P).multiplyScalar(r1/r0).add(P);AF.pan=1}}
+function zoomAt(cx,cy,r1,P,pin){const r0=want.r;r1=Math.min(zMax(),Math.max(Z_MIN,r1));if(Math.abs(r1-r0)<1e-6)return;
+  if(pin&&P){want.tgt.sub(P).multiplyScalar(r1/r0).add(P);AF.pan=1}else if(r1<r0){P=P||zoomPt(cx,cy);if(P){want.tgt.sub(P).multiplyScalar(r1/r0).add(P);AF.pan=1}}
   else{const rH=AF.rH||homeR(),H=homeTgt(tab==='torque',homeFlip),t=rH>r0?Math.min(1,(r1-r0)/(rH-r0)):1;want.tgt.lerp(H,t);if(r1>=rH*.98)AF.pan=0}
   want.r=r1;wk()}
 stage.addEventListener('wheel',e=>{e.preventDefault();scUser('3D 縮放');zoomAt(e.clientX,e.clientY,want.r*(1+Math.sign(e.deltaY)*.1))/* v199zzzzzz130：滾輪方向改為通例（往上滾＝拉近；原本相反） */},{passive:false});
@@ -2908,16 +2908,18 @@ function wuCompile(){wuPre();const t0=tab,tv=topL.visible,ti=topL.intensity,a0=A
   try{scene.traverse(o=>{if(!o.visible&&!o.isLight){hid.push(o);o.visible=true}});ALPHA=Math.min(a0,.5);
     [tv,!tv].forEach(lt=>{topL.visible=lt;topL.intensity=lt?Math.max(ti,1):0;[false,true].forEach(a=>{partAlpha(a);try{mcSync()}catch(e){}/* 分材質 matcap 複本跟著同步透明度 */renderer.compileAsync(scene,camera).catch(()=>{})})});wuTex()}
   finally{ALPHA=a0;topL.visible=tv;topL.intensity=ti;hid.forEach(o=>o.visible=false);try{partAlpha(t0==='custom');paintHS()}catch(e){}}}
-function wuBuild(){const J0=cfgGather(),L=[],ms=Object.keys(MNAME).sort((a,b)=>(b===selM)-(a===selM)),pick=(a,k)=>a[k%a.length];
-  const HSC=['k','f','ti','m0'],FKP=['k','m1','g1','s1'],SMC=['d'].concat(SM_OPTS.map(o=>o[0])),DTC=['ti','m2','g2','s2'],LGF=['blast','std'];
-  ms.forEach(m=>{const C=[];if(PAINT_OK.includes(m)){['std','blast','brush'].forEach(f=>(f==='brush'?['ti']:['ti','mono','grad','spl']).forEach(pt=>['pbrf','mat'].forEach(mc=>C.push({f,pt,mc}))))}else for(let k=0;k<8;k++)C.push({f:'std',pt:'ti',mc:k%2?'mat':'pbrf'});
-    C.forEach((c,k0)=>{const k=k0>>1;/* 輪替以「成對」序號 k＝k0/2：同一組塗裝的 PBR／Matcap 兩個工作帶相同選項，各選項因此與兩種陽極繪製都會配對（避免奇偶混疊） */const v=JSON.parse(JSON.stringify(J0));v.車款.model=m;const P=v.塗裝;P.fin=c.f;P.paint=c.pt;P.paintSaved=null;P.anoM=k%ANO_MONO.length;P.anoG=k%ANO_GRAD.length;P.splI=k%SPL.length;
-      P.hsCol=pick(HSC,k);P.fkPat=pick(FKP,k);P.smCol=pick(SMC,k);P.dtCol=pick(DTC,k);P.logoCol=pick(DTC,k+1);P.logoLinked=k%3===0;P.logoFin=pick(LGF,k);P.gRev=k%2===1;P.dtRev=k%2===0;
-      const A=v.加購,on=k%2===0;TI_ITEMS.forEach(it=>{A.ti[it.id]=(on||!['fork','stem','post'].includes(it.id))?(it.opts.length?1+k%it.opts.length:1):0});A.ti.cInt=k%CR_INT.length;A.ti.cLen=k%CR_LEN.length;
-      BK_POS.forEach(([b])=>{A.bk[b]=on?-1:k%BK_COL.length});A.ser=k%4;v.畫質.mc=c.mc;L.push(v)})});
-  {const v=JSON.parse(JSON.stringify(J0));Object.assign(v.畫質,{film:0,an:0,ao:0,parts:true});L.push(v)}
-  return L}
-function wuRun(v){const t0=performance.now(),w0=wake,tw0=tween,vt0=vTween,J=cfgGather(),su=ADD_S.serUser,cm=cmp,sw=swT,C={r:cam.r,th:cam.th,ph:cam.ph,t:cam.tgt.clone()},W={r:want.r,th:want.th,ph:want.ph,t:want.tgt.clone()};
+/* ===== v199zzzzzz150：預熱改為定點（使用者 2026-11-21：放棄所有排列組合，只針對［ms 延誤最重、車款、尺寸］；加購套件等其他維持 lazy load）=====
+   工作清單（依序，皆為重工作、只在畫面靜止時跑；開場毛玻璃期間有空檔先跑）：
+   ① 目前配置本身——wuCompile 已含兩種燈光（明暗切換）× 不透明／半透明（進客製服務），即實測延誤最重的兩處；
+   ② 其他五個車款各一組（其餘配置維持使用者目前選擇）；
+   ③ 目前車款的其他尺寸。使用者換車款後回到閒置，補熱該車款的其他尺寸。
+   不再預熱：塗裝 × 顏色 × 陽極繪製、加購件、傳動系列、頭碗色、前叉圖樣、降級畫質等組合——首次選用時才解碼／編譯（lazy）。輕工作佇列停用。 */
+/* v199zzzzzz152（使用者 2026-11-21 選定）：①拿掉尺寸預熱（換尺寸不產生新 shader，整套重建 80–550 ms 幾乎無收益，還可能擠掉 4 組的管標網格快取）；②車款依車款標的相鄰順序（下一款、上一款、再下一款⋯）；③意圖觸發：桌機滑鼠移到車款標上，若下一款還沒熱就立刻熱（觸控不做：按下到點擊只有約 100 ms，同步重建反而拖慢這次點擊） */
+function wuOrder(){const K=Object.keys(MNAME),i=Math.max(0,K.indexOf(selM)),n=K.length,L=[];for(let s=1;L.length<n-1&&s<n;s++){[i+s,i-s].forEach(j=>{const m=K[((j%n)+n)%n];if(m!==selM&&!L.includes(m))L.push(m)})}return L}
+function wuBuild(){const J0=cfgGather(),cp=()=>JSON.parse(JSON.stringify(J0)),L=[cp()];
+  wuOrder().forEach(m=>{const v=cp();v.車款.model=m;L.push(v)});WU.lastM=selM;return L}
+window.__wuIntent=()=>{try{if(window.__WARMING||!WU.full||document.hidden||tween||vTween)return;const K=Object.keys(MNAME),m=K[(K.indexOf(selM)+1)%K.length];if(!WU.wm)WU.wm=new Set();if(WU.wm.has(m))return;const v=cfgGather();v.車款.model=m;wuRun(v);if(WU.q){WU.q=WU.q.filter((x,k)=>k<WU.i||x.車款.model!==m)}}catch(e){console.warn('warm intent',e)}};
+function wuRun(v){if(!WU.wm)WU.wm=new Set();try{WU.wm.add(v.車款.model)}catch(e){}const t0=performance.now(),w0=wake,tw0=tween,vt0=vTween,J=cfgGather(),su=ADD_S.serUser,cm=cmp,sw=swT,C={r:cam.r,th:cam.th,ph:cam.ph,t:cam.tgt.clone()},W={r:want.r,th:want.th,ph:want.ph,t:want.tgt.clone()};
   window.__WARMING=1;
   try{cfgApply(v);wuCompile()}catch(e){console.warn('warm',e)}
   finally{try{cfgApply(J);wuPre()}catch(e){console.warn('warm restore',e)}ADD_S.serUser=su;swT=sw;if(cmp!==cm){cmp=cm;try{updateGhost();renderGeo()}catch(e){}}
@@ -2944,8 +2946,7 @@ function wuCompileS(S){if(!S.length)return;const t0=tab,tv=topL.visible,ti=topL.
     [tv,!tv].forEach(lt=>{topL.visible=lt;topL.intensity=lt?Math.max(ti,1):0;[false,true].forEach(a=>{partAlpha(a);try{mcSync()}catch(e){}S.forEach(o=>{try{renderer.compile(o,camera,scene)}catch(e){}})})});
     S.forEach(o=>[].concat(o.material).forEach(m=>{if(!m)return;for(const k in m){const v=m[k];if(v&&v.isTexture&&!WL.inited.has(v)&&v.image){WL.inited.add(v);try{renderer.initTexture(v)}catch(e){}}}}))}
   finally{ALPHA=a0;topL.visible=tv;topL.intensity=ti;hid.forEach(o=>o.visible=false);try{partAlpha(t0==='custom')}catch(e){}}}
-function wuLiteList(){const L=[],po=paintOk();(po?['std','blast','brush']:[finSel]).forEach(f=>((!po||f==='brush')?['ti']:['ti','mono','grad','spl']).forEach(pt=>['pbrf','mat'].forEach(mc=>L.push({f,pt,mc,k:L.length}))));
-  L.push({f:finSel,pt:paintSel,mc:QP.mc,parts:!MC_ADV.parts,k:L.length});return L}
+function wuLiteList(){return[]}/* v150：輕工作（塗裝排列組合）停用 */
 function wuLite(o){const t0=performance.now(),S0={fin:finSel,pt:paintSel,ps:paintSaved,am:anoM,ag:anoG,si:splI,gr:gRev,mc:QP.mc,pa:MC_ADV.parts};
   window.__WARMING=1;try{const m0=wuSnapM();finSel=o.f;paintSel=o.pt;paintSaved=null;anoM=o.k%ANO_MONO.length;anoG=o.k%ANO_GRAD.length;splI=o.k%SPL.length;gRev=o.k%2===1;QP.mc=o.mc;if(o.parts!==undefined)MC_ADV.parts=o.parts;
     wuPre();wuCompileS(wuDiff(m0))}catch(e){console.warn('warm lite',e)}
@@ -2955,7 +2956,7 @@ function wuStatic(){return!(typeof SC!=='undefined'&&SC.on)&&wake<=0&&!tween&&!v
 const wRIC=window.requestIdleCallback?(f=>requestIdleCallback(f,{timeout:1200})):(f=>setTimeout(()=>f(null),300));
 function wuTick(dl){try{if(!WU.full){WU.q=wuBuild();WU.i=0;WU.full=1;if(!WU.vq)WL.q=wuLiteList();WU.sig=wuSig()}
   if(wuOk()){const st=wuStatic(),gap=window.__WU_GAP;
-    if(!WL.q.length&&WU.done){const s=wuSig();if(s&&s!==WU.sig){WU.sig=s;WL.q=wuLiteList();WU.nb++}}
+    
     if(WL.q.length&&(st||gap!=null||(dl&&!dl.didTimeout&&dl.timeRemaining()>=WL.ema+2)))wuLite(WL.q.shift());
     else if(!WL.q.length&&WU.q&&(st||gap!=null)){wuRun(WU.q[WU.i++]);if(WU.i>=WU.q.length){WU.q=null;WU.done=1;WU.sig=wuSig();console.info('VIBE 預熱完成',WU.n,'組',Math.round(WU.ms),'ms，program',renderer.info.programs.length)}}}}
   catch(e){console.warn('warm tick',e);WU.q=null;WU.done=1;WL.q=[]}
@@ -3424,16 +3425,16 @@ function scTagSet(i){const t=i==null?'':scName(SC_NODES[i]);if(t&&scTag.textCont
     body.append(fg,tx);li.append(b,body);box.appendChild(li);R.push({w:li,b,body,dot});
     b.onclick=()=>featSel(cur===i?-1:i)});if(was>=0&&was<R.length)applyRow(was)}
   build();
-  function featSel(i){if(i>=0&&!FOLD.feat&&window.__fold)window.__fold('feat',true);if(i>=0){const d=SC_NODES[i],p=scPos(d);if(!p){console.warn('特色說明：取不到節點位置',scName(d));return}scUser('特色說明',true);scFocus(p,(d&&typeof d==='object')?d:null);wk()}
+  function featSel(i){if(i>=0&&!FOLD.feat&&window.__fold)window.__fold('feat',true);if(i>=0){const d=SC_NODES[i],p=scPos(d);if(!p){console.warn('特色說明：取不到節點位置',scName(d));return}scUser('特色說明',true);scFocus(p,(d&&typeof d==='object')?{ph:d.ph,th:d.th}:null);wk()}/* v199zzzzzz150：點功能說明的特寫距離改同扭力橘點（focus r＝1.05），不用展示特寫的近距離 d.r——原本太近，藍點過大；展示自動播放仍用 d.r */
     else{scUser('特色說明',true);goHome();wk()}
     applyRow(i);
     if(i>=0)try{R[i].w.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(_){}else scResume()/* v199zzzzzz105：收起＝回整車並繼續自旋 */}
   window.__featSel=featSel;window.__featCur=()=>cur;
   /* v199zzzzzz130（B2）：特色節點在 3D 顯示藍點（形式同扭力橘點：核心＋脈動光環＋透明點擊球）。清單展開且在整車組裝分頁才顯示；選取某點時只留該點（同 v99 橘點規則）。位置每幀取 scPos（隨車款、尺寸、拆解移動）。 */
-  const FD=[],FDC=0x3D8BFF,FDC_D=0x6FA8FF;SC_NODES.forEach((d,i)=>{const g=new THREE.Group();g.visible=false;scene.add(g);
+  const FD=[],FDC=0x3D8BFF,FDC_D=0x6FA8FF,FD_V=new THREE.Vector3(),/* v199zzzzzz150（使用者 2026-11-21）：管標節點的藍點不壓在標誌上——沿螢幕方向移開（[0＝右／1＝上, 公尺 × 點的縮放]）：頭管、中管（直立）往右；上管、下管往上 */FD_OFF={hd:[0,.045],st:[0,.04],tt:[1,.04],dt:[1,.04]};SC_NODES.forEach((d,i)=>{const g=new THREE.Group();g.visible=false;scene.add(g);
     const core=new THREE.Mesh(coreGeo,new THREE.MeshBasicMaterial({color:FDC,depthTest:false,transparent:true,toneMapped:false})),halo=new THREE.Mesh(haloGeo,new THREE.MeshBasicMaterial({color:FDC,depthTest:false,transparent:true,side:THREE.DoubleSide,toneMapped:false})),hit=new THREE.Mesh(hitGeo,new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
     core.renderOrder=halo.renderOrder=10;hit.userData.fi=i;g.add(core,halo,hit);FD.push({g,core,halo,hit,ph:i*.9})});
-  window.__fdTick=t=>{const on=tab==='torque'&&FOLD.feat,c=isDark()?FDC_D:FDC;FD.forEach((f,i)=>{const v=on&&(cur<0||cur===i);let p=null;if(v){p=scPos(SC_NODES[i])}f.g.visible=!!(v&&p);if(!f.g.visible)return;f.g.position.copy(p);f.core.material.color.setHex(c);f.halo.material.color.setHex(c);f.halo.visible=cur===i;f.halo.lookAt(camera.position);f.halo.scale.setScalar(1+.35*Math.sin(t*3+f.ph));f.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(cur===i?3:2):1))})};
+  window.__fdTick=t=>{const on=tab==='torque'&&FOLD.feat,c=isDark()?FDC_D:FDC;FD.forEach((f,i)=>{const v=on&&(cur<0||cur===i);let p=null;if(v){p=scPos(SC_NODES[i])}f.g.visible=!!(v&&p);if(!f.g.visible)return;f.g.position.copy(p);{const od=FD_OFF[SC_NODES[i].k];if(od){camera.updateMatrixWorld();f.g.position.addScaledVector(FD_V.setFromMatrixColumn(camera.matrixWorld,od[0]),od[1]*Math.max(.55,Math.min(1.4,cam.r/2.5)))}}f.core.material.color.setHex(c);f.halo.material.color.setHex(c);f.halo.visible=cur===i;f.halo.lookAt(camera.position);f.halo.scale.setScalar(1+.35*Math.sin(t*3+f.ph));f.g.scale.setScalar(Math.max(.55,Math.min(1.4,cam.r/2.5))*(window.innerWidth<=760?(cur===i?3:2):1))})};
   window.__fdPick=e=>{const L=FD.filter(f=>f.g.visible).map(f=>f.hit);if(!L.length)return -1;const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ndc,camera);const h=ray.intersectObjects(L);return h.length?h[0].object.userData.fi:-1};
   /* 兩大項收折鈕 */
   const fold=(k,on)=>{FOLD[k]=on;const b=document.getElementById(k==='feat'?'featFoldB':'tqFoldB'),bx=document.getElementById(k==='feat'?'featFold':'tqFold');if(b)b.setAttribute('aria-expanded',on?'true':'false');if(bx)bx.hidden=!on;
@@ -3465,7 +3466,7 @@ function scPlace(){const rb=document.getElementById('reset');if(!rb)return;let a
       if(!S){S=document.createElement('div');S.id='mStrip';S.hidden=true;stage.appendChild(S);
         /* 只顯示選中車款；左右滑動／觸控板橫滑／←→／兩側箭頭切換（循環），方向寫入 data-dir 供滑入動畫 */
         const W=document.createElement('div');W.className='ms-m';W.setAttribute('role','group');W.setAttribute('aria-label','車款（左右滑動切換）');W.tabIndex=0;
-        const EG=document.createElement('div');EG.className='ms-egg';EG.setAttribute('aria-hidden','true');S.append(W,EG);W.title='點選或左右滑動切換車款';{const P=document.createElement('div');P.id='mPop';P.hidden=true;P.setAttribute('data-noi18n','');P.setAttribute('role','dialog');stage.appendChild(P);EG.setAttribute('role','button');EG.tabIndex=0;EG.title='車款簡介';
+        const EG=document.createElement('div');EG.className='ms-egg';EG.setAttribute('aria-hidden','true');S.append(W,EG);W.title='點選或左右滑動切換車款';W.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&window.__wuIntent)window.__wuIntent()});{const P=document.createElement('div');P.id='mPop';P.hidden=true;P.setAttribute('data-noi18n','');P.setAttribute('role','dialog');stage.appendChild(P);EG.setAttribute('role','button');EG.tabIndex=0;EG.title='車款簡介';
           /* v199zzzzzz137（使用者 2026-11-20，行動版）：點彩蛋跳出車款簡介；點其他地方關閉 */
           const tog=e=>{if(innerWidth>760)return;e.stopPropagation();e.preventDefault();if(!P.hidden){P.hidden=true;return}mPopFill();const r=S.getBoundingClientRect(),q=stage.getBoundingClientRect();P.style.top=Math.round(r.bottom-q.top+6)+'px';P.hidden=false;P.style.left=Math.round(Math.max(8,(innerWidth-P.offsetWidth)/2-q.left))+'px'};/* v199zzzzzz138：卡片水平置中於頁面（使用者 2026-11-20） */
           EG.addEventListener('click',tog);EG.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')tog(e)});addEventListener('pointerdown',e=>{if(!P.hidden&&!P.contains(e.target)&&e.target!==EG)P.hidden=true},true)}/* v199zzzzzz133（B2）：換款提示 */
